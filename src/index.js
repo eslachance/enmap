@@ -54,6 +54,10 @@ class Collection extends Map {
     }
   }
 
+  /**
+   * Internal method called on persistent Enmaps to load data from the underlying database.
+   * @return {Void}
+   */
   init() {
     const stream = this.db.keyStream();
     stream.on('data', key => {
@@ -71,14 +75,29 @@ class Collection extends Map {
     });
   }
 
+  /**
+   * Internal method used to validate persistent enmap names (valid Windows filenames);
+   * @return {boolean} Indicates whether the name is valid.
+   */
   validateName() {
     this.name = this.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
   }
 
+  /**
+   * Shuts down the underlying persistent enmap database.
+   */
   close() {
     this.db.close();
   }
 
+  /**
+   * 
+   * @param {*} key Required. The key of the element to add to the EnMap object. 
+   * If the EnMap is persistent this value MUST be a string or number.
+   * @param {*} val Required. The value of the element to add to the EnMap object. 
+   * If the EnMap is persistent this value MUST be stringifiable as JSON.
+   * @return {Map} The EnMap object.
+   */
   set(key, val) {
     this._array = null;
     this._keyArray = null;
@@ -91,6 +110,11 @@ class Collection extends Map {
     return super.set(key, val);
   }
 
+  /**
+   * 
+   * @param {*} key Required. The key of the element to delete from the EnMap object. 
+   * @param {boolean} bulk Internal property used by the purge method.  
+   */
   delete(key, bulk = false) {
     this._array = null;
     this._keyArray = null;
@@ -100,6 +124,10 @@ class Collection extends Map {
     return super.delete(key);
   }
 
+  /**
+   * Completely deletes all keys from an EnMap, including persistent data.
+   * @return {Promise}
+   */
   purge() {
     return new Promise((resolve, reject) => {
       this.db.close(err=> {
