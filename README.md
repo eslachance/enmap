@@ -3,53 +3,53 @@ Enhanced Map structure with additional utility methods.
 
 <a name="Collection"></a>
 
-## Collection ÔçÉ <code>Map</code>
+## Collection ⇐ <code>Map</code>
 A enhanced Map structure with additional utility methods.
 Can be made persistent
 
 **Kind**: global class  
 **Extends**: <code>Map</code>  
 
-* [Collection](#Collection) ÔçÉ <code>Map</code>
-    * [.init()](#Collection+init) ÔçÆ <code>Void</code>
-    * [.validateName()](#Collection+validateName) ÔçÆ <code>boolean</code>
+* [Collection](#Collection) ⇐ <code>Map</code>
+    * [.init()](#Collection+init) ⇒ <code>Void</code>
+    * [.validateName()](#Collection+validateName) ⇒ <code>boolean</code>
     * [.close()](#Collection+close)
-    * [.set(key, val)](#Collection+set) ÔçÆ <code>Map</code>
+    * [.set(key, val)](#Collection+set) ⇒ <code>Map</code>
     * [.delete(key, bulk)](#Collection+delete)
-    * [.purge()](#Collection+purge) ÔçÆ <code>Promise</code>
-    * [.array()](#Collection+array) ÔçÆ <code>Array</code>
-    * [.keyArray()](#Collection+keyArray) ÔçÆ <code>Array</code>
-    * [.first([count])](#Collection+first) ÔçÆ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-    * [.firstKey([count])](#Collection+firstKey) ÔçÆ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-    * [.last([count])](#Collection+last) ÔçÆ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-    * [.lastKey([count])](#Collection+lastKey) ÔçÆ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-    * [.random([count])](#Collection+random) ÔçÆ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-    * [.randomKey([count])](#Collection+randomKey) ÔçÆ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-    * [.findAll(prop, value)](#Collection+findAll) ÔçÆ <code>Array</code>
-    * [.find(propOrFn, [value])](#Collection+find) ÔçÆ <code>\*</code>
-    * [.findKey(propOrFn, [value])](#Collection+findKey) ÔçÆ <code>\*</code>
-    * [.exists(prop, value)](#Collection+exists) ÔçÆ <code>boolean</code>
-    * [.filter(fn, [thisArg])](#Collection+filter) ÔçÆ [<code>Collection</code>](#Collection)
-    * [.filterArray(fn, [thisArg])](#Collection+filterArray) ÔçÆ <code>Array</code>
-    * [.map(fn, [thisArg])](#Collection+map) ÔçÆ <code>Array</code>
-    * [.some(fn, [thisArg])](#Collection+some) ÔçÆ <code>boolean</code>
-    * [.every(fn, [thisArg])](#Collection+every) ÔçÆ <code>boolean</code>
-    * [.reduce(fn, [initialValue])](#Collection+reduce) ÔçÆ <code>\*</code>
-    * [.clone()](#Collection+clone) ÔçÆ [<code>Collection</code>](#Collection)
-    * [.concat(...collections)](#Collection+concat) ÔçÆ [<code>Collection</code>](#Collection)
-    * [.deleteAll()](#Collection+deleteAll) ÔçÆ <code>Array.&lt;Promise&gt;</code>
-    * [.equals(collection)](#Collection+equals) ÔçÆ <code>boolean</code>
-    * [.sort([compareFunction])](#Collection+sort) ÔçÆ [<code>Collection</code>](#Collection)
+    * [.purge()](#Collection+purge) ⇒ <code>Promise</code>
+    * [.array()](#Collection+array) ⇒ <code>Array</code>
+    * [.keyArray()](#Collection+keyArray) ⇒ <code>Array</code>
+    * [.first([count])](#Collection+first) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+    * [.firstKey([count])](#Collection+firstKey) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+    * [.last([count])](#Collection+last) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+    * [.lastKey([count])](#Collection+lastKey) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+    * [.random([count])](#Collection+random) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+    * [.randomKey([count])](#Collection+randomKey) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+    * [.findAll(prop, value)](#Collection+findAll) ⇒ <code>Array</code>
+    * [.find(propOrFn, [value])](#Collection+find) ⇒ <code>\*</code>
+    * [.findKey(propOrFn, [value])](#Collection+findKey) ⇒ <code>\*</code>
+    * [.exists(prop, value)](#Collection+exists) ⇒ <code>boolean</code>
+    * [.filter(fn, [thisArg])](#Collection+filter) ⇒ [<code>Collection</code>](#Collection)
+    * [.filterArray(fn, [thisArg])](#Collection+filterArray) ⇒ <code>Array</code>
+    * [.map(fn, [thisArg])](#Collection+map) ⇒ <code>Array</code>
+    * [.some(fn, [thisArg])](#Collection+some) ⇒ <code>boolean</code>
+    * [.every(fn, [thisArg])](#Collection+every) ⇒ <code>boolean</code>
+    * [.reduce(fn, [initialValue])](#Collection+reduce) ⇒ <code>\*</code>
+    * [.clone()](#Collection+clone) ⇒ [<code>Collection</code>](#Collection)
+    * [.concat(...collections)](#Collection+concat) ⇒ [<code>Collection</code>](#Collection)
+    * [.deleteAll()](#Collection+deleteAll) ⇒ <code>Array.&lt;Promise&gt;</code>
+    * [.equals(collection)](#Collection+equals) ⇒ <code>boolean</code>
+    * [.sort([compareFunction])](#Collection+sort) ⇒ [<code>Collection</code>](#Collection)
 
 <a name="Collection+init"></a>
 
-### collection.init() ÔçÆ <code>Void</code>
+### collection.init() ⇒ <code>Void</code>
 Internal method called on persistent Enmaps to load data from the underlying database.
 
 **Kind**: instance method of [<code>Collection</code>](#Collection)  
 <a name="Collection+validateName"></a>
 
-### collection.validateName() ÔçÆ <code>boolean</code>
+### collection.validateName() ⇒ <code>boolean</code>
 Internal method used to validate persistent enmap names (valid Windows filenames);
 
 **Kind**: instance method of [<code>Collection</code>](#Collection)  
@@ -62,7 +62,7 @@ Shuts down the underlying persistent enmap database.
 **Kind**: instance method of [<code>Collection</code>](#Collection)  
 <a name="Collection+set"></a>
 
-### collection.set(key, val) ÔçÆ <code>Map</code>
+### collection.set(key, val) ⇒ <code>Map</code>
 **Kind**: instance method of [<code>Collection</code>](#Collection)  
 **Returns**: <code>Map</code> - The EnMap object.  
 
@@ -83,13 +83,13 @@ Shuts down the underlying persistent enmap database.
 
 <a name="Collection+purge"></a>
 
-### collection.purge() ÔçÆ <code>Promise</code>
+### collection.purge() ⇒ <code>Promise</code>
 Completely deletes all keys from an EnMap, including persistent data.
 
 **Kind**: instance method of [<code>Collection</code>](#Collection)  
 <a name="Collection+array"></a>
 
-### collection.array() ÔçÆ <code>Array</code>
+### collection.array() ⇒ <code>Array</code>
 Creates an ordered array of the values of this collection, and caches it internally.
 The array will only be reconstructed if an item is added to or removed from the collection, 
 or if you change the length of the array itself. If you don't want this caching behaviour, 
@@ -98,7 +98,7 @@ use `Array.from(collection.values())` instead.
 **Kind**: instance method of [<code>Collection</code>](#Collection)  
 <a name="Collection+keyArray"></a>
 
-### collection.keyArray() ÔçÆ <code>Array</code>
+### collection.keyArray() ⇒ <code>Array</code>
 Creates an ordered array of the keys of this collection, and caches it internally. 
 The array will only be reconstructed if an item is added to or removed from the collection, 
 or if you change the length of the array itself. If you don't want this caching behaviour, 
@@ -107,7 +107,7 @@ use `Array.from(collection.keys())` instead.
 **Kind**: instance method of [<code>Collection</code>](#Collection)  
 <a name="Collection+first"></a>
 
-### collection.first([count]) ÔçÆ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+### collection.first([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
 Obtains the first value(s) in this collection.
 
 **Kind**: instance method of [<code>Collection</code>](#Collection)  
@@ -120,7 +120,7 @@ or an array of values of `count` length
 
 <a name="Collection+firstKey"></a>
 
-### collection.firstKey([count]) ÔçÆ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+### collection.firstKey([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
 Obtains the first key(s) in this collection.
 
 **Kind**: instance method of [<code>Collection</code>](#Collection)  
@@ -133,7 +133,7 @@ or an array of keys of `count` length
 
 <a name="Collection+last"></a>
 
-### collection.last([count]) ÔçÆ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+### collection.last([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
 Obtains the last value(s) in this collection. This relies on [array](#Collection+array), 
 and thus the caching mechanism applies here as well.
 
@@ -147,7 +147,7 @@ or an array of values of `count` length
 
 <a name="Collection+lastKey"></a>
 
-### collection.lastKey([count]) ÔçÆ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+### collection.lastKey([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
 Obtains the last key(s) in this collection. This relies on [keyArray](#Collection+keyArray), 
 and thus the caching mechanism applies here as well.
 
@@ -161,7 +161,7 @@ or an array of keys of `count` length
 
 <a name="Collection+random"></a>
 
-### collection.random([count]) ÔçÆ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+### collection.random([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
 Obtains random value(s) from this collection. This relies on [array](#Collection+array), 
 and thus the caching mechanism applies here as well.
 
@@ -175,7 +175,7 @@ or an array of values of `count` length
 
 <a name="Collection+randomKey"></a>
 
-### collection.randomKey([count]) ÔçÆ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+### collection.randomKey([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
 Obtains random key(s) from this collection. This relies on [keyArray](#Collection+keyArray), 
 and thus the caching mechanism applies here as well.
 
@@ -189,7 +189,7 @@ or an array of keys of `count` length
 
 <a name="Collection+findAll"></a>
 
-### collection.findAll(prop, value) ÔçÆ <code>Array</code>
+### collection.findAll(prop, value) ⇒ <code>Array</code>
 Searches for all items where their specified property's value is identical to the given value
 (`item[prop] === value`).
 
@@ -206,7 +206,7 @@ collection.findAll('username', 'Bob');
 ```
 <a name="Collection+find"></a>
 
-### collection.find(propOrFn, [value]) ÔçÆ <code>\*</code>
+### collection.find(propOrFn, [value]) ⇒ <code>\*</code>
 Searches for a single item where its specified property's value is identical to the given value
 (`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is identical to
 [Array.find()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find).
@@ -231,7 +231,7 @@ collection.find(val => val.username === 'Bob');
 ```
 <a name="Collection+findKey"></a>
 
-### collection.findKey(propOrFn, [value]) ÔçÆ <code>\*</code>
+### collection.findKey(propOrFn, [value]) ⇒ <code>\*</code>
 Searches for the key of a single item where its specified property's value is identical to the given value
 (`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is identical to
 [Array.findIndex()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex).
@@ -253,7 +253,7 @@ collection.findKey(val => val.username === 'Bob');
 ```
 <a name="Collection+exists"></a>
 
-### collection.exists(prop, value) ÔçÆ <code>boolean</code>
+### collection.exists(prop, value) ⇒ <code>boolean</code>
 Searches for the existence of a single item where its specified property's value is identical to the given value
 (`item[prop] === value`).
 <warn>Do not use this to check for an item by its ID. Instead, use `collection.has(id)`. See
@@ -274,7 +274,7 @@ if (collection.exists('username', 'Bob')) {
 ```
 <a name="Collection+filter"></a>
 
-### collection.filter(fn, [thisArg]) ÔçÆ [<code>Collection</code>](#Collection)
+### collection.filter(fn, [thisArg]) ⇒ [<code>Collection</code>](#Collection)
 Identical to
 [Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter),
 but returns a Collection instead of an Array.
@@ -288,7 +288,7 @@ but returns a Collection instead of an Array.
 
 <a name="Collection+filterArray"></a>
 
-### collection.filterArray(fn, [thisArg]) ÔçÆ <code>Array</code>
+### collection.filterArray(fn, [thisArg]) ⇒ <code>Array</code>
 Identical to
 [Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter).
 
@@ -301,7 +301,7 @@ Identical to
 
 <a name="Collection+map"></a>
 
-### collection.map(fn, [thisArg]) ÔçÆ <code>Array</code>
+### collection.map(fn, [thisArg]) ⇒ <code>Array</code>
 Identical to
 [Array.map()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map).
 
@@ -314,7 +314,7 @@ Identical to
 
 <a name="Collection+some"></a>
 
-### collection.some(fn, [thisArg]) ÔçÆ <code>boolean</code>
+### collection.some(fn, [thisArg]) ⇒ <code>boolean</code>
 Identical to
 [Array.some()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/some).
 
@@ -327,7 +327,7 @@ Identical to
 
 <a name="Collection+every"></a>
 
-### collection.every(fn, [thisArg]) ÔçÆ <code>boolean</code>
+### collection.every(fn, [thisArg]) ⇒ <code>boolean</code>
 Identical to
 [Array.every()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every).
 
@@ -340,7 +340,7 @@ Identical to
 
 <a name="Collection+reduce"></a>
 
-### collection.reduce(fn, [initialValue]) ÔçÆ <code>\*</code>
+### collection.reduce(fn, [initialValue]) ⇒ <code>\*</code>
 Identical to
 [Array.reduce()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce).
 
@@ -353,7 +353,7 @@ Identical to
 
 <a name="Collection+clone"></a>
 
-### collection.clone() ÔçÆ [<code>Collection</code>](#Collection)
+### collection.clone() ⇒ [<code>Collection</code>](#Collection)
 Creates an identical shallow copy of this collection.
 
 **Kind**: instance method of [<code>Collection</code>](#Collection)  
@@ -363,7 +363,7 @@ const newColl = someColl.clone();
 ```
 <a name="Collection+concat"></a>
 
-### collection.concat(...collections) ÔçÆ [<code>Collection</code>](#Collection)
+### collection.concat(...collections) ⇒ [<code>Collection</code>](#Collection)
 Combines this collection with others into a new collection. None of the source collections are modified.
 
 **Kind**: instance method of [<code>Collection</code>](#Collection)  
@@ -378,13 +378,13 @@ const newColl = someColl.concat(someOtherColl, anotherColl, ohBoyAColl);
 ```
 <a name="Collection+deleteAll"></a>
 
-### collection.deleteAll() ÔçÆ <code>Array.&lt;Promise&gt;</code>
+### collection.deleteAll() ⇒ <code>Array.&lt;Promise&gt;</code>
 Calls the `delete()` method on all items that have it.
 
 **Kind**: instance method of [<code>Collection</code>](#Collection)  
 <a name="Collection+equals"></a>
 
-### collection.equals(collection) ÔçÆ <code>boolean</code>
+### collection.equals(collection) ⇒ <code>boolean</code>
 Checks if this collection shares identical key-value pairings with another.
 This is different to checking for equality using equal-signs, because
 the collections may be different objects, but contain the same data.
@@ -398,7 +398,7 @@ the collections may be different objects, but contain the same data.
 
 <a name="Collection+sort"></a>
 
-### collection.sort([compareFunction]) ÔçÆ [<code>Collection</code>](#Collection)
+### collection.sort([compareFunction]) ⇒ [<code>Collection</code>](#Collection)
 The sort() method sorts the elements of a collection in place and returns the collection.
 The sort is not necessarily stable. The default sort order is according to string Unicode code points.
 
