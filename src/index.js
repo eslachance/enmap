@@ -1,5 +1,6 @@
 const level = require('native-level-promise');
 const path = require('path');
+const { inspect } = require('util');
 
 /**
  * A enhanced Map structure with additional utility methods.
@@ -47,7 +48,7 @@ class Collection extends Map {
         }
       }
       this.path = path.join(process.cwd(), this.dataDir, this.name);
-      this.db = level(this.path);
+      this.db = new level(this.path);
       this.init();
     } else {
       this.ready();
@@ -104,7 +105,7 @@ class Collection extends Map {
     if (this.persistent) {
       if (!key || !['String', 'Number'].includes(key.constructor.name))
         throw new Error('Persistent Collections require keys to be strings or numbers.');
-      val = (typeof val === 'object' ? JSON.stringify(val) : val);
+      val = (typeof val === 'object' ? inspect(val, { depth: 2 }) : val);
       this.db.put(key, val);
     }
     return super.set(key, val);
