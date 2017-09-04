@@ -113,6 +113,24 @@ class Collection extends Map {
 
   /**
    * 
+   * @param {*} key Required. The key of the element to add to the EnMap object. 
+   * If the EnMap is persistent this value MUST be a string or number.
+   * @param {*} val Required. The value of the element to add to the EnMap object. 
+   * If the EnMap is persistent this value MUST be stringifiable as JSON.
+   * @return {Map} The EnMap object.
+   */
+  async setAsync(key, val) {
+    this._array = null;
+    this._keyArray = null;
+    if (!key || !['String', 'Number'].includes(key.constructor.name))
+      throw new Error('Persistent Collections require keys to be strings or numbers.');
+    val = (typeof val === 'object' ? inspect(val, { depth: 2 }) : val);
+    await this.db.put(key, val);
+    return super.set(key, val);
+  }
+
+  /**
+   * 
    * @param {*} key Required. The key of the element to delete from the EnMap object. 
    * @param {boolean} bulk Internal property used by the purge method.  
    */
@@ -126,19 +144,26 @@ class Collection extends Map {
   }
 
   /**
+   * 
+   * @param {*} key Required. The key of the element to delete from the EnMap object. 
+   * @param {boolean} bulk Internal property used by the purge method.  
+   */
+  async deleteAsync(key, bulk = false) {
+    this._array = null;
+    this._keyArray = null;
+    if (!bulk) {
+      await this.db.del(key);
+    }
+    return super.delete(key);
+  }
+
+  /**
    * Completely deletes all keys from an EnMap, including persistent data.
    * @return {Promise}
    */
-  purge() {
-    return new Promise((resolve, reject) => {
-      this.db.close(err=> {
-        if (err) return reject(err);
-        level.destroy(this.path, (err) => {
-          if (err) return reject(err);
-          resolve();
-        });
-      });
-    });
+  async purge() {
+    await this.db.close();
+    return level.destroy(this.path);
   }
 
   /**
