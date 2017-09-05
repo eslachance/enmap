@@ -99,10 +99,10 @@ class Collection extends Map {
    * If the EnMap is persistent this value MUST be stringifiable as JSON.
    * @return {Map} The EnMap object.
    */
-  set(key, val) {
+  set(key, val, save = true) {
     this._array = null;
     this._keyArray = null;
-    if (this.persistent) {
+    if (this.persistent && save) {
       if (!key || !['String', 'Number'].includes(key.constructor.name)) {
         throw new Error('Persistent Collections require keys to be strings or numbers.');
       }
@@ -120,13 +120,13 @@ class Collection extends Map {
    * If the EnMap is persistent this value MUST be stringifiable as JSON.
    * @return {Map} The EnMap object.
    */
-  async setAsync(key, val) {
+  async setAsync(key, val, save = true) {
     this._array = null;
     this._keyArray = null;
     if (!key || !['String', 'Number'].includes(key.constructor.name))
       throw new Error('Persistent Collections require keys to be strings or numbers.');
-    val = (typeof val === 'object' ? inspect(val, { depth: 2 }) : val);
-    await this.db.put(key, val);
+    const insert = typeof val === 'object' ? JSON.stringify(val) : val;
+    if(save) await this.db.put(key, insert);
     return super.set(key, val);
   }
 
