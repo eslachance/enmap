@@ -126,7 +126,7 @@ class Enmap extends Map {
     if (!key || !['String', 'Number'].includes(key.constructor.name))
       throw new Error('Enmap require keys to be strings or numbers.');
     const insert = typeof val === 'object' ? JSON.stringify(val) : val;
-    if(save) await this.db.put(key, insert);
+    if (save) await this.db.put(key, insert);
     return super.set(key, val);
   }
 

@@ -1,69 +1,68 @@
-# enmap
+# Enmap - Enhanced Maps
+<a name="Enmap"></a>
+
+## Enmap ⇐ <code>Map</code>
 Enhanced Map structure with additional utility methods.
-
-<a name="Collection"></a>
-
-## Collection ⇐ <code>Map</code>
-A enhanced Map structure with additional utility methods.
-Can be made persistent
+Can be made persistent using an underlying `level` database.
 
 **Kind**: global class  
 **Extends**: <code>Map</code>  
 
-* [Collection](#Collection) ⇐ <code>Map</code>
-    * [.init()](#Collection+init) ⇒ <code>Void</code>
-    * [.validateName()](#Collection+validateName) ⇒ <code>boolean</code>
-    * [.close()](#Collection+close)
-    * [.set(key, val)](#Collection+set) ⇒ <code>Map</code>
-    * [.delete(key, bulk)](#Collection+delete)
-    * [.purge()](#Collection+purge) ⇒ <code>Promise</code>
-    * [.array()](#Collection+array) ⇒ <code>Array</code>
-    * [.keyArray()](#Collection+keyArray) ⇒ <code>Array</code>
-    * [.first([count])](#Collection+first) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-    * [.firstKey([count])](#Collection+firstKey) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-    * [.last([count])](#Collection+last) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-    * [.lastKey([count])](#Collection+lastKey) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-    * [.random([count])](#Collection+random) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-    * [.randomKey([count])](#Collection+randomKey) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-    * [.findAll(prop, value)](#Collection+findAll) ⇒ <code>Array</code>
-    * [.find(propOrFn, [value])](#Collection+find) ⇒ <code>\*</code>
-    * [.findKey(propOrFn, [value])](#Collection+findKey) ⇒ <code>\*</code>
-    * [.exists(prop, value)](#Collection+exists) ⇒ <code>boolean</code>
-    * [.filter(fn, [thisArg])](#Collection+filter) ⇒ [<code>Collection</code>](#Collection)
-    * [.filterArray(fn, [thisArg])](#Collection+filterArray) ⇒ <code>Array</code>
-    * [.map(fn, [thisArg])](#Collection+map) ⇒ <code>Array</code>
-    * [.some(fn, [thisArg])](#Collection+some) ⇒ <code>boolean</code>
-    * [.every(fn, [thisArg])](#Collection+every) ⇒ <code>boolean</code>
-    * [.reduce(fn, [initialValue])](#Collection+reduce) ⇒ <code>\*</code>
-    * [.clone()](#Collection+clone) ⇒ [<code>Collection</code>](#Collection)
-    * [.concat(...collections)](#Collection+concat) ⇒ [<code>Collection</code>](#Collection)
-    * [.deleteAll()](#Collection+deleteAll) ⇒ <code>Array.&lt;Promise&gt;</code>
-    * [.equals(collection)](#Collection+equals) ⇒ <code>boolean</code>
-    * [.sort([compareFunction])](#Collection+sort) ⇒ [<code>Collection</code>](#Collection)
+* [Enmap](#Enmap) ⇐ <code>Map</code>
+    * [.init()](#Enmap+init) ⇒ <code>Void</code>
+    * [.validateName()](#Enmap+validateName) ⇒ <code>boolean</code>
+    * [.close()](#Enmap+close)
+    * [.set(key, val)](#Enmap+set) ⇒ <code>Map</code>
+    * [.setAsync(key, val)](#Enmap+setAsync) ⇒ <code>Map</code>
+    * [.delete(key, bulk)](#Enmap+delete)
+    * [.deleteAsync(key, bulk)](#Enmap+deleteAsync)
+    * [.purge()](#Enmap+purge) ⇒ <code>Promise</code>
+    * [.array()](#Enmap+array) ⇒ <code>Array</code>
+    * [.keyArray()](#Enmap+keyArray) ⇒ <code>Array</code>
+    * [.first([count])](#Enmap+first) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+    * [.firstKey([count])](#Enmap+firstKey) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+    * [.last([count])](#Enmap+last) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+    * [.lastKey([count])](#Enmap+lastKey) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+    * [.random([count])](#Enmap+random) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+    * [.randomKey([count])](#Enmap+randomKey) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+    * [.findAll(prop, value)](#Enmap+findAll) ⇒ <code>Array</code>
+    * [.find(propOrFn, [value])](#Enmap+find) ⇒ <code>\*</code>
+    * [.exists(prop, value)](#Enmap+exists) ⇒ <code>boolean</code>
+    * [.filter(fn, [thisArg])](#Enmap+filter) ⇒ [<code>Enmap</code>](#Enmap)
+    * [.filterArray(fn, [thisArg])](#Enmap+filterArray) ⇒ <code>Array</code>
+    * [.map(fn, [thisArg])](#Enmap+map) ⇒ <code>Array</code>
+    * [.some(fn, [thisArg])](#Enmap+some) ⇒ <code>boolean</code>
+    * [.every(fn, [thisArg])](#Enmap+every) ⇒ <code>boolean</code>
+    * [.reduce(fn, [initialValue])](#Enmap+reduce) ⇒ <code>\*</code>
+    * [.clone()](#Enmap+clone) ⇒ [<code>Enmap</code>](#Enmap)
+    * [.concat(...enmaps)](#Enmap+concat) ⇒ [<code>Enmap</code>](#Enmap)
+    * [.deleteAll()](#Enmap+deleteAll) ⇒ <code>Array.&lt;Promise&gt;</code>
+    * [.equals(enmap)](#Enmap+equals) ⇒ <code>boolean</code>
+    * [.sort([compareFunction])](#Enmap+sort) ⇒ [<code>Enmap</code>](#Enmap)
 
-<a name="Collection+init"></a>
+<a name="Enmap+init"></a>
 
-### collection.init() ⇒ <code>Void</code>
+### enmap.init() ⇒ <code>Void</code>
 Internal method called on persistent Enmaps to load data from the underlying database.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
-<a name="Collection+validateName"></a>
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+<a name="Enmap+validateName"></a>
 
-### collection.validateName() ⇒ <code>boolean</code>
+### enmap.validateName() ⇒ <code>boolean</code>
 Internal method used to validate persistent enmap names (valid Windows filenames);
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: <code>boolean</code> - Indicates whether the name is valid.  
-<a name="Collection+close"></a>
+<a name="Enmap+close"></a>
 
-### collection.close()
+### enmap.close()
 Shuts down the underlying persistent enmap database.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
-<a name="Collection+set"></a>
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+<a name="Enmap+set"></a>
 
-### collection.set(key, val) ⇒ <code>Map</code>
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+### enmap.set(key, val) ⇒ <code>Map</code>
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: <code>Map</code> - The EnMap object.  
 
 | Param | Type | Description |
@@ -71,46 +70,67 @@ Shuts down the underlying persistent enmap database.
 | key | <code>\*</code> | Required. The key of the element to add to the EnMap object.  If the EnMap is persistent this value MUST be a string or number. |
 | val | <code>\*</code> | Required. The value of the element to add to the EnMap object.  If the EnMap is persistent this value MUST be stringifiable as JSON. |
 
-<a name="Collection+delete"></a>
+<a name="Enmap+setAsync"></a>
 
-### collection.delete(key, bulk)
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+### enmap.setAsync(key, val) ⇒ <code>Map</code>
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>Map</code> - The EnMap object.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| key | <code>\*</code> | Required. The key of the element to add to the EnMap object.  If the EnMap is persistent this value MUST be a string or number. |
+| val | <code>\*</code> | Required. The value of the element to add to the EnMap object.  If the EnMap is persistent this value MUST be stringifiable as JSON. |
+
+<a name="Enmap+delete"></a>
+
+### enmap.delete(key, bulk)
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
 | key | <code>\*</code> |  | Required. The key of the element to delete from the EnMap object. |
 | bulk | <code>boolean</code> | <code>false</code> | Internal property used by the purge method. |
 
-<a name="Collection+purge"></a>
+<a name="Enmap+deleteAsync"></a>
 
-### collection.purge() ⇒ <code>Promise</code>
+### enmap.deleteAsync(key, bulk)
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| key | <code>\*</code> |  | Required. The key of the element to delete from the EnMap object. |
+| bulk | <code>boolean</code> | <code>false</code> | Internal property used by the purge method. |
+
+<a name="Enmap+purge"></a>
+
+### enmap.purge() ⇒ <code>Promise</code>
 Completely deletes all keys from an EnMap, including persistent data.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
-<a name="Collection+array"></a>
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+<a name="Enmap+array"></a>
 
-### collection.array() ⇒ <code>Array</code>
-Creates an ordered array of the values of this collection, and caches it internally.
-The array will only be reconstructed if an item is added to or removed from the collection, 
+### enmap.array() ⇒ <code>Array</code>
+Creates an ordered array of the values of this Enmap, and caches it internally.
+The array will only be reconstructed if an item is added to or removed from the Enmap, 
 or if you change the length of the array itself. If you don't want this caching behaviour, 
-use `Array.from(collection.values())` instead.
+use `Array.from(enmap.values())` instead.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
-<a name="Collection+keyArray"></a>
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+<a name="Enmap+keyArray"></a>
 
-### collection.keyArray() ⇒ <code>Array</code>
-Creates an ordered array of the keys of this collection, and caches it internally. 
-The array will only be reconstructed if an item is added to or removed from the collection, 
+### enmap.keyArray() ⇒ <code>Array</code>
+Creates an ordered array of the keys of this Enmap, and caches it internally. 
+The array will only be reconstructed if an item is added to or removed from the Enmap, 
 or if you change the length of the array itself. If you don't want this caching behaviour, 
-use `Array.from(collection.keys())` instead.
+use `Array.from(enmap.keys())` instead.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
-<a name="Collection+first"></a>
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+<a name="Enmap+first"></a>
 
-### collection.first([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-Obtains the first value(s) in this collection.
+### enmap.first([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+Obtains the first value(s) in this Enmap.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single value if `count` is undefined, 
 or an array of values of `count` length  
 
@@ -118,12 +138,12 @@ or an array of values of `count` length
 | --- | --- | --- |
 | [count] | <code>number</code> | Number of values to obtain from the beginning |
 
-<a name="Collection+firstKey"></a>
+<a name="Enmap+firstKey"></a>
 
-### collection.firstKey([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-Obtains the first key(s) in this collection.
+### enmap.firstKey([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+Obtains the first key(s) in this Enmap.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single key if `count` is undefined, 
 or an array of keys of `count` length  
 
@@ -131,13 +151,13 @@ or an array of keys of `count` length
 | --- | --- | --- |
 | [count] | <code>number</code> | Number of keys to obtain from the beginning |
 
-<a name="Collection+last"></a>
+<a name="Enmap+last"></a>
 
-### collection.last([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-Obtains the last value(s) in this collection. This relies on [array](#Collection+array), 
+### enmap.last([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+Obtains the last value(s) in this Enmap. This relies on [array](#Enmap+array), 
 and thus the caching mechanism applies here as well.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single value if `count` is undefined, 
 or an array of values of `count` length  
 
@@ -145,13 +165,13 @@ or an array of values of `count` length
 | --- | --- | --- |
 | [count] | <code>number</code> | Number of values to obtain from the end |
 
-<a name="Collection+lastKey"></a>
+<a name="Enmap+lastKey"></a>
 
-### collection.lastKey([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-Obtains the last key(s) in this collection. This relies on [keyArray](#Collection+keyArray), 
+### enmap.lastKey([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+Obtains the last key(s) in this Enmap. This relies on [keyArray](#Enmap+keyArray), 
 and thus the caching mechanism applies here as well.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single key if `count` is undefined, 
 or an array of keys of `count` length  
 
@@ -159,13 +179,13 @@ or an array of keys of `count` length
 | --- | --- | --- |
 | [count] | <code>number</code> | Number of keys to obtain from the end |
 
-<a name="Collection+random"></a>
+<a name="Enmap+random"></a>
 
-### collection.random([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-Obtains random value(s) from this collection. This relies on [array](#Collection+array), 
+### enmap.random([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+Obtains random value(s) from this Enmap. This relies on [array](#Enmap+array), 
 and thus the caching mechanism applies here as well.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single value if `count` is undefined, 
 or an array of values of `count` length  
 
@@ -173,13 +193,13 @@ or an array of values of `count` length
 | --- | --- | --- |
 | [count] | <code>number</code> | Number of values to obtain randomly |
 
-<a name="Collection+randomKey"></a>
+<a name="Enmap+randomKey"></a>
 
-### collection.randomKey([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-Obtains random key(s) from this collection. This relies on [keyArray](#Collection+keyArray), 
+### enmap.randomKey([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
+Obtains random key(s) from this Enmap. This relies on [keyArray](#Enmap+keyArray), 
 and thus the caching mechanism applies here as well.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single key if `count` is undefined, 
 or an array of keys of `count` length  
 
@@ -187,13 +207,13 @@ or an array of keys of `count` length
 | --- | --- | --- |
 | [count] | <code>number</code> | Number of keys to obtain randomly |
 
-<a name="Collection+findAll"></a>
+<a name="Enmap+findAll"></a>
 
-### collection.findAll(prop, value) ⇒ <code>Array</code>
+### enmap.findAll(prop, value) ⇒ <code>Array</code>
 Searches for all items where their specified property's value is identical to the given value
 (`item[prop] === value`).
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -202,19 +222,19 @@ Searches for all items where their specified property's value is identical to th
 
 **Example**  
 ```js
-collection.findAll('username', 'Bob');
+enmap.findAll('username', 'Bob');
 ```
-<a name="Collection+find"></a>
+<a name="Enmap+find"></a>
 
-### collection.find(propOrFn, [value]) ⇒ <code>\*</code>
+### enmap.find(propOrFn, [value]) ⇒ <code>\*</code>
 Searches for a single item where its specified property's value is identical to the given value
 (`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is identical to
 [Array.find()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find).
-<warn>All collections used in Discord.js are mapped using their `id` property, and if you want to find by id you
+<warn>All Enmap used in Discord.js are mapped using their `id` property, and if you want to find by id you
 should use the `get` method. See
 [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/get) for details.</warn>
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -223,43 +243,21 @@ should use the `get` method. See
 
 **Example**  
 ```js
-collection.find('username', 'Bob');
+enmap.find('username', 'Bob');
 ```
 **Example**  
 ```js
-collection.find(val => val.username === 'Bob');
+enmap.find(val => val.username === 'Bob');
 ```
-<a name="Collection+findKey"></a>
+<a name="Enmap+exists"></a>
 
-### collection.findKey(propOrFn, [value]) ⇒ <code>\*</code>
-Searches for the key of a single item where its specified property's value is identical to the given value
-(`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is identical to
-[Array.findIndex()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex).
-
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| propOrFn | <code>string</code> \| <code>function</code> | The property to test against, or the function to test with |
-| [value] | <code>\*</code> | The expected value - only applicable and required if using a property for the first argument |
-
-**Example**  
-```js
-collection.findKey('username', 'Bob');
-```
-**Example**  
-```js
-collection.findKey(val => val.username === 'Bob');
-```
-<a name="Collection+exists"></a>
-
-### collection.exists(prop, value) ⇒ <code>boolean</code>
+### enmap.exists(prop, value) ⇒ <code>boolean</code>
 Searches for the existence of a single item where its specified property's value is identical to the given value
 (`item[prop] === value`).
-<warn>Do not use this to check for an item by its ID. Instead, use `collection.has(id)`. See
+<warn>Do not use this to check for an item by its ID. Instead, use `enmap.has(id)`. See
 [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/has) for details.</warn>
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -268,143 +266,142 @@ Searches for the existence of a single item where its specified property's value
 
 **Example**  
 ```js
-if (collection.exists('username', 'Bob')) {
+if (enmap.exists('username', 'Bob')) {
  console.log('user here!');
 }
 ```
-<a name="Collection+filter"></a>
+<a name="Enmap+filter"></a>
 
-### collection.filter(fn, [thisArg]) ⇒ [<code>Collection</code>](#Collection)
+### enmap.filter(fn, [thisArg]) ⇒ [<code>Enmap</code>](#Enmap)
 Identical to
 [Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter),
-but returns a Collection instead of an Array.
+but returns a Enmap instead of an Array.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | fn | <code>function</code> | Function used to test (should return a boolean) |
 | [thisArg] | <code>Object</code> | Value to use as `this` when executing function |
 
-<a name="Collection+filterArray"></a>
+<a name="Enmap+filterArray"></a>
 
-### collection.filterArray(fn, [thisArg]) ⇒ <code>Array</code>
+### enmap.filterArray(fn, [thisArg]) ⇒ <code>Array</code>
 Identical to
 [Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter).
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | fn | <code>function</code> | Function used to test (should return a boolean) |
 | [thisArg] | <code>Object</code> | Value to use as `this` when executing function |
 
-<a name="Collection+map"></a>
+<a name="Enmap+map"></a>
 
-### collection.map(fn, [thisArg]) ⇒ <code>Array</code>
+### enmap.map(fn, [thisArg]) ⇒ <code>Array</code>
 Identical to
 [Array.map()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map).
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | fn | <code>function</code> | Function that produces an element of the new array, taking three arguments |
 | [thisArg] | <code>\*</code> | Value to use as `this` when executing function |
 
-<a name="Collection+some"></a>
+<a name="Enmap+some"></a>
 
-### collection.some(fn, [thisArg]) ⇒ <code>boolean</code>
+### enmap.some(fn, [thisArg]) ⇒ <code>boolean</code>
 Identical to
 [Array.some()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/some).
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | fn | <code>function</code> | Function used to test (should return a boolean) |
 | [thisArg] | <code>Object</code> | Value to use as `this` when executing function |
 
-<a name="Collection+every"></a>
+<a name="Enmap+every"></a>
 
-### collection.every(fn, [thisArg]) ⇒ <code>boolean</code>
+### enmap.every(fn, [thisArg]) ⇒ <code>boolean</code>
 Identical to
 [Array.every()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every).
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
 | Param | Type | Description |
 | --- | --- | --- |
 | fn | <code>function</code> | Function used to test (should return a boolean) |
 | [thisArg] | <code>Object</code> | Value to use as `this` when executing function |
 
-<a name="Collection+reduce"></a>
+<a name="Enmap+reduce"></a>
 
-### collection.reduce(fn, [initialValue]) ⇒ <code>\*</code>
+### enmap.reduce(fn, [initialValue]) ⇒ <code>\*</code>
 Identical to
 [Array.reduce()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce).
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| fn | <code>function</code> | Function used to reduce, taking four arguments; `accumulator`, `currentValue`, `currentKey`, and `collection` |
+| fn | <code>function</code> | Function used to reduce, taking four arguments; `accumulator`, `currentValue`, `currentKey`, and `enmap` |
 | [initialValue] | <code>\*</code> | Starting value for the accumulator |
 
-<a name="Collection+clone"></a>
+<a name="Enmap+clone"></a>
 
-### collection.clone() ⇒ [<code>Collection</code>](#Collection)
-Creates an identical shallow copy of this collection.
+### enmap.clone() ⇒ [<code>Enmap</code>](#Enmap)
+Creates an identical shallow copy of this Enmap.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Example**  
 ```js
 const newColl = someColl.clone();
 ```
-<a name="Collection+concat"></a>
+<a name="Enmap+concat"></a>
 
-### collection.concat(...collections) ⇒ [<code>Collection</code>](#Collection)
-Combines this collection with others into a new collection. None of the source collections are modified.
+### enmap.concat(...enmaps) ⇒ [<code>Enmap</code>](#Enmap)
+Combines this Enmap with others into a new Enmap. None of the source Enmaps are modified.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| ...collections | [<code>Collection</code>](#Collection) | Collections to merge |
+| ...enmaps | [<code>Enmap</code>](#Enmap) | Enmaps to merge |
 
 **Example**  
 ```js
 const newColl = someColl.concat(someOtherColl, anotherColl, ohBoyAColl);
 ```
-<a name="Collection+deleteAll"></a>
+<a name="Enmap+deleteAll"></a>
 
-### collection.deleteAll() ⇒ <code>Array.&lt;Promise&gt;</code>
+### enmap.deleteAll() ⇒ <code>Array.&lt;Promise&gt;</code>
 Calls the `delete()` method on all items that have it.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
-<a name="Collection+equals"></a>
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+<a name="Enmap+equals"></a>
 
-### collection.equals(collection) ⇒ <code>boolean</code>
-Checks if this collection shares identical key-value pairings with another.
+### enmap.equals(enmap) ⇒ <code>boolean</code>
+Checks if this Enmap shares identical key-value pairings with another.
 This is different to checking for equality using equal-signs, because
-the collections may be different objects, but contain the same data.
+the Enmaps may be different objects, but contain the same data.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
-**Returns**: <code>boolean</code> - Whether the collections have identical contents  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>boolean</code> - Whether the Enmaps have identical contents  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| collection | [<code>Collection</code>](#Collection) | Collection to compare with |
+| enmap | [<code>Enmap</code>](#Enmap) | Enmap to compare with |
 
-<a name="Collection+sort"></a>
+<a name="Enmap+sort"></a>
 
-### collection.sort([compareFunction]) ⇒ [<code>Collection</code>](#Collection)
-The sort() method sorts the elements of a collection in place and returns the collection.
+### enmap.sort([compareFunction]) ⇒ [<code>Enmap</code>](#Enmap)
+The sort() method sorts the elements of a Enmap in place and returns the Enmap.
 The sort is not necessarily stable. The default sort order is according to string Unicode code points.
 
-**Kind**: instance method of [<code>Collection</code>](#Collection)  
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| [compareFunction] | <code>function</code> | Specifies a function that defines the sort order. if omitted, the collection is sorted according to each character's Unicode code point value, according to the string conversion of each element. |
-
+| [compareFunction] | <code>function</code> | Specifies a function that defines the sort order. if omitted, the Enmap is sorted according to each character's Unicode code point value, according to the string conversion of each element. |
