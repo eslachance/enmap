@@ -9,7 +9,7 @@ const { inspect } = require('util');
  */
 class Collection extends Map {
   constructor(iterable, options = {}) {
-    if (typeof iterable[Symbol.iterator] !== 'function') {
+    if (!iterable || typeof iterable[Symbol.iterator] !== 'function') {
       options = iterable || {};
       iterable = null;
     }
@@ -103,10 +103,11 @@ class Collection extends Map {
     this._array = null;
     this._keyArray = null;
     if (this.persistent) {
-      if (!key || !['String', 'Number'].includes(key.constructor.name))
+      if (!key || !['String', 'Number'].includes(key.constructor.name)) {
         throw new Error('Persistent Collections require keys to be strings or numbers.');
-      val = (typeof val === 'object' ? inspect(val, { depth: 2 }) : val);
-      this.db.put(key, val);
+      }
+      const insert = typeof val === 'object' ? JSON.stringify(val) : val;
+      this.db.put(key, insert);
     }
     return super.set(key, val);
   }
