@@ -7,7 +7,7 @@ const { inspect } = require('util');
  * Can be made persistent 
  * @extends {Map}
  */
-class Collection extends Map {
+class Enmap extends Map {
   constructor(iterable, options = {}) {
     if (!iterable || typeof iterable[Symbol.iterator] !== 'function') {
       options = iterable || {};
@@ -18,7 +18,7 @@ class Collection extends Map {
     /**
        * Cached array for the `array()` method - will be reset to `null` 
        * whenever `set()` or `delete()` are called
-       * @name Collection#_array
+       * @name Enmap#_array
        * @type {?Array}
        * @private
        */
@@ -27,7 +27,7 @@ class Collection extends Map {
     /**
        * Cached array for the `keyArray()` method - will be reset to `null` 
        * whenever `set()` or `delete()` are called
-       * @name Collection#_keyArray
+       * @name Enmap#_keyArray
        * @type {?Array}
        * @private
        */
@@ -35,7 +35,7 @@ class Collection extends Map {
 
     this.defer = new Promise(resolve => this.ready = resolve);
     if (options.persistent) {
-      if (!options.name) throw new Error('Must provide a name for the collection.');
+      if (!options.name) throw new Error('Must provide a name for the Enmap.');
       this.name = options.name;
       //todo: check for "unique" option for the DB name and exit if exists
       this.validateName();
@@ -104,7 +104,7 @@ class Collection extends Map {
     this._keyArray = null;
     if (this.persistent && save) {
       if (!key || !['String', 'Number'].includes(key.constructor.name)) {
-        throw new Error('Persistent Collections require keys to be strings or numbers.');
+        throw new Error('Enmap require keys to be strings or numbers.');
       }
       const insert = typeof val === 'object' ? JSON.stringify(val) : val;
       this.db.put(key, insert);
@@ -124,7 +124,7 @@ class Collection extends Map {
     this._array = null;
     this._keyArray = null;
     if (!key || !['String', 'Number'].includes(key.constructor.name))
-      throw new Error('Persistent Collections require keys to be strings or numbers.');
+      throw new Error('Enmap require keys to be strings or numbers.');
     const insert = typeof val === 'object' ? JSON.stringify(val) : val;
     if(save) await this.db.put(key, insert);
     return super.set(key, val);
@@ -168,10 +168,10 @@ class Collection extends Map {
   }
 
   /**
-     * Creates an ordered array of the values of this collection, and caches it internally.
-     * The array will only be reconstructed if an item is added to or removed from the collection, 
+     * Creates an ordered array of the values of this Enmap, and caches it internally.
+     * The array will only be reconstructed if an item is added to or removed from the Enmap, 
      * or if you change the length of the array itself. If you don't want this caching behaviour, 
-     * use `Array.from(collection.values())` instead.
+     * use `Array.from(enmap.values())` instead.
      * @returns {Array}
      */
   array() {
@@ -180,10 +180,10 @@ class Collection extends Map {
   }
 
   /**
-     * Creates an ordered array of the keys of this collection, and caches it internally. 
-     * The array will only be reconstructed if an item is added to or removed from the collection, 
+     * Creates an ordered array of the keys of this Enmap, and caches it internally. 
+     * The array will only be reconstructed if an item is added to or removed from the Enmap, 
      * or if you change the length of the array itself. If you don't want this caching behaviour, 
-     * use `Array.from(collection.keys())` instead.
+     * use `Array.from(enmap.keys())` instead.
      * @returns {Array}
      */
   keyArray() {
@@ -192,7 +192,7 @@ class Collection extends Map {
   }
 
   /**
-     * Obtains the first value(s) in this collection.
+     * Obtains the first value(s) in this Enmap.
      * @param {number} [count] Number of values to obtain from the beginning
      * @returns {*|Array<*>} The single value if `count` is undefined, 
      * or an array of values of `count` length
@@ -209,7 +209,7 @@ class Collection extends Map {
   }
 
   /**
-     * Obtains the first key(s) in this collection.
+     * Obtains the first key(s) in this Enmap.
      * @param {number} [count] Number of keys to obtain from the beginning
      * @returns {*|Array<*>} The single key if `count` is undefined, 
      * or an array of keys of `count` length
@@ -226,7 +226,7 @@ class Collection extends Map {
   }
 
   /**
-     * Obtains the last value(s) in this collection. This relies on {@link Collection#array}, 
+     * Obtains the last value(s) in this Enmap. This relies on {@link Enmap#array}, 
      * and thus the caching mechanism applies here as well.
      * @param {number} [count] Number of values to obtain from the end
      * @returns {*|Array<*>} The single value if `count` is undefined, 
@@ -241,7 +241,7 @@ class Collection extends Map {
   }
 
   /**
-     * Obtains the last key(s) in this collection. This relies on {@link Collection#keyArray}, 
+     * Obtains the last key(s) in this Enmap. This relies on {@link Enmap#keyArray}, 
      * and thus the caching mechanism applies here as well.
      * @param {number} [count] Number of keys to obtain from the end
      * @returns {*|Array<*>} The single key if `count` is undefined, 
@@ -256,7 +256,7 @@ class Collection extends Map {
   }
 
   /**
-     * Obtains random value(s) from this collection. This relies on {@link Collection#array}, 
+     * Obtains random value(s) from this Enmap. This relies on {@link Enmap#array}, 
      * and thus the caching mechanism applies here as well.
      * @param {number} [count] Number of values to obtain randomly
      * @returns {*|Array<*>} The single value if `count` is undefined, 
@@ -275,7 +275,7 @@ class Collection extends Map {
   }
 
   /**
-     * Obtains random key(s) from this collection. This relies on {@link Collection#keyArray}, 
+     * Obtains random key(s) from this Enmap. This relies on {@link Enmap#keyArray}, 
      * and thus the caching mechanism applies here as well.
      * @param {number} [count] Number of keys to obtain randomly
      * @returns {*|Array<*>} The single key if `count` is undefined, 
@@ -300,7 +300,7 @@ class Collection extends Map {
      * @param {*} value The expected value
      * @returns {Array}
      * @example
-     * collection.findAll('username', 'Bob');
+     * enmap.findAll('username', 'Bob');
      */
   findAll(prop, value) {
     if (typeof prop !== 'string') throw new TypeError('Key must be a string.');
@@ -316,16 +316,16 @@ class Collection extends Map {
      * Searches for a single item where its specified property's value is identical to the given value
      * (`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is identical to
      * [Array.find()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find).
-     * <warn>All collections used in Discord.js are mapped using their `id` property, and if you want to find by id you
+     * <warn>All Enmap used in Discord.js are mapped using their `id` property, and if you want to find by id you
      * should use the `get` method. See
      * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/get) for details.</warn>
      * @param {string|Function} propOrFn The property to test against, or the function to test with
      * @param {*} [value] The expected value - only applicable and required if using a property for the first argument
      * @returns {*}
      * @example
-     * collection.find('username', 'Bob');
+     * enmap.find('username', 'Bob');
      * @example
-     * collection.find(val => val.username === 'Bob');
+     * enmap.find(val => val.username === 'Bob');
      */
   find(propOrFn, value) {
     if (typeof propOrFn === 'string') {
@@ -353,9 +353,9 @@ class Collection extends Map {
      * @param {*} [value] The expected value - only applicable and required if using a property for the first argument
      * @returns {*}
      * @example
-     * collection.findKey('username', 'Bob');
+     * enmap.findKey('username', 'Bob');
      * @example
-     * collection.findKey(val => val.username === 'Bob');
+     * enmap.findKey(val => val.username === 'Bob');
      */
   /* eslint-enable max-len */
   findKey(propOrFn, value) {
@@ -377,13 +377,13 @@ class Collection extends Map {
   /**
      * Searches for the existence of a single item where its specified property's value is identical to the given value
      * (`item[prop] === value`).
-     * <warn>Do not use this to check for an item by its ID. Instead, use `collection.has(id)`. See
+     * <warn>Do not use this to check for an item by its ID. Instead, use `enmap.has(id)`. See
      * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/has) for details.</warn>
      * @param {string} prop The property to test against
      * @param {*} value The expected value
      * @returns {boolean}
      * @example
-     * if (collection.exists('username', 'Bob')) {
+     * if (enmap.exists('username', 'Bob')) {
      *  console.log('user here!');
      * }
      */
@@ -394,14 +394,14 @@ class Collection extends Map {
   /**
      * Identical to
      * [Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter),
-     * but returns a Collection instead of an Array.
+     * but returns a Enmap instead of an Array.
      * @param {Function} fn Function used to test (should return a boolean)
      * @param {Object} [thisArg] Value to use as `this` when executing function
-     * @returns {Collection}
+     * @returns {Enmap}
      */
   filter(fn, thisArg) {
     if (thisArg) fn = fn.bind(thisArg);
-    const results = new Collection();
+    const results = new Enmap();
     for (const [key, val] of this) {
       if (fn(val, key, this)) results.set(key, val);
     }
@@ -473,7 +473,7 @@ class Collection extends Map {
      * Identical to
      * [Array.reduce()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce).
      * @param {Function} fn Function used to reduce, taking four arguments; `accumulator`, `currentValue`, `currentKey`,
-     * and `collection`
+     * and `enmap`
      * @param {*} [initialValue] Starting value for the accumulator
      * @returns {*}
      */
@@ -497,8 +497,8 @@ class Collection extends Map {
   }
 
   /**
-     * Creates an identical shallow copy of this collection.
-     * @returns {Collection}
+     * Creates an identical shallow copy of this Enmap.
+     * @returns {Enmap}
      * @example const newColl = someColl.clone();
      */
   clone() {
@@ -506,14 +506,14 @@ class Collection extends Map {
   }
 
   /**
-     * Combines this collection with others into a new collection. None of the source collections are modified.
-     * @param {...Collection} collections Collections to merge
-     * @returns {Collection}
+     * Combines this Enmap with others into a new Enmap. None of the source Enmaps are modified.
+     * @param {...Enmap} enmaps Enmaps to merge
+     * @returns {Enmap}
      * @example const newColl = someColl.concat(someOtherColl, anotherColl, ohBoyAColl);
      */
-  concat(...collections) {
+  concat(...enmaps) {
     const newColl = this.clone();
-    for (const coll of collections) {
+    for (const coll of enmaps) {
       for (const [key, val] of coll) newColl.set(key, val);
     }
     return newColl;
@@ -533,33 +533,33 @@ class Collection extends Map {
   }
 
   /**
-     * Checks if this collection shares identical key-value pairings with another.
+     * Checks if this Enmap shares identical key-value pairings with another.
      * This is different to checking for equality using equal-signs, because
-     * the collections may be different objects, but contain the same data.
-     * @param {Collection} collection Collection to compare with
-     * @returns {boolean} Whether the collections have identical contents
+     * the Enmaps may be different objects, but contain the same data.
+     * @param {Enmap} enmap Enmap to compare with
+     * @returns {boolean} Whether the Enmaps have identical contents
      */
-  equals(collection) {
-    if (!collection) return false;
-    if (this === collection) return true;
-    if (this.size !== collection.size) return false;
+  equals(enmap) {
+    if (!enmap) return false;
+    if (this === enmap) return true;
+    if (this.size !== enmap.size) return false;
     return !this.find((value, key) => {
-      const testVal = collection.get(key);
-      return testVal !== value || (testVal === undefined && !collection.has(key));
+      const testVal = enmap.get(key);
+      return testVal !== value || (testVal === undefined && !enmap.has(key));
     });
   }
 
   /**
-     * The sort() method sorts the elements of a collection in place and returns the collection.
+     * The sort() method sorts the elements of a Enmap in place and returns the Enmap.
      * The sort is not necessarily stable. The default sort order is according to string Unicode code points.
      * @param {Function} [compareFunction] Specifies a function that defines the sort order.
-     * if omitted, the collection is sorted according to each character's Unicode code point value,
+     * if omitted, the Enmap is sorted according to each character's Unicode code point value,
      * according to the string conversion of each element.
-     * @returns {Collection}
+     * @returns {Enmap}
      */
   sort(compareFunction = (x, y) => +(x > y) || +(x === y) - 1) {
-    return new Collection(Array.from(this.entries()).sort((a, b) => compareFunction(a[1], b[1], a[0], b[0])));
+    return new Enmap(Array.from(this.entries()).sort((a, b) => compareFunction(a[1], b[1], a[0], b[0])));
   }
 }
 
-module.exports = Collection;
+module.exports = Enmap;

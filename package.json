@@ -6,9 +6,17 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/eslachance/enmap.git"
+  },
+  "bugs": {
+    "url": "https://github.com/eslachance/enmap/issues"
+  },
+  "homepage": "https://github.com/eslachance/enmap#readme",
   "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "author": "Evelyne Lachance",
+  "license": "Apache",
   "dependencies": {
     "native-level-promise": "github:eslachance/native-level-promise#partytime"
   },
