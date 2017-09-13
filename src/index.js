@@ -39,7 +39,7 @@ class Enmap extends Map {
       this.name = options.name;
       //todo: check for "unique" option for the DB name and exit if exists
       this.validateName();
-      this.dataDir = (options.dataDir || 'data');
+      this.dataDir = path.resolve(process.cwd(), (options.dataDir || 'data'));
       this.persistent = (options.persistent || false);
       if (!options.dataDir) {
         const fs = require('fs');
@@ -47,7 +47,7 @@ class Enmap extends Map {
           fs.mkdirSync('./data');
         }
       }
-      this.path = path.join(process.cwd(), this.dataDir, this.name);
+      this.path = path.join(this.dataDir, this.name);
       this.db = new level(this.path);
       this.init();
     } else {
