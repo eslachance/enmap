@@ -5,3 +5,4 @@ node_modules
 Thumbs.db
 data/
 config.json
+.vscode

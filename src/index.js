@@ -1,6 +1,6 @@
 const level = require('native-level-promise');
 const path = require('path');
-const { inspect } = require('util');
+const fs = require('fs');
 
 /**
  * A enhanced Map structure with additional utility methods.
@@ -34,15 +34,17 @@ class Enmap extends Map {
     Object.defineProperty(this, '_keyArray', { value: null, writable: true, configurable: true });
 
     this.defer = new Promise(resolve => this.ready = resolve);
-    if (options.persistent) {
-      if (!options.name) throw new Error('Must provide a name for the Enmap.');
+
+    if (options.name) this.persistent = options.persistent || true;
+
+    if (this.persistent) {
+      if (!options.name) throw new Error('Must provide a name for a persistent Enmap.');
       this.name = options.name;
-      //todo: check for "unique" option for the DB name and exit if exists
+      // todo: check for "unique" option for the DB name and exit if exists
       this.validateName();
       this.dataDir = (options.dataDir || 'data');
       this.persistent = (options.persistent || false);
       if (!options.dataDir) {
-        const fs = require('fs');
         if (!fs.existsSync('./data')) {
           fs.mkdirSync('./data');
         }
@@ -61,7 +63,7 @@ class Enmap extends Map {
    */
   init() {
     const stream = this.db.keyStream();
-    stream.on('data', key => {
+    stream.on('data', (key) => {
       this.db.get(key, (err, value) => {
         if (err) console.log(err);
         try {
