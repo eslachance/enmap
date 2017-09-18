@@ -26,8 +26,8 @@ class Enmap extends Map {
       if (!options.name) throw new Error('Must provide a name for a persistent Enmap.');
       this.name = options.name;
       this.validateName();
-      this.dataDir = path.resolve(process.cwd(), (options.dataDir || 'data'));
-      this.persistent = (options.persistent || false);
+      this.dataDir = path.resolve(process.cwd(), options.dataDir || 'data');
+      this.persistent = options.persistent || false;
       if (!options.dataDir) {
         if (!fs.existsSync('./data')) {
           fs.mkdirSync('./data');
@@ -133,15 +133,6 @@ class Enmap extends Map {
       await this.db.del(key);
     }
     super.delete(key);
-  }
-
-  /**
-   * Completely deletes all keys from an EnMap, including persistent data.
-   * @return {Promise}
-   */
-  async purge() {
-    await this.db.close();
-    return Level.destroy(this.path);
   }
 
   /**
