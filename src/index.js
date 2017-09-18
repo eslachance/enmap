@@ -1,4 +1,4 @@
-const level = require('native-level-promise');
+const Level = require('native-level-promise');
 const path = require('path');
 const fs = require('fs');
 
@@ -8,6 +8,7 @@ const fs = require('fs');
  * @extends {Map}
  */
 class Enmap extends Map {
+
   constructor(iterable, options = {}) {
     if (!iterable || typeof iterable[Symbol.iterator] !== 'function') {
       options = iterable || {};
@@ -15,32 +16,15 @@ class Enmap extends Map {
     }
     super(iterable);
 
-    /**
-       * Cached array for the `array()` method - will be reset to `null` 
-       * whenever `set()` or `delete()` are called
-       * @name Enmap#_array
-       * @type {?Array}
-       * @private
-       */
-    Object.defineProperty(this, '_array', { value: null, writable: true, configurable: true });
-
-    /**
-       * Cached array for the `keyArray()` method - will be reset to `null` 
-       * whenever `set()` or `delete()` are called
-       * @name Enmap#_keyArray
-       * @type {?Array}
-       * @private
-       */
-    Object.defineProperty(this, '_keyArray', { value: null, writable: true, configurable: true });
-
-    this.defer = new Promise(resolve => this.ready = resolve);
+    this.defer = new Promise((resolve) => {
+      this.ready = resolve;
+    });
 
     if (options.name) this.persistent = options.persistent || true;
 
     if (this.persistent) {
       if (!options.name) throw new Error('Must provide a name for a persistent Enmap.');
       this.name = options.name;
-      // todo: check for "unique" option for the DB name and exit if exists
       this.validateName();
       this.dataDir = path.resolve(process.cwd(), (options.dataDir || 'data'));
       this.persistent = (options.persistent || false);
@@ -50,7 +34,7 @@ class Enmap extends Map {
         }
       }
       this.path = path.join(this.dataDir, this.name);
-      this.db = new level(this.path);
+      this.db = new Level(this.path);
       this.init();
     } else {
       this.ready();
@@ -59,7 +43,6 @@ class Enmap extends Map {
 
   /**
    * Internal method called on persistent Enmaps to load data from the underlying database.
-   * @return {Void}
    */
   init() {
     const stream = this.db.keyStream();
@@ -68,7 +51,7 @@ class Enmap extends Map {
         if (err) console.log(err);
         try {
           this.set(key, JSON.parse(value));
-        } catch (e) {
+        } catch (error) {
           this.set(key, value);
         }
       });
@@ -80,7 +63,6 @@ class Enmap extends Map {
 
   /**
    * Internal method used to validate persistent enmap names (valid Windows filenames);
-   * @return {boolean} Indicates whether the name is valid.
    */
   validateName() {
     this.name = this.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -101,10 +83,8 @@ class Enmap extends Map {
    * If the EnMap is persistent this value MUST be stringifiable as JSON.
    * @return {Map} The EnMap object.
    */
-  set(key, val, save = true) {
-    this._array = null;
-    this._keyArray = null;
-    if (this.persistent && save) {
+  set(key, val) {
+    if (this.persistent) {
       if (!key || !['String', 'Number'].includes(key.constructor.name)) {
         throw new Error('Enmap require keys to be strings or numbers.');
       }
@@ -122,13 +102,12 @@ class Enmap extends Map {
    * If the EnMap is persistent this value MUST be stringifiable as JSON.
    * @return {Map} The EnMap object.
    */
-  async setAsync(key, val, save = true) {
-    this._array = null;
-    this._keyArray = null;
-    if (!key || !['String', 'Number'].includes(key.constructor.name))
+  async setAsync(key, val) {
+    if (!key || !['String', 'Number'].includes(key.constructor.name)) {
       throw new Error('Enmap require keys to be strings or numbers.');
+    }
     const insert = typeof val === 'object' ? JSON.stringify(val) : val;
-    if (save) await this.db.put(key, insert);
+    await this.db.put(key, insert);
     return super.set(key, val);
   }
 
@@ -138,12 +117,10 @@ class Enmap extends Map {
    * @param {boolean} bulk Internal property used by the purge method.  
    */
   delete(key, bulk = false) {
-    this._array = null;
-    this._keyArray = null;
     if (!bulk && this.persistent) {
       this.db.del(key);
     }
-    return super.delete(key);
+    super.delete(key);
   }
 
   /**
@@ -152,12 +129,10 @@ class Enmap extends Map {
    * @param {boolean} bulk Internal property used by the purge method.  
    */
   async deleteAsync(key, bulk = false) {
-    this._array = null;
-    this._keyArray = null;
     if (!bulk) {
       await this.db.del(key);
     }
-    return super.delete(key);
+    super.delete(key);
   }
 
   /**
@@ -166,102 +141,36 @@ class Enmap extends Map {
    */
   async purge() {
     await this.db.close();
-    return level.destroy(this.path);
+    return Level.destroy(this.path);
   }
 
   /**
      * Creates an ordered array of the values of this Enmap, and caches it internally.
-     * The array will only be reconstructed if an item is added to or removed from the Enmap, 
+     * The array will only be reconstructed if an item is added to or removed from the Enmap,
      * or if you change the length of the array itself. If you don't want this caching behaviour, 
      * use `Array.from(enmap.values())` instead.
      * @returns {Array}
      */
   array() {
-    if (!this._array || this._array.length !== this.size) this._array = Array.from(this.values());
-    return this._array;
+    return Array.from(this.values());
   }
 
   /**
-     * Creates an ordered array of the keys of this Enmap, and caches it internally. 
+     * Creates an ordered array of the keys of this Enmap, and caches it internally.
      * The array will only be reconstructed if an item is added to or removed from the Enmap, 
      * or if you change the length of the array itself. If you don't want this caching behaviour, 
      * use `Array.from(enmap.keys())` instead.
      * @returns {Array}
      */
   keyArray() {
-    if (!this._keyArray || this._keyArray.length !== this.size) this._keyArray = Array.from(this.keys());
-    return this._keyArray;
-  }
-
-  /**
-     * Obtains the first value(s) in this Enmap.
-     * @param {number} [count] Number of values to obtain from the beginning
-     * @returns {*|Array<*>} The single value if `count` is undefined, 
-     * or an array of values of `count` length
-     */
-  first(count) {
-    if (count === undefined) return this.values().next().value;
-    if (typeof count !== 'number') throw new TypeError('The count must be a number.');
-    if (!Number.isInteger(count) || count < 1) throw new RangeError('The count must be an integer greater than 0.');
-    count = Math.min(this.size, count);
-    const arr = new Array(count);
-    const iter = this.values();
-    for (let i = 0; i < count; i++) arr[i] = iter.next().value;
-    return arr;
-  }
-
-  /**
-     * Obtains the first key(s) in this Enmap.
-     * @param {number} [count] Number of keys to obtain from the beginning
-     * @returns {*|Array<*>} The single key if `count` is undefined, 
-     * or an array of keys of `count` length
-     */
-  firstKey(count) {
-    if (count === undefined) return this.keys().next().value;
-    if (typeof count !== 'number') throw new TypeError('The count must be a number.');
-    if (!Number.isInteger(count) || count < 1) throw new RangeError('The count must be an integer greater than 0.');
-    count = Math.min(this.size, count);
-    const arr = new Array(count);
-    const iter = this.iter();
-    for (let i = 0; i < count; i++) arr[i] = iter.next().value;
-    return arr;
-  }
-
-  /**
-     * Obtains the last value(s) in this Enmap. This relies on {@link Enmap#array}, 
-     * and thus the caching mechanism applies here as well.
-     * @param {number} [count] Number of values to obtain from the end
-     * @returns {*|Array<*>} The single value if `count` is undefined, 
-     * or an array of values of `count` length
-     */
-  last(count) {
-    const arr = this.array();
-    if (count === undefined) return arr[arr.length - 1];
-    if (typeof count !== 'number') throw new TypeError('The count must be a number.');
-    if (!Number.isInteger(count) || count < 1) throw new RangeError('The count must be an integer greater than 0.');
-    return arr.slice(-count);
-  }
-
-  /**
-     * Obtains the last key(s) in this Enmap. This relies on {@link Enmap#keyArray}, 
-     * and thus the caching mechanism applies here as well.
-     * @param {number} [count] Number of keys to obtain from the end
-     * @returns {*|Array<*>} The single key if `count` is undefined, 
-     * or an array of keys of `count` length
-     */
-  lastKey(count) {
-    const arr = this.keyArray();
-    if (count === undefined) return arr[arr.length - 1];
-    if (typeof count !== 'number') throw new TypeError('The count must be a number.');
-    if (!Number.isInteger(count) || count < 1) throw new RangeError('The count must be an integer greater than 0.');
-    return arr.slice(-count);
+    return Array.from(this.keys());
   }
 
   /**
      * Obtains random value(s) from this Enmap. This relies on {@link Enmap#array}, 
      * and thus the caching mechanism applies here as well.
      * @param {number} [count] Number of values to obtain randomly
-     * @returns {*|Array<*>} The single value if `count` is undefined, 
+     * @returns {*|Array<*>} The single value if `count` is undefined,
      * or an array of values of `count` length
      */
   random(count) {
@@ -272,7 +181,9 @@ class Enmap extends Map {
     if (arr.length === 0) return [];
     const rand = new Array(count);
     arr = arr.slice();
-    for (let i = 0; i < count; i++) rand[i] = arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
+    for (let i = 0; i < count; i++) {
+      rand[i] = arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
+    }
     return rand;
   }
 
@@ -291,7 +202,9 @@ class Enmap extends Map {
     if (arr.length === 0) return [];
     const rand = new Array(count);
     arr = arr.slice();
-    for (let i = 0; i < count; i++) rand[i] = arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
+    for (let i = 0; i < count; i++) {
+      rand[i] = arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
+    }
     return rand;
   }
 
@@ -341,9 +254,8 @@ class Enmap extends Map {
         if (propOrFn(val, key, this)) return val;
       }
       return null;
-    } else {
-      throw new Error('First argument must be a property string or a function.');
     }
+    throw new Error('First argument must be a property string or a function.');
   }
 
   /* eslint-disable max-len */
@@ -551,17 +463,6 @@ class Enmap extends Map {
     });
   }
 
-  /**
-     * The sort() method sorts the elements of a Enmap in place and returns the Enmap.
-     * The sort is not necessarily stable. The default sort order is according to string Unicode code points.
-     * @param {Function} [compareFunction] Specifies a function that defines the sort order.
-     * if omitted, the Enmap is sorted according to each character's Unicode code point value,
-     * according to the string conversion of each element.
-     * @returns {Enmap}
-     */
-  sort(compareFunction = (x, y) => +(x > y) || +(x === y) - 1) {
-    return new Enmap(Array.from(this.entries()).sort((a, b) => compareFunction(a[1], b[1], a[0], b[0])));
-  }
 }
 
 module.exports = Enmap;

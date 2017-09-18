@@ -1,16 +1,7 @@
-const PersistentCollection = require('../');
-const myColl = new PersistentCollection({ name: '1mil', persistent: true });
+const Enmap = require('../');
+const myColl = new Enmap({ name: '1mil', persistent: true });
 
 const test = async () => {
-  await myColl.defer;
-  console.time('LotsofRecords');
-  for (let i = 0; i < 500000; i++) {
-    await myColl.setAsync(`test${i}`, { testValue: 'This is a test Value' });
-  }
-  console.timeEnd('LotsofRecords');
-};
-
-const test2 = async () => {
   await myColl.defer;
   console.time('LotsofRecords-PAll');
   let promises = [];
@@ -21,12 +12,8 @@ const test2 = async () => {
   console.timeEnd('LotsofRecords-PAll');
 };
 
-const runAll = async () => {
-  await test();
-  await test2();
-};
+test();
 
-runAll();
 /*
 console.time('DeleteAll');
 const arrPromises = myColl.deleteAll();
@@ -38,3 +25,4 @@ Promise.all(arrPromises).then(() => {
 process.on('unhandledRejection', err => {
   console.error('Uncaught Promise Error: ', err);
 });
+

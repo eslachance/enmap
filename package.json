@@ -21,9 +21,12 @@
     "native-level-promise": "github:eslachance/native-level-promise#partytime"
   },
   "devDependencies": {
-    "discord.js": "^11.1.0",
-    "eslint": "^4.6.0",
+    "eslint": "^4.7.0",
     "eslint-config-airbnb-base": "^11.3.2",
-    "eslint-plugin-import": "^2.7.0"
+    "eslint-config-standard": "^10.2.1",
+    "eslint-plugin-import": "^2.7.0",
+    "eslint-plugin-node": "^5.1.1",
+    "eslint-plugin-promise": "^3.5.0",
+    "eslint-plugin-standard": "^3.0.1"
   }
 }
