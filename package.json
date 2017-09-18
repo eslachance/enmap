@@ -18,7 +18,7 @@
   "author": "Evelyne Lachance",
   "license": "Apache",
   "dependencies": {
-    "native-level-promise": "github:eslachance/native-level-promise#partytime"
+    "native-level-promise": "^0.1.0"
   },
   "devDependencies": {
     "eslint": "^4.7.0",
