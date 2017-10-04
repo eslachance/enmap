@@ -1,10 +1,6 @@
 {
   "name": "enmap",
-<<<<<<< HEAD
-  "version": "0.3.1",
-=======
   "version": "0.3.2",
->>>>>>> 314845b075501f8d3b33c417520b6a7f5ef71a76
   "description": "",
   "main": "index.js",
   "scripts": {
