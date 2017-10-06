@@ -60,7 +60,7 @@ It must be initialized with the appropriate values
 
 ```js
 // Load Enmap
-const Enmap = require('../');
+const Enmap = require('enmap');
 
 // Load EnmapLevel
 const EnmapLevel = require('enmap-level');

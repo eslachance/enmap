@@ -22,15 +22,23 @@ class Enmap extends Map {
   }
 
   /**
+   * Shuts down the underlying persistent enmap database.
+   */
+  close() {
+    this.db.close();
+  }
+
+  /**
    * 
    * @param {*} key Required. The key of the element to add to the EnMap object. 
    * If the EnMap is persistent this value MUST be a string or number.
    * @param {*} val Required. The value of the element to add to the EnMap object. 
    * If the EnMap is persistent this value MUST be stringifiable as JSON.
+   * @param {boolean} save Optional. Whether to save to persistent DB (used as false in init)
    * @return {Map} The EnMap object.
    */
-  set(key, val) {
-    if (this.persistent) {
+  set(key, val, save = true) {
+    if (this.persistent && save) {
       this.db.set(key, val);
     }
     return super.set(key, val);
@@ -45,7 +53,7 @@ class Enmap extends Map {
    * @return {Map} The EnMap object.
    */
   async setAsync(key, val) {
-    await this.db.set(key, val);
+    await this.db.setAsync(key, val);
     return super.set(key, val);
   }
 
@@ -54,8 +62,8 @@ class Enmap extends Map {
    * @param {*} key Required. The key of the element to delete from the EnMap object. 
    * @param {boolean} bulk Internal property used by the purge method.  
    */
-  delete(key, bulk = false) {
-    if (!bulk && this.persistent) {
+  delete(key) {
+    if (this.persistent) {
       this.db.delete(key);
     }
     super.delete(key);
@@ -66,10 +74,8 @@ class Enmap extends Map {
    * @param {*} key Required. The key of the element to delete from the EnMap object. 
    * @param {boolean} bulk Internal property used by the purge method.  
    */
-  async deleteAsync(key, bulk = false) {
-    if (!bulk) {
-      await this.db.delete(key);
-    }
+  async deleteAsync(key) {
+    await this.db.delete(key);
     super.delete(key);
   }
   /**
@@ -363,15 +369,36 @@ class Enmap extends Map {
 
   /**
      * Calls the `delete()` method on all items that have it.
-     * @returns {Promise[]}
+     * @param {boolean} bulk Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one.
      */
-  deleteAll() {
-    const returns = [];
-    for (const item of this.values()) {
-      if (item.delete) returns.push(item.delete());
+  deleteAll(bulk = true) {
+    if (this.persistent) {
+      if (bulk) {
+        this.db.bulkDelete();
+      } else {
+        for (const key of this.keys()) {
+          this.db.delete(key);
+        }
+      }
     }
-    returns.push(this.purge());
-    return returns;
+    this.clear();
+  }
+
+  /**
+     * Calls the `delete()` method on all items that have it.
+     * @param {boolean} bulk Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one.
+     */
+  async deleteAllAsync(bulk = true) {
+    if (bulk) {
+      await this.db.bulkDelete();
+    } else {
+      const promises = [];
+      for (const key of this.keys()) {
+        promises.push(this.db.delete(key));
+      }
+      await Promise.all(promises);
+    }
+    this.clear();
   }
 
   /**
