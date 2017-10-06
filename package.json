@@ -17,10 +17,9 @@
   "keywords": [],
   "author": "Evelyne Lachance",
   "license": "Apache",
-  "dependencies": {
-    "native-level-promise": "^0.1.0"
-  },
+  "dependencies": {},
   "devDependencies": {
+    "enmap-level": "*",
     "eslint": "^4.7.0",
     "eslint-config-airbnb-base": "^11.3.2",
     "eslint-config-standard": "^10.2.1",

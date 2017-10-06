@@ -1,7 +1,3 @@
-const Level = require('native-level-promise');
-const path = require('path');
-const fs = require('fs');
-
 /**
  * A enhanced Map structure with additional utility methods.
  * Can be made persistent 
@@ -16,63 +12,13 @@ class Enmap extends Map {
     }
     super(iterable);
 
-    this.defer = new Promise((resolve) => {
-      this.ready = resolve;
-    });
-
-    if (options.name) this.persistent = options.persistent || true;
-
-    if (this.persistent) {
-      if (!options.name) throw new Error('Must provide a name for a persistent Enmap.');
-      this.name = options.name;
-      this.validateName();
-      this.dataDir = path.resolve(process.cwd(), options.dataDir || 'data');
-      this.persistent = options.persistent || false;
-      if (!options.dataDir) {
-        if (!fs.existsSync('./data')) {
-          fs.mkdirSync('./data');
-        }
-      }
-      this.path = path.join(this.dataDir, this.name);
-      this.db = new Level(this.path);
-      this.init();
-    } else {
-      this.ready();
+    if (options.provider) {
+      this.persistent = true;
+      if (!options.provider) throw new Error('Must provide a DB provider for a persistent Enmap.');
+      this.db = options.provider;
+      this.defer = this.db.defer;
+      this.db.init(this);
     }
-  }
-
-  /**
-   * Internal method called on persistent Enmaps to load data from the underlying database.
-   */
-  init() {
-    const stream = this.db.keyStream();
-    stream.on('data', (key) => {
-      this.db.get(key, (err, value) => {
-        if (err) console.log(err);
-        try {
-          this.set(key, JSON.parse(value));
-        } catch (error) {
-          this.set(key, value);
-        }
-      });
-    });
-    stream.on('end', () => {
-      this.ready();
-    });
-  }
-
-  /**
-   * Internal method used to validate persistent enmap names (valid Windows filenames);
-   */
-  validateName() {
-    this.name = this.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
-  }
-
-  /**
-   * Shuts down the underlying persistent enmap database.
-   */
-  close() {
-    this.db.close();
   }
 
   /**
@@ -85,11 +31,7 @@ class Enmap extends Map {
    */
   set(key, val) {
     if (this.persistent) {
-      if (!key || !['String', 'Number'].includes(key.constructor.name)) {
-        throw new Error('Enmap require keys to be strings or numbers.');
-      }
-      const insert = typeof val === 'object' ? JSON.stringify(val) : val;
-      this.db.put(key, insert);
+      this.db.set(key, val);
     }
     return super.set(key, val);
   }
@@ -103,11 +45,7 @@ class Enmap extends Map {
    * @return {Map} The EnMap object.
    */
   async setAsync(key, val) {
-    if (!key || !['String', 'Number'].includes(key.constructor.name)) {
-      throw new Error('Enmap require keys to be strings or numbers.');
-    }
-    const insert = typeof val === 'object' ? JSON.stringify(val) : val;
-    await this.db.put(key, insert);
+    await this.db.set(key, val);
     return super.set(key, val);
   }
 
@@ -118,7 +56,7 @@ class Enmap extends Map {
    */
   delete(key, bulk = false) {
     if (!bulk && this.persistent) {
-      this.db.del(key);
+      this.db.delete(key);
     }
     super.delete(key);
   }
@@ -130,18 +68,17 @@ class Enmap extends Map {
    */
   async deleteAsync(key, bulk = false) {
     if (!bulk) {
-      await this.db.del(key);
+      await this.db.delete(key);
     }
     super.delete(key);
   }
-
   /**
-     * Creates an ordered array of the values of this Enmap, and caches it internally.
-     * The array will only be reconstructed if an item is added to or removed from the Enmap,
-     * or if you change the length of the array itself. If you don't want this caching behaviour, 
-     * use `Array.from(enmap.values())` instead.
-     * @returns {Array}
-     */
+   * Creates an ordered array of the values of this Enmap, and caches it internally.
+   * The array will only be reconstructed if an item is added to or removed from the Enmap,
+   * or if you change the length of the array itself. If you don't want this caching behaviour, 
+   * use `Array.from(enmap.values())` instead.
+   * @returns {Array}
+   */
   array() {
     return Array.from(this.values());
   }

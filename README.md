@@ -1,9 +1,101 @@
 # Enmap - Enhanced Maps
-<a name="Enmap"></a>
 
-## Enmap ⇐ <code>Map</code>
+Enhanced Maps are a data structure that can be used to store data in memory that can also be saved in a database behind the scenes. The data is synchronized to the database automatically, seamlessly, and asynchronously so it should not adversely affect your performance compared to using Maps for storage. 
+
+## FAQs
+
+### Q: So what's Enmap
+
+**A**: Enmaps are the Javascript Map() data structure with additional utility methods.
+
+### Q: What is "Persistent"?
+
+**A**: With the use of the optional providers modules, any data added to the Enmap
+is stored not only in temporary memory but also backed up in a local file
+database. This does not require a server. Saving things in memory enables
+faster code, but it may take more memory.
+
+### Q: How big can the Enmap be?
+
+**A**: In its initial implementation, upon loading Enmap, all
+key/value pairs are loaded in memory. The size of the memory used is directly
+proportional to the size of your actual database. 
+
+Future versions will have ways to load partial or temporary values, etc.
+
+## Installation
+
+To use Enmap, install it via NPM: 
+
+```
+npm i enmap
+```
+
+## Basic Usage
+
+Inside your script, initialize a new Enmap: 
+
+```js
+const Enmap = require("enmap");
+
+// Initialize an instance of Enmap
+const myCollection = new Enmap();
+
+// Adding data is simply a `set` command: 
+myCollection.set("myKey", "a value");
+
+// Getting a value is done by key 
+let result = myCollection.get("myKey");
+```
+
+## Adding Persistence
+
+Persistence requires an additional Provider module. Currently only one is available:
+
+```
+npm i enmap-level
+```
+
+It must be initialized with the appropriate values
+
+```js
+// Load Enmap
+const Enmap = require('../');
+
+// Load EnmapLevel
+const EnmapLevel = require('enmap-level');
+
+// Initialize the leveldb with the name "test" (this is the folder name in ./data)
+const level = new EnmapLevel({ name: 'test' });
+
+// Initialize the Enmap with the provider instance.
+const myColl = new Enmap({ provider: level });
+
+// Persistent providers load in an **async** fashion and provide a handy defer property:
+
+myColl.defer.then(() => {
+    // all data is loaded now.
+    console.log(myColl.size + "keys loaded");
+});
+
+// You can also await it if your function is async: 
+(async function() {
+    await myColl.defer;
+    console.log(myColl.size + "keys loaded");
+    // Do stuff here!
+}());
+
+// Persistent collections should be **closed** before shutdown: 
+await myColl.db.close(); // or level.close() works too!
+```
+
+
+
+
+### Enmap ⇐ <code>Map</code>
+<a name="docs"></a>
 Enhanced Map structure with additional utility methods.
-Can be made persistent using an underlying `level` database.
+Can be made persistent with optional provider modules.
 
 **Kind**: global class  
 **Extends**: <code>Map</code>  
@@ -19,10 +111,6 @@ Can be made persistent using an underlying `level` database.
     * [.purge()](#Enmap+purge) ⇒ <code>Promise</code>
     * [.array()](#Enmap+array) ⇒ <code>Array</code>
     * [.keyArray()](#Enmap+keyArray) ⇒ <code>Array</code>
-    * [.first([count])](#Enmap+first) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-    * [.firstKey([count])](#Enmap+firstKey) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-    * [.last([count])](#Enmap+last) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-    * [.lastKey([count])](#Enmap+lastKey) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
     * [.random([count])](#Enmap+random) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
     * [.randomKey([count])](#Enmap+randomKey) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
     * [.findAll(prop, value)](#Enmap+findAll) ⇒ <code>Array</code>
@@ -38,7 +126,6 @@ Can be made persistent using an underlying `level` database.
     * [.concat(...enmaps)](#Enmap+concat) ⇒ [<code>Enmap</code>](#Enmap)
     * [.deleteAll()](#Enmap+deleteAll) ⇒ <code>Array.&lt;Promise&gt;</code>
     * [.equals(enmap)](#Enmap+equals) ⇒ <code>boolean</code>
-    * [.sort([compareFunction])](#Enmap+sort) ⇒ [<code>Enmap</code>](#Enmap)
 
 <a name="Enmap+init"></a>
 
@@ -125,59 +212,6 @@ or if you change the length of the array itself. If you don't want this caching 
 use `Array.from(enmap.keys())` instead.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-<a name="Enmap+first"></a>
-
-### enmap.first([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-Obtains the first value(s) in this Enmap.
-
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single value if `count` is undefined, 
-or an array of values of `count` length  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| [count] | <code>number</code> | Number of values to obtain from the beginning |
-
-<a name="Enmap+firstKey"></a>
-
-### enmap.firstKey([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-Obtains the first key(s) in this Enmap.
-
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single key if `count` is undefined, 
-or an array of keys of `count` length  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| [count] | <code>number</code> | Number of keys to obtain from the beginning |
-
-<a name="Enmap+last"></a>
-
-### enmap.last([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-Obtains the last value(s) in this Enmap. This relies on [array](#Enmap+array), 
-and thus the caching mechanism applies here as well.
-
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single value if `count` is undefined, 
-or an array of values of `count` length  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| [count] | <code>number</code> | Number of values to obtain from the end |
-
-<a name="Enmap+lastKey"></a>
-
-### enmap.lastKey([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
-Obtains the last key(s) in this Enmap. This relies on [keyArray](#Enmap+keyArray), 
-and thus the caching mechanism applies here as well.
-
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single key if `count` is undefined, 
-or an array of keys of `count` length  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| [count] | <code>number</code> | Number of keys to obtain from the end |
 
 <a name="Enmap+random"></a>
 
@@ -393,15 +427,3 @@ the Enmaps may be different objects, but contain the same data.
 | Param | Type | Description |
 | --- | --- | --- |
 | enmap | [<code>Enmap</code>](#Enmap) | Enmap to compare with |
-
-<a name="Enmap+sort"></a>
-
-### enmap.sort([compareFunction]) ⇒ [<code>Enmap</code>](#Enmap)
-The sort() method sorts the elements of a Enmap in place and returns the Enmap.
-The sort is not necessarily stable. The default sort order is according to string Unicode code points.
-
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| [compareFunction] | <code>function</code> | Specifies a function that defines the sort order. if omitted, the Enmap is sorted according to each character's Unicode code point value, according to the string conversion of each element. |
