@@ -89,8 +89,46 @@ myColl.defer.then(() => {
 await myColl.db.close(); // or level.close() works too!
 ```
 
+## Reading and Writing Data
 
+Reading and writing data from an enmap is as simple as from a regular map. Note that the example uses a persistent enmap, but the set and get method will work for non-persistent enmaps too. Obviously though, those values won't be persistent through reboot if you don't give a provider.
 
+```js
+const Enmap = require('enmap');
+const EnmapLevel = require('enmap-level');
+// Oh look a shortcut to initializing ;)
+const myColl = new Enmap({ provider: new EnmapLevel({ name: 'test' }); });
+
+(async function() {
+    await myColl.defer;
+    console.log(myColl.size + 'keys loaded');
+
+    // Setting data is done with a key and value.
+    myColl.set('simplevalue', 'this is a string');
+    
+    // enmap supports any **primitive** type.
+    myColl.set('boolean', true);
+    myColl.set('integer', 42);
+    myColl.set('null', null);
+
+    // enmap can retrieve items at any time
+    const simplevalue = myColl.get('simplevalue'); // 'this is a string'
+    const myboolean = myColl.get('boolean'); // true
+    if(myColl.get('boolean')) console.log('yay!') // prints 'yay!' to the console.
+
+    // You can **change** the value of a key by loading it, editing it,
+    // then setting it **back** into enmap. There's no "update" function
+    // it just overrides the data through the same set method: 
+    myColl.set('someobject', {blah: "foo", thing: "amajig"});
+    console.log(myColl.get('someobject')) // prints the object to console.
+
+    const myObject = myColl.get('someobject'); // value is now the object with 2 properties.
+    myObject.thing = "amabob"; // value of temporary object is now {blah: "foo", thing: "amabob"}
+    myColl.set('someobject', myObject); // only now is it actually written correctly.
+}());
+```
+
+> Because of how javascript works, doing something like `myColl.get('myobject').blah = 'meh'` actually works. HOWEVER that does *not* trigger persistence saves even though in memory it actually does change the enmap. "fixing" this would require some "monitor" on each value which is most definitely not the sort of overhead I want to add to this code. JavaScript wasn't built for that sort of thing in mind. 
 
 ### Enmap ⇐ <code>Map</code>
 <a name="docs"></a>
