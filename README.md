@@ -50,13 +50,18 @@ let result = myCollection.get("myKey");
 
 ## Adding Persistence
 
-Persistence requires an additional Provider module. Currently only one is available:
+Persistence requires an additional Provider module.
 
-```
-npm i enmap-level
-```
+Official Enmap Providers: 
 
-It must be initialized with the appropriate values
+* [Enmap Rethink](https://www.npmjs.com/package/enmap-rethink)
+* [Enmap LevelDB](https://www.npmjs.com/package/enmap-level) *Note: LevelDB does not support multiple processes or shards!*
+
+Unofficial Providers: 
+
+* None! Make your own and let me know!
+
+The following example uses Enmap-Level
 
 ```js
 // Load Enmap
