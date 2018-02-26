@@ -54,8 +54,9 @@ Persistence requires an additional Provider module.
 
 Official Enmap Providers: 
 
-* [Enmap Rethink](https://www.npmjs.com/package/enmap-rethink)
-* [Enmap LevelDB](https://www.npmjs.com/package/enmap-level) *Note: LevelDB does not support multiple processes or shards!*
+* [Enmap-Rethink](https://www.npmjs.com/package/enmap-rethink)
+* [Enmap-SQLite](https://www.npmjs.com/package/enmap-sqlite)
+* [Enmap-Level](https://www.npmjs.com/package/enmap-level) *Note: LevelDB does not support multiple processes or shards!*
 
 Unofficial Providers: 
 
