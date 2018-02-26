@@ -62,20 +62,20 @@ Unofficial Providers:
 
 * None! Make your own and let me know!
 
-The following example uses Enmap-Level
+The following example uses Enmap-SQLite
 
 ```js
 // Load Enmap
 const Enmap = require('enmap');
 
-// Load EnmapLevel
-const EnmapLevel = require('enmap-level');
+// Load EnmapSQLite
+const EnmapSQLite = require('enmap-sqlite');
 
-// Initialize the leveldb with the name "test" (this is the folder name in ./data)
-const level = new EnmapLevel({ name: 'test' });
+// Initialize the sqlite database with a table named "test"
+const provider = new EnmapSQLite({ name: 'test' });
 
 // Initialize the Enmap with the provider instance.
-const myColl = new Enmap({ provider: level });
+const myColl = new Enmap({ provider: provider });
 
 // Persistent providers load in an **async** fashion and provide a handy defer property:
 
@@ -101,9 +101,9 @@ Reading and writing data from an enmap is as simple as from a regular map. Note 
 
 ```js
 const Enmap = require('enmap');
-const EnmapLevel = require('enmap-level');
+const EnmapSQLite = require('enmap-sqlite');
 // Oh look a shortcut to initializing ;)
-const myColl = new Enmap({ provider: new EnmapLevel({ name: 'test' }); });
+const myColl = new Enmap({ provider: new EnmapSQLite({ name: 'test' }) });
 
 (async function() {
     await myColl.defer;
