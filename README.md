@@ -11,9 +11,7 @@ Enhanced Maps are a data structure that can be used to store data in memory that
 ### Q: What is "Persistent"?
 
 **A**: With the use of the optional providers modules, any data added to the Enmap
-is stored not only in temporary memory but also backed up in a local file
-database. This does not require a server. Saving things in memory enables
-faster code, but it may take more memory.
+is stored not only in temporary memory but also backed up in a local database. 
 
 ### Q: How big can the Enmap be?
 
@@ -54,13 +52,10 @@ Persistence requires an additional Provider module.
 
 Official Enmap Providers: 
 
-* [Enmap-Rethink](https://www.npmjs.com/package/enmap-rethink)
-* [Enmap-SQLite](https://www.npmjs.com/package/enmap-sqlite)
+* [Enmap-SQLite](https://www.npmjs.com/package/enmap-sqlite) *Note: Against all odds, this provider DOES support sharding!*
+* [Enmap-Rethink](https://www.npmjs.com/package/enmap-rethink) *Note: Obviously, supports sharding.*
+* [Enmap-PGSQL](https://www.npmjs.com/package/enmap-pgsql) *Note: That's shorthand for "Postgresql". Supports sharding of course.*
 * [Enmap-Level](https://www.npmjs.com/package/enmap-level) *Note: LevelDB does not support multiple processes or shards!*
-
-Unofficial Providers: 
-
-* None! Make your own and let me know!
 
 The following example uses Enmap-SQLite
 
