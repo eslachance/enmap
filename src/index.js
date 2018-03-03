@@ -21,6 +21,26 @@ class Enmap extends Map {
     }
   }
 
+  static multi(names, Provider, options) {
+    if (!names.length || names.length < 1) {
+      throw new Error('"names" parameter must be an array of string names');
+    }
+    if (!Provider) {
+      throw new Error('Provider must be given and be an enmap provider!');
+    }
+
+    const returnvalue = {};
+    for (const name of names) {
+      const enmap = new Enmap({ provider: new Provider(Object.assign(options, { name })) });
+      returnvalue[name] = enmap;
+    }
+    return returnvalue;
+  }
+
+  static test() {
+    return { blah: 'foo' };
+  }
+
   /**
    * Shuts down the underlying persistent enmap database.
    */
@@ -116,7 +136,7 @@ class Enmap extends Map {
     const rand = new Array(count);
     arr = arr.slice();
     for (let i = 0; i < count; i++) {
-      rand[i] = arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
+      rand[i] = [arr.splice(Math.floor(Math.random() * arr.length), 1)];
     }
     return rand;
   }
@@ -137,7 +157,7 @@ class Enmap extends Map {
     const rand = new Array(count);
     arr = arr.slice();
     for (let i = 0; i < count; i++) {
-      rand[i] = arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
+      rand[i] = [arr.splice(Math.floor(Math.random() * arr.length), 1)];
     }
     return rand;
   }

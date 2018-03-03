@@ -55,6 +55,7 @@ Official Enmap Providers:
 * [Enmap-SQLite](https://www.npmjs.com/package/enmap-sqlite) *Note: Against all odds, this provider DOES support sharding!*
 * [Enmap-Rethink](https://www.npmjs.com/package/enmap-rethink) *Note: Obviously, supports sharding.*
 * [Enmap-PGSQL](https://www.npmjs.com/package/enmap-pgsql) *Note: That's shorthand for "Postgresql". Supports sharding of course.*
+* [Enmap-Mongo](https://www.npmjs.com/package/enmap-mongo) *Note: Yay, MongoDB! Supports sharding, duh.*
 * [Enmap-Level](https://www.npmjs.com/package/enmap-level) *Note: LevelDB does not support multiple processes or shards!*
 
 The following example uses Enmap-SQLite
@@ -89,6 +90,26 @@ myColl.defer.then(() => {
 // Persistent collections should be **closed** before shutdown: 
 await myColl.db.close(); // or level.close() works too!
 ```
+
+## Using Enmap.multi() for multiple enmaps
+
+To account for people that might use a large number of enmaps in the same project, I've created a new `multi()` method that can be used to instanciate multiple peristent enmaps together. 
+
+The method takes 3 arguments: 
+* An `array` of names for the enmaps to be created.
+* A Provider (not instanciated), from any of the available ones.
+* An `options` object containing any of the options needed to instanciate the provider. Do not add `name` to this, as it will use the names in the array instead.
+
+The method returns an object where each property is a new fully-started Enmap that can be used as you would normally. 
+
+Below, an example that uses destructuring to fit all in one nice line: 
+```js
+const Enmap = require('enmap');
+const Provider = require('enmap-mongo');
+const { settings, tags, blacklist, langs } = Enmap.multi(['settings', 'tags', 'blacklist', 'langs'], Provider, { url: "mongodb://localhost:27017/enmap" });
+```
+
+> Note that this uses a static method which means you should NOT call `new Enmap()` yourself, it's done within the method.
 
 ## Reading and Writing Data
 
