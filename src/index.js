@@ -50,12 +50,12 @@ class Enmap extends Map {
 
   /**
    * 
-   * @param {*} key Required. The key of the element to add to the EnMap object. 
+   * @param {*} key Required. The key of the element to add to The Enmap. 
    * If the EnMap is persistent this value MUST be a string or number.
-   * @param {*} val Required. The value of the element to add to the EnMap object. 
+   * @param {*} val Required. The value of the element to add to The Enmap. 
    * If the EnMap is persistent this value MUST be stringifiable as JSON.
    * @param {boolean} save Optional. Whether to save to persistent DB (used as false in init)
-   * @return {Map} The EnMap object.
+   * @return {Map} The Enmap.
    */
   set(key, val, save = true) {
     if (this.persistent && save) {
@@ -65,14 +65,28 @@ class Enmap extends Map {
   }
 
   /**
-   * Modify the property of a value inside the enmap, assuming this value is an object.
+   * Returns the specific property within a stored value. If the value isn't an object or array, returns the unchanged data
+   * @param {*} key Required. The key of the element to get from The Enmap. 
+   * @param {*} prop Required. The property to retrieve from the object or array.
+   * @return {*} The value of the property obtained.
+   */
+  getProp(key, prop) {
+    const data = super.get(key);
+    if (typeof data !== 'object') {
+      return data;
+    }
+    return data[prop];
+  }
+
+  /**
+   * Modify the property of a value inside the enmap, assuming this value is an object or array.
    * This is a shortcut to loading the key, changing the value, and setting it back.
-   * @param {*} key Required. The key of the element to add to the EnMap object. 
+   * @param {*} key Required. The key of the element to add to The Enmap or array. 
    * If the EnMap is persistent this value MUST be a string or number.
-   * @param {*} prop Required. The property to modify inside the value object.
+   * @param {*} prop Required. The property to modify inside the value object or array.
    * @param {*} val Required. The value to apply to the specified property.
    * @param {boolean} save Optional. Whether to save to persistent DB (used as false in init)
-   * @return {Map} The EnMap object.
+   * @return {Map} The EnMap.
    */
   setProp(key, prop, val, save = true) {
     const data = super.get(key);
@@ -88,11 +102,11 @@ class Enmap extends Map {
 
   /**
    * 
-   * @param {*} key Required. The key of the element to add to the EnMap object. 
+   * @param {*} key Required. The key of the element to add to The Enmap. 
    * If the EnMap is persistent this value MUST be a string or number.
-   * @param {*} val Required. The value of the element to add to the EnMap object. 
+   * @param {*} val Required. The value of the element to add to The Enmap. 
    * If the EnMap is persistent this value MUST be stringifiable as JSON.
-   * @return {Map} The EnMap object.
+   * @return {Map} The Enmap.
    */
   async setAsync(key, val) {
     await this.db.setAsync(key, val);
@@ -101,7 +115,7 @@ class Enmap extends Map {
 
   /**
    * 
-   * @param {*} key Required. The key of the element to delete from the EnMap object. 
+   * @param {*} key Required. The key of the element to delete from The Enmap. 
    * @param {boolean} bulk Internal property used by the purge method.  
    */
   delete(key) {
@@ -113,7 +127,7 @@ class Enmap extends Map {
 
   /**
    * 
-   * @param {*} key Required. The key of the element to delete from the EnMap object. 
+   * @param {*} key Required. The key of the element to delete from The Enmap. 
    * @param {boolean} bulk Internal property used by the purge method.  
    */
   async deleteAsync(key) {
