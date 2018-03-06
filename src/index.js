@@ -65,6 +65,28 @@ class Enmap extends Map {
   }
 
   /**
+   * Modify the property of a value inside the enmap, assuming this value is an object.
+   * This is a shortcut to loading the key, changing the value, and setting it back.
+   * @param {*} key Required. The key of the element to add to the EnMap object. 
+   * If the EnMap is persistent this value MUST be a string or number.
+   * @param {*} prop Required. The property to modify inside the value object.
+   * @param {*} val Required. The value to apply to the specified property.
+   * @param {boolean} save Optional. Whether to save to persistent DB (used as false in init)
+   * @return {Map} The EnMap object.
+   */
+  setProp(key, prop, val, save = true) {
+    const data = super.get(key);
+    if (typeof data !== 'object') {
+      throw 'Method can only be used when the value is an object';
+    }
+    data[prop] = val;
+    if (this.persistent && save) {
+      this.db.set(key, data);
+    }
+    return super.set(key, data);
+  }
+
+  /**
    * 
    * @param {*} key Required. The key of the element to add to the EnMap object. 
    * If the EnMap is persistent this value MUST be a string or number.
