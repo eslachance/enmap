@@ -152,23 +152,24 @@ const myColl = new Enmap({ provider: new EnmapSQLite({ name: 'test' }) });
 
 > Because of how javascript works, doing something like `myColl.get('myobject').blah = 'meh'` actually works. HOWEVER that does *not* trigger persistence saves even though in memory it actually does change the enmap. "fixing" this would require some "monitor" on each value which is most definitely not the sort of overhead I want to add to this code. JavaScript wasn't built for that sort of thing in mind. 
 
-### Enmap ⇐ <code>Map</code>
-<a name="docs"></a>
-Enhanced Map structure with additional utility methods.
-Can be made persistent with optional provider modules.
+## API Documentation
+
+### Enmap ⇒ <code>Map</code>
+A enhanced Map structure with additional utility methods.
+Can be made persistent
 
 **Kind**: global class  
 **Extends**: <code>Map</code>  
 
 * [Enmap](#Enmap) ⇐ <code>Map</code>
-    * [.init()](#Enmap+init) ⇒ <code>Void</code>
-    * [.validateName()](#Enmap+validateName) ⇒ <code>boolean</code>
     * [.close()](#Enmap+close)
-    * [.set(key, val)](#Enmap+set) ⇒ <code>Map</code>
+    * [.set(key, val, save)](#Enmap+set) ⇒ <code>Map</code>
+    * [.getProp(key, prop)](#Enmap+getProp) ⇒ <code>\*</code>
+    * [.setProp(key, prop, val, save)](#Enmap+setProp) ⇒ <code>Map</code>
+    * [.hasProp(key, prop)](#Enmap+hasProp) ⇒ <code>boolean</code>
     * [.setAsync(key, val)](#Enmap+setAsync) ⇒ <code>Map</code>
     * [.delete(key, bulk)](#Enmap+delete)
     * [.deleteAsync(key, bulk)](#Enmap+deleteAsync)
-    * [.purge()](#Enmap+purge) ⇒ <code>Promise</code>
     * [.array()](#Enmap+array) ⇒ <code>Array</code>
     * [.keyArray()](#Enmap+keyArray) ⇒ <code>Array</code>
     * [.random([count])](#Enmap+random) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
@@ -184,22 +185,10 @@ Can be made persistent with optional provider modules.
     * [.reduce(fn, [initialValue])](#Enmap+reduce) ⇒ <code>\*</code>
     * [.clone()](#Enmap+clone) ⇒ [<code>Enmap</code>](#Enmap)
     * [.concat(...enmaps)](#Enmap+concat) ⇒ [<code>Enmap</code>](#Enmap)
-    * [.deleteAll()](#Enmap+deleteAll) ⇒ <code>Array.&lt;Promise&gt;</code>
+    * [.deleteAll(bulk)](#Enmap+deleteAll)
+    * [.deleteAllAsync(bulk)](#Enmap+deleteAllAsync)
     * [.equals(enmap)](#Enmap+equals) ⇒ <code>boolean</code>
 
-<a name="Enmap+init"></a>
-
-### enmap.init() ⇒ <code>Void</code>
-Internal method called on persistent Enmaps to load data from the underlying database.
-
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-<a name="Enmap+validateName"></a>
-
-### enmap.validateName() ⇒ <code>boolean</code>
-Internal method used to validate persistent enmap names (valid Windows filenames);
-
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>boolean</code> - Indicates whether the name is valid.  
 <a name="Enmap+close"></a>
 
 ### enmap.close()
@@ -208,57 +197,97 @@ Shuts down the underlying persistent enmap database.
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 <a name="Enmap+set"></a>
 
-### enmap.set(key, val) ⇒ <code>Map</code>
+### enmap.set(key, val, save) ⇒ <code>Map</code>
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>Map</code> - The EnMap object.  
+**Returns**: <code>Map</code> - The Enmap.  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| key | <code>\*</code> |  | Required. The key of the element to add to The Enmap.  If the EnMap is persistent this value MUST be a string or number. |
+| val | <code>\*</code> |  | Required. The value of the element to add to The Enmap.  If the EnMap is persistent this value MUST be stringifiable as JSON. |
+| save | <code>boolean</code> | <code>true</code> | Optional. Whether to save to persistent DB (used as false in init) |
+
+<a name="Enmap+getProp"></a>
+
+### enmap.getProp(key, prop) ⇒ <code>\*</code>
+Returns the specific property within a stored value. If the value isn't an object or array, returns the unchanged data
+If the key does not exist or the value is not an object, throws an error.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>\*</code> - The value of the property obtained.  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| key | <code>\*</code> | Required. The key of the element to add to the EnMap object.  If the EnMap is persistent this value MUST be a string or number. |
-| val | <code>\*</code> | Required. The value of the element to add to the EnMap object.  If the EnMap is persistent this value MUST be stringifiable as JSON. |
+| key | <code>\*</code> | Required. The key of the element to get from The Enmap. |
+| prop | <code>\*</code> | Required. The property to retrieve from the object or array. |
+
+<a name="Enmap+setProp"></a>
+
+### enmap.setProp(key, prop, val, save) ⇒ <code>Map</code>
+Modify the property of a value inside the enmap, assuming this value is an object or array.
+This is a shortcut to loading the key, changing the value, and setting it back.
+If the key does not exist or the value is not an object, throws an error.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>Map</code> - The EnMap.  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| key | <code>\*</code> |  | Required. The key of the element to add to The Enmap or array.  If the EnMap is persistent this value MUST be a string or number. |
+| prop | <code>\*</code> |  | Required. The property to modify inside the value object or array. |
+| val | <code>\*</code> |  | Required. The value to apply to the specified property. |
+| save | <code>boolean</code> | <code>true</code> | Optional. Whether to save to persistent DB (used as false in init) |
+
+<a name="Enmap+hasProp"></a>
+
+### enmap.hasProp(key, prop) ⇒ <code>boolean</code>
+Returns whether or not the property exists within an object or array value in enmap.
+If the key does not exist or the value is not an object, throws an error.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>boolean</code> - Whether the property exists.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| key | <code>\*</code> | Required. The key of the element to check in the Enmap or array. |
+| prop | <code>\*</code> | Required. The property to verify inside the value object or array. |
 
 <a name="Enmap+setAsync"></a>
 
 ### enmap.setAsync(key, val) ⇒ <code>Map</code>
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>Map</code> - The EnMap object.  
+**Returns**: <code>Map</code> - The Enmap.  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| key | <code>\*</code> | Required. The key of the element to add to the EnMap object.  If the EnMap is persistent this value MUST be a string or number. |
-| val | <code>\*</code> | Required. The value of the element to add to the EnMap object.  If the EnMap is persistent this value MUST be stringifiable as JSON. |
+| key | <code>\*</code> | Required. The key of the element to add to The Enmap.  If the EnMap is persistent this value MUST be a string or number. |
+| val | <code>\*</code> | Required. The value of the element to add to The Enmap.  If the EnMap is persistent this value MUST be stringifiable as JSON. |
 
 <a name="Enmap+delete"></a>
 
 ### enmap.delete(key, bulk)
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| key | <code>\*</code> |  | Required. The key of the element to delete from the EnMap object. |
-| bulk | <code>boolean</code> | <code>false</code> | Internal property used by the purge method. |
+| Param | Type | Description |
+| --- | --- | --- |
+| key | <code>\*</code> | Required. The key of the element to delete from The Enmap. |
+| bulk | <code>boolean</code> | Internal property used by the purge method. |
 
 <a name="Enmap+deleteAsync"></a>
 
 ### enmap.deleteAsync(key, bulk)
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| key | <code>\*</code> |  | Required. The key of the element to delete from the EnMap object. |
-| bulk | <code>boolean</code> | <code>false</code> | Internal property used by the purge method. |
+| Param | Type | Description |
+| --- | --- | --- |
+| key | <code>\*</code> | Required. The key of the element to delete from The Enmap. |
+| bulk | <code>boolean</code> | Internal property used by the purge method. |
 
-<a name="Enmap+purge"></a>
-
-### enmap.purge() ⇒ <code>Promise</code>
-Completely deletes all keys from an EnMap, including persistent data.
-
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 <a name="Enmap+array"></a>
 
 ### enmap.array() ⇒ <code>Array</code>
 Creates an ordered array of the values of this Enmap, and caches it internally.
-The array will only be reconstructed if an item is added to or removed from the Enmap, 
+The array will only be reconstructed if an item is added to or removed from the Enmap,
 or if you change the length of the array itself. If you don't want this caching behaviour, 
 use `Array.from(enmap.values())` instead.
 
@@ -266,13 +295,12 @@ use `Array.from(enmap.values())` instead.
 <a name="Enmap+keyArray"></a>
 
 ### enmap.keyArray() ⇒ <code>Array</code>
-Creates an ordered array of the keys of this Enmap, and caches it internally. 
+Creates an ordered array of the keys of this Enmap, and caches it internally.
 The array will only be reconstructed if an item is added to or removed from the Enmap, 
 or if you change the length of the array itself. If you don't want this caching behaviour, 
 use `Array.from(enmap.keys())` instead.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-
 <a name="Enmap+random"></a>
 
 ### enmap.random([count]) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
@@ -280,7 +308,7 @@ Obtains random value(s) from this Enmap. This relies on [array](#Enmap+array),
 and thus the caching mechanism applies here as well.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single value if `count` is undefined, 
+**Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single value if `count` is undefined,
 or an array of values of `count` length  
 
 | Param | Type | Description |
@@ -470,10 +498,26 @@ const newColl = someColl.concat(someOtherColl, anotherColl, ohBoyAColl);
 ```
 <a name="Enmap+deleteAll"></a>
 
-### enmap.deleteAll() ⇒ <code>Array.&lt;Promise&gt;</code>
+### enmap.deleteAll(bulk)
 Calls the `delete()` method on all items that have it.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| bulk | <code>boolean</code> | <code>true</code> | Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one. |
+
+<a name="Enmap+deleteAllAsync"></a>
+
+### enmap.deleteAllAsync(bulk)
+Calls the `delete()` method on all items that have it.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| bulk | <code>boolean</code> | <code>true</code> | Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one. |
+
 <a name="Enmap+equals"></a>
 
 ### enmap.equals(enmap) ⇒ <code>boolean</code>

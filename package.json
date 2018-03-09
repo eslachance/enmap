@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "repository": {
     "type": "git",
@@ -19,7 +19,8 @@
   "license": "Apache",
   "dependencies": {},
   "devDependencies": {
-    "enmap-level": "*",
+    "enmap-level": "^1.0.1",
+    "enmap-sqlite": "^1.0.1",
     "eslint": "^4.7.0",
     "eslint-config-airbnb-base": "^11.3.2",
     "eslint-config-standard": "^10.2.1",

@@ -66,21 +66,26 @@ class Enmap extends Map {
 
   /**
    * Returns the specific property within a stored value. If the value isn't an object or array, returns the unchanged data
+   * If the key does not exist or the value is not an object, throws an error.
    * @param {*} key Required. The key of the element to get from The Enmap. 
    * @param {*} prop Required. The property to retrieve from the object or array.
    * @return {*} The value of the property obtained.
    */
   getProp(key, prop) {
+    if (!this.has(key)) {
+      throw 'This key does not exist';
+    }
     const data = super.get(key);
     if (typeof data !== 'object') {
       return data;
     }
-    return data[prop];
+    return data[prop] || null;
   }
 
   /**
    * Modify the property of a value inside the enmap, assuming this value is an object or array.
    * This is a shortcut to loading the key, changing the value, and setting it back.
+   * If the key does not exist or the value is not an object, throws an error.
    * @param {*} key Required. The key of the element to add to The Enmap or array. 
    * If the EnMap is persistent this value MUST be a string or number.
    * @param {*} prop Required. The property to modify inside the value object or array.
@@ -89,6 +94,9 @@ class Enmap extends Map {
    * @return {Map} The EnMap.
    */
   setProp(key, prop, val, save = true) {
+    if (!this.has(key)) {
+      throw 'This key does not exist';
+    }
     const data = super.get(key);
     if (typeof data !== 'object') {
       throw 'Method can only be used when the value is an object';
@@ -98,6 +106,24 @@ class Enmap extends Map {
       this.db.set(key, data);
     }
     return super.set(key, data);
+  }
+
+  /**
+   * Returns whether or not the property exists within an object or array value in enmap.
+   * If the key does not exist or the value is not an object, throws an error.
+   * @param {*} key Required. The key of the element to check in the Enmap or array. 
+   * @param {*} prop Required. The property to verify inside the value object or array.
+   * @return {boolean} Whether the property exists.
+   */
+  hasProp(key, prop) {
+    if (!this.has(key)) {
+      throw 'This key does not exist';
+    }
+    const data = super.get(key);
+    if (typeof data !== 'object') {
+      throw 'The value of this key is not an object.';
+    }
+    return data.hasOwnProperty(prop);
   }
 
   /**
@@ -134,6 +160,7 @@ class Enmap extends Map {
     await this.db.delete(key);
     super.delete(key);
   }
+
   /**
    * Creates an ordered array of the values of this Enmap, and caches it internally.
    * The array will only be reconstructed if an item is added to or removed from the Enmap,

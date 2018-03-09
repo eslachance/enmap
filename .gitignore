@@ -6,3 +6,5 @@ Thumbs.db
 data/
 config.json
 .vscode
+data/
+out/
