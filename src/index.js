@@ -12,10 +12,13 @@ class Enmap extends Map {
     }
     super(iterable);
 
+    console.log(options.fetchAll);
+    this.fetchAll = options.fetchAll !== undefined ? options.fetchAll : true;
+
     if (options.provider) {
       this.persistent = true;
-      if (!options.provider) throw new Error('Must provide a DB provider for a persistent Enmap.');
       this.db = options.provider;
+      this.db.fetchAll = this.fetchAll;
       this.defer = this.db.defer;
       this.db.init(this);
     }
@@ -37,15 +40,46 @@ class Enmap extends Map {
     return returnvalue;
   }
 
-  static test() {
-    return { blah: 'foo' };
-  }
-
   /**
    * Shuts down the underlying persistent enmap database.
    */
   close() {
     this.db.close();
+  }
+
+  /**
+   * Retrieves a key from the enmap. If fetchAll is false, returns a promise.
+   * @param {*} key The key to retrieve from the enmap.
+   * @return {*|Promise<*>} The value or a promise containing the value.
+   */
+  get(key) {
+    if (this.has(key)) {
+      return super.get(key);
+    }
+    if (this.fetchAll) {
+      return null;
+    }
+    return this.fetch(key);
+  }
+
+  /**
+   * Fetch one or more key values from the enmap.
+   * @param {*} keyOrKeys A single key or array of keys to force fetch from the enmap database.
+   * @return {*|Map} A single value if requested, or a non-persistent enmap of keys if an array is requested.
+   */
+  async fetch(keyOrKeys) {
+    if (!Array.isArray(keyOrKeys)) {
+      return this.db.fetch(keyOrKeys);
+    }
+    return new this.constructor(await Promise.all(keyOrKeys.map(async key => [key, await this.db.fetch(key)])));
+  }
+
+  /**
+   * Fetches every key from the persistent enmap and loads them into the current enmap value.
+   * @return {Map} The enmap containing all values.
+   */
+  fetchEverything() {
+    return this.db.fetchEverything();
   }
 
   /**
@@ -57,10 +91,23 @@ class Enmap extends Map {
    * @param {boolean} save Optional. Whether to save to persistent DB (used as false in init)
    * @return {Map} The Enmap.
    */
-  set(key, val, save = true) {
-    if (this.persistent && save) {
+  set(key, val) {
+    if (this.persistent) {
       this.db.set(key, val);
     }
+    return super.set(key, val);
+  }
+
+  /**
+   * 
+   * @param {*} key Required. The key of the element to add to The Enmap. 
+   * If the EnMap is persistent this value MUST be a string or number.
+   * @param {*} val Required. The value of the element to add to The Enmap. 
+   * If the EnMap is persistent this value MUST be stringifiable as JSON.
+   * @return {Map} The Enmap.
+   */
+  async setAsync(key, val) {
+    await this.db.set(key, val);
     return super.set(key, val);
   }
 
@@ -72,14 +119,19 @@ class Enmap extends Map {
    * @return {*} The value of the property obtained.
    */
   getProp(key, prop) {
-    if (!this.has(key)) {
-      throw 'This key does not exist';
+    if (this.fetchAll) {
+      if (this.has(key)) {
+        const data = super.get(key);
+        return typeof data === 'object' ? data[prop] || null : data;
+      } else {
+        throw 'This key does not exist';
+      }
+    } else {
+      return this.fetch(key).then(data => {
+        if (!data) throw 'This key does not exist';
+        return typeof data === 'object' ? data[prop] || null : data;
+      });
     }
-    const data = super.get(key);
-    if (typeof data !== 'object') {
-      return data;
-    }
-    return data[prop] || null;
   }
 
   /**
@@ -93,7 +145,7 @@ class Enmap extends Map {
    * @param {boolean} save Optional. Whether to save to persistent DB (used as false in init)
    * @return {Map} The EnMap.
    */
-  setProp(key, prop, val, save = true) {
+  setProp(key, prop, val) {
     if (!this.has(key)) {
       throw 'This key does not exist';
     }
@@ -102,10 +154,15 @@ class Enmap extends Map {
       throw 'Method can only be used when the value is an object';
     }
     data[prop] = val;
-    if (this.persistent && save) {
+    if (this.persistent) {
       this.db.set(key, data);
     }
     return super.set(key, data);
+  }
+
+  has(key) {
+    if (this.fetchAll) return super.has(key);
+    return this.db.hasAsync(key);
   }
 
   /**
@@ -116,27 +173,24 @@ class Enmap extends Map {
    * @return {boolean} Whether the property exists.
    */
   hasProp(key, prop) {
-    if (!this.has(key)) {
-      throw 'This key does not exist';
+    if (this.fetchAll) {
+      if (!this.has(key)) {
+        throw 'This key does not exist';
+      }
+      const data = super.get(key);
+      if (typeof data !== 'object') {
+        throw 'The value of this key is not an object.';
+      }
+      return data.hasOwnProperty(prop);
+    } else {
+      return this.fetch(key).then(data => {
+        if (!data) throw 'This key does not exist';
+        if (typeof data !== 'object') {
+          throw 'The value of this key is not an object.';
+        }
+        return data.hasOwnProperty(prop);
+      });
     }
-    const data = super.get(key);
-    if (typeof data !== 'object') {
-      throw 'The value of this key is not an object.';
-    }
-    return data.hasOwnProperty(prop);
-  }
-
-  /**
-   * 
-   * @param {*} key Required. The key of the element to add to The Enmap. 
-   * If the EnMap is persistent this value MUST be a string or number.
-   * @param {*} val Required. The value of the element to add to The Enmap. 
-   * If the EnMap is persistent this value MUST be stringifiable as JSON.
-   * @return {Map} The Enmap.
-   */
-  async setAsync(key, val) {
-    await this.db.setAsync(key, val);
-    return super.set(key, val);
   }
 
   /**
