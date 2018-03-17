@@ -12,7 +12,6 @@ class Enmap extends Map {
     }
     super(iterable);
 
-    console.log(options.fetchAll);
     this.fetchAll = options.fetchAll !== undefined ? options.fetchAll : true;
 
     if (options.provider) {
@@ -24,7 +23,7 @@ class Enmap extends Map {
     }
   }
 
-  static multi(names, Provider, options) {
+  static multi(names, Provider, options = {}) {
     if (!names.length || names.length < 1) {
       throw new Error('"names" parameter must be an array of string names');
     }
@@ -71,7 +70,11 @@ class Enmap extends Map {
     if (!Array.isArray(keyOrKeys)) {
       return this.db.fetch(keyOrKeys);
     }
-    return new this.constructor(await Promise.all(keyOrKeys.map(async key => [key, await this.db.fetch(key)])));
+    return new this.constructor(await Promise.all(keyOrKeys.map(async key => {
+      const value = await this.db.fetch(key);
+      super.set(key, value);
+      return [key, value];
+    })));
   }
 
   /**
