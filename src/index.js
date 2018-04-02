@@ -23,12 +23,19 @@ class Enmap extends Map {
     }
   }
 
+  /**
+   * Initialize multiple Enmaps easily.
+   * @param {Array<string>} names Array of strings. Each array entry will create a separate enmap with that name.
+   * @param {EnmapProvider} Provider Valid EnmapProvider object.
+   * @param {Object} options Options object to pass to the provider. See provider documentation for its options.
+   * @returns {Array<Map>} An array of initialized Enmaps.
+   */
   static multi(names, Provider, options = {}) {
     if (!names.length || names.length < 1) {
-      throw new Error('"names" parameter must be an array of string names');
+      throw new Error('"names" argument must be an array of string names.');
     }
     if (!Provider) {
-      throw new Error('Provider must be given and be an enmap provider!');
+      throw new Error('Second argument must be a valid EnmapProvider.');
     }
 
     const returnvalue = {};
@@ -48,7 +55,7 @@ class Enmap extends Map {
 
   /**
    * Retrieves a key from the enmap. If fetchAll is false, returns a promise.
-   * @param {*} key The key to retrieve from the enmap.
+   * @param {string|number} key The key to retrieve from the enmap.
    * @return {*|Promise<*>} The value or a promise containing the value.
    */
   get(key) {
@@ -62,8 +69,8 @@ class Enmap extends Map {
   }
 
   /**
-   * Fetch one or more key values from the enmap.
-   * @param {*} keyOrKeys A single key or array of keys to force fetch from the enmap database.
+   * Force fetch one or more key values from the enmap. If the database has changed, that new value is used.
+   * @param {string|number} keyOrKeys A single key or array of keys to force fetch from the enmap database.
    * @return {*|Map} A single value if requested, or a non-persistent enmap of keys if an array is requested.
    */
   async fetch(keyOrKeys) {
@@ -86,38 +93,44 @@ class Enmap extends Map {
   }
 
   /**
-   * 
-   * @param {*} key Required. The key of the element to add to The Enmap. 
-   * If the EnMap is persistent this value MUST be a string or number.
+   * Set the value in Enmap.
+   * @param {string|number} key Required. The key of the element to add to The Enmap. 
+   * If the Enmap is persistent this value MUST be a string or number.
    * @param {*} val Required. The value of the element to add to The Enmap. 
-   * If the EnMap is persistent this value MUST be stringifiable as JSON.
-   * @param {boolean} save Optional. Whether to save to persistent DB (used as false in init)
+   * If the Enmap is persistent this value MUST be stringifiable as JSON.
    * @return {Map} The Enmap.
    */
   set(key, val) {
+    if (!val) throw 'Cannot set null, undefined or empty value to a key. Use Enmap.delete(key) instead.';
+    let insert = typeof val === 'object' ? Object.create(val) : val;
+    insert = val.constructor.name === 'Array' ? [...insert] : insert;
     if (this.persistent) {
-      this.db.set(key, val);
+      this.db.set(key, insert);
     }
-    return super.set(key, val);
+    return super.set(key, insert);
   }
 
   /**
-   * 
-   * @param {*} key Required. The key of the element to add to The Enmap. 
-   * If the EnMap is persistent this value MUST be a string or number.
+   * Set the value in Enmap, but returns a promise that resolves once writte to the database.
+   * Useless on non-persistent Enmaps.
+   * @param {string|number} key Required. The key of the element to add to The Enmap. 
+   * If the Enmap is persistent this value MUST be a string or number.
    * @param {*} val Required. The value of the element to add to The Enmap. 
-   * If the EnMap is persistent this value MUST be stringifiable as JSON.
-   * @return {Map} The Enmap.
+   * If the Enmap is persistent this value MUST be stringifiable as JSON.
+   * @return {Promise<Map>} The Enmap.
    */
-  async setAsync(key, val) {
-    await this.db.set(key, val);
-    return super.set(key, val);
+  setAsync(key, val) {
+    if (!val) throw 'Cannot set null, undefined or empty value to a key. Use Enmap.delete(key) instead.';
+    let insert = typeof val === 'object' ? Object.create(val) : val;
+    insert = val.constructor.name === 'Array' ? [...insert] : insert;
+    super.set(key, insert);
+    return this.db.set(key, insert);
   }
 
   /**
    * Returns the specific property within a stored value. If the value isn't an object or array, returns the unchanged data
    * If the key does not exist or the value is not an object, throws an error.
-   * @param {*} key Required. The key of the element to get from The Enmap. 
+   * @param {string|number} key Required. The key of the element to get from The Enmap. 
    * @param {*} prop Required. The property to retrieve from the object or array.
    * @return {*} The value of the property obtained.
    */
@@ -138,11 +151,10 @@ class Enmap extends Map {
   }
 
   /**
-   * Modify the property of a value inside the enmap, assuming this value is an object or array.
+   * Modify the property of a value inside the enmap, if the value is an object or array.
    * This is a shortcut to loading the key, changing the value, and setting it back.
-   * If the key does not exist or the value is not an object, throws an error.
-   * @param {*} key Required. The key of the element to add to The Enmap or array. 
-   * If the EnMap is persistent this value MUST be a string or number.
+   * @param {string|number} key Required. The key of the element to add to The Enmap or array. 
+   * This value MUST be a string or number.
    * @param {*} prop Required. The property to modify inside the value object or array.
    * @param {*} val Required. The value to apply to the specified property.
    * @param {boolean} save Optional. Whether to save to persistent DB (used as false in init)
@@ -163,6 +175,12 @@ class Enmap extends Map {
     return super.set(key, data);
   }
 
+  /**
+   * Returns whether or not the key exists in the Enmap.
+   * @param {string|number} key Required. The key of the element to add to The Enmap or array. 
+   * This value MUST be a string or number.
+   * @returns {Promise<boolean>}
+   */
   has(key) {
     if (this.fetchAll) return super.has(key);
     return this.db.hasAsync(key);
@@ -170,8 +188,7 @@ class Enmap extends Map {
 
   /**
    * Returns whether or not the property exists within an object or array value in enmap.
-   * If the key does not exist or the value is not an object, throws an error.
-   * @param {*} key Required. The key of the element to check in the Enmap or array. 
+   * @param {string|number} key Required. The key of the element to check in the Enmap or array. 
    * @param {*} prop Required. The property to verify inside the value object or array.
    * @return {boolean} Whether the property exists.
    */
@@ -197,8 +214,8 @@ class Enmap extends Map {
   }
 
   /**
-   * 
-   * @param {*} key Required. The key of the element to delete from The Enmap. 
+   * Deletes a key in the Enmap.
+   * @param {string|number} key Required. The key of the element to delete from The Enmap. 
    * @param {boolean} bulk Internal property used by the purge method.  
    */
   delete(key) {
@@ -210,7 +227,7 @@ class Enmap extends Map {
 
   /**
    * 
-   * @param {*} key Required. The key of the element to delete from The Enmap. 
+   * @param {string|number} key Required. The key of the element to delete from The Enmap. 
    * @param {boolean} bulk Internal property used by the purge method.  
    */
   async deleteAsync(key) {
