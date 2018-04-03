@@ -102,7 +102,14 @@ class Enmap extends Map {
    */
   set(key, val) {
     if (!val) throw 'Cannot set null, undefined or empty value to a key. Use Enmap.delete(key) instead.';
-    let insert = typeof val === 'object' ? Object.create(val) : val;
+    let insert = val;
+    if (typeof val === 'object') {
+      const temp = {};
+      for (const prop in val) {
+        temp[prop] = val[prop];
+      }
+      insert = temp;
+    }
     insert = val.constructor.name === 'Array' ? [...insert] : insert;
     if (this.persistent) {
       this.db.set(key, insert);
