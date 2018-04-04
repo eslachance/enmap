@@ -101,16 +101,18 @@ class Enmap extends Map {
    * @return {Map} The Enmap.
    */
   set(key, val) {
-    if (!val) throw 'Cannot set null, undefined or empty value to a key. Use Enmap.delete(key) instead.';
+    if (val === undefined || val === null) throw `Value provided for ${key} was null or undefined. Please provide a value.`;
     let insert = val;
-    if (typeof val === 'object') {
+    if (val.constructor.name === 'Object') {
       const temp = {};
       for (const prop in val) {
         temp[prop] = val[prop];
       }
       insert = temp;
     }
-    insert = val.constructor.name === 'Array' ? [...insert] : insert;
+    if (val.constructor.name === 'Array') {
+      insert = [...insert];
+    }
     if (this.persistent) {
       this.db.set(key, insert);
     }
@@ -223,6 +225,35 @@ class Enmap extends Map {
           throw 'The value of this key is not an object.';
         }
         return data.hasOwnProperty(prop);
+      });
+    }
+  }
+
+  /**
+   * Delete a property from an object or array value in Enmap.
+   * @param {string|number} key Required. The key of the element to delete the property from in Enmap. 
+   * @param {*} prop Required. The name of the property to remove from the object.
+   * @returns {Promise<Enmap>|Enmap} If fetchAll is true, return the Enmap. Otherwise return a promise containing the Enmap.
+   */
+  deleteProp(key, prop) {
+    if (this.fetchAll) {
+      if (!this.has(key)) {
+        throw 'This key does not exist';
+      }
+      const data = super.get(key);
+      if (typeof data !== 'object') {
+        throw 'The value of this key is not an object.';
+      }
+      delete data[prop];
+      return this.set(key, data);
+    } else {
+      return this.fetch(key).then(data => {
+        if (!data) throw 'This key does not exist';
+        if (typeof data !== 'object') {
+          throw 'The value of this key is not an object.';
+        }
+        delete data[prop];
+        return this.set(key, data);
       });
     }
   }
