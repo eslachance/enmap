@@ -101,7 +101,7 @@ class Enmap extends Map {
    * @return {Map} The Enmap.
    */
   set(key, val) {
-    if (val === undefined || val === null) throw `Value provided for ${key} was null or undefined. Please provide a value.`;
+    if (val == null) throw `Value provided for ${key} was null or undefined. Please provide a value.`;
     let insert = val;
     if (val.constructor.name === 'Object') {
       const temp = {};
@@ -129,16 +129,18 @@ class Enmap extends Map {
    * @return {Promise<Map>} The Enmap.
    */
   setAsync(key, val) {
-    if (!val) throw 'Cannot set null, undefined or empty value to a key. Use Enmap.delete(key) instead.';
+    if (val == null) throw `Value provided for ${key} was null or undefined. Please provide a value.`;
     let insert = val;
-    if (typeof val === 'object') {
+    if (val.constructor.name === 'Object') {
       const temp = {};
       for (const prop in val) {
         temp[prop] = val[prop];
       }
       insert = temp;
     }
-    insert = val.constructor.name === 'Array' ? [...insert] : insert;
+    if (val.constructor.name === 'Array') {
+      insert = [...insert];
+    }
     super.set(key, insert);
     return this.db.set(key, insert);
   }
@@ -589,6 +591,7 @@ class Enmap extends Map {
   /**
      * Calls the `delete()` method on all items that have it.
      * @param {boolean} bulk Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one.
+     * @return {Promise} Returns a promise that is resolved when the database is cleared.
      */
   async deleteAllAsync(bulk = true) {
     if (bulk) {
@@ -600,7 +603,7 @@ class Enmap extends Map {
       }
       await Promise.all(promises);
     }
-    this.clear();
+    return this.clear();
   }
 
   /**
