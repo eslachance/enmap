@@ -33,7 +33,7 @@
 		"curly": ["error", "multi-line", "consistent"],
 		"dot-location": ["error", "property"],
 		"dot-notation": "error",
-		"eqeqeq": "error",
+		"eqeqeq": "off",
 		"no-console": ["error", { "allow": ["log", "warn", "error"] }],
 		"no-empty-function": "error",
 		"no-floating-decimal": "error",

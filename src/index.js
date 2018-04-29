@@ -28,6 +28,17 @@ class Enmap extends Map {
    * @param {Array<string>} names Array of strings. Each array entry will create a separate enmap with that name.
    * @param {EnmapProvider} Provider Valid EnmapProvider object.
    * @param {Object} options Options object to pass to the provider. See provider documentation for its options.
+   * @example
+   * // Using local variables and the mongodb provider.
+   * const Enmap = require('enmap');
+   * const Provider = require('enmap-mongo');
+   * const { settings, tags, blacklist } = Enmap.multi(['settings', 'tags', 'blacklist'], Provider, { url: "some connection URL here" });
+   * 
+   * // Attaching to an existing object (for instance some API's client)
+   * const Enmap = require("enmap");
+   * const Provider = require("enmap-mongo");
+   * Object.assign(client, Enmap.multi(["settings", "tags", "blacklist"], Provider, { url: "some connection URL here" }));
+   * 
    * @returns {Array<Map>} An array of initialized Enmaps.
    */
   static multi(names, Provider, options = {}) {
@@ -47,15 +58,11 @@ class Enmap extends Map {
   }
 
   /**
-   * Shuts down the underlying persistent enmap database.
-   */
-  close() {
-    this.db.close();
-  }
-
-  /**
    * Retrieves a key from the enmap. If fetchAll is false, returns a promise.
    * @param {string|number} key The key to retrieve from the enmap.
+   * @example
+   * const myKeyValue = enmap.get("myKey");
+   * console.log(myKeyValue);
    * @return {*|Promise<*>} The value or a promise containing the value.
    */
   get(key) {
@@ -98,6 +105,11 @@ class Enmap extends Map {
    * If the Enmap is persistent this value MUST be a string or number.
    * @param {*} val Required. The value of the element to add to The Enmap. 
    * If the Enmap is persistent this value MUST be stringifiable as JSON.
+   * @example
+   * enmap.set('simplevalue', 'this is a string');
+   * enmap.set('isEnmapGreat', true);
+   * enmap.set('TheAnswer', 42);
+   * enmap.set('IhazObjects', { color: 'black', action: 'paint', desire: true });
    * @return {Map} The Enmap.
    */
   set(key, val) {
@@ -283,7 +295,79 @@ class Enmap extends Map {
   }
 
   /**
-   * Creates an ordered array of the values of this Enmap, and caches it internally.
+   * Generates an automatic numerical key for inserting a new value. 
+   * @return {number} The generated key number.
+   */
+  autonum() {
+    const start = this.get('internal::autonum') || 0;
+    let highest = this.getHighestAutonum(start);
+    this.set('internal::autonum', ++highest);
+    return highest;
+  }
+
+  /**
+   * Internal method used by autonum().
+   * Loops on incremental numerical values until it finds a free key
+   * of that value in the Enamp. 
+   * @param {Integer} start The starting value to look for.
+   * @return {Integer} The first non-existant value found.
+   */
+  getHighestAutonum(start = 0) {
+    let highest = start;
+    while (this.has(highest)) {
+      highest++;
+    }
+    return highest;
+  }
+
+  /**
+   * Calls the `delete()` method on all items that have it.
+   * @param {boolean} bulk Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one.
+   */
+  deleteAll(bulk = true) {
+    if (this.persistent) {
+      if (bulk) {
+        this.db.bulkDelete();
+      } else {
+        for (const key of this.keys()) {
+          this.db.delete(key);
+        }
+      }
+    }
+    super.clear();
+  }
+
+  clear() { return this.deleteAll; }
+
+  /**
+     * Calls the `delete()` method on all items that have it.
+     * @param {boolean} bulk Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one.
+     * @return {Promise} Returns a promise that is resolved when the database is cleared.
+     */
+  async deleteAllAsync(bulk = true) {
+    if (bulk) {
+      await this.db.bulkDelete();
+    } else {
+      const promises = [];
+      for (const key of this.keys()) {
+        promises.push(this.db.delete(key));
+      }
+      await Promise.all(promises);
+    }
+    return this.clear();
+  }
+
+  /*
+  BELOW IS DISCORD.JS COLLECTION CODE
+  Per notes in the LICENSE file, this project contains code from Amish Shah's Discord.js
+  library. The code is from the Collections object, in discord.js version 11. 
+
+  All below code is sourced from Collections.
+  https://github.com/discordjs/discord.js/blob/stable/src/util/Collection.js
+  */
+
+  /**
+   * Creates an ordered array of the values of this Enmap.
    * The array will only be reconstructed if an item is added to or removed from the Enmap,
    * or if you change the length of the array itself. If you don't want this caching behaviour, 
    * use `Array.from(enmap.values())` instead.
@@ -294,7 +378,7 @@ class Enmap extends Map {
   }
 
   /**
-     * Creates an ordered array of the keys of this Enmap, and caches it internally.
+     * Creates an ordered array of the keys of this Enmap
      * The array will only be reconstructed if an item is added to or removed from the Enmap, 
      * or if you change the length of the array itself. If you don't want this caching behaviour, 
      * use `Array.from(enmap.keys())` instead.
@@ -305,8 +389,7 @@ class Enmap extends Map {
   }
 
   /**
-     * Obtains random value(s) from this Enmap. This relies on {@link Enmap#array}, 
-     * and thus the caching mechanism applies here as well.
+     * Obtains random value(s) from this Enmap. This relies on {@link Enmap#array}.
      * @param {number} [count] Number of values to obtain randomly
      * @returns {*|Array<*>} The single value if `count` is undefined,
      * or an array of values of `count` length
@@ -326,8 +409,7 @@ class Enmap extends Map {
   }
 
   /**
-     * Obtains random key(s) from this Enmap. This relies on {@link Enmap#keyArray}, 
-     * and thus the caching mechanism applies here as well.
+     * Obtains random key(s) from this Enmap. This relies on {@link Enmap#keyArray}
      * @param {number} [count] Number of keys to obtain randomly
      * @returns {*|Array<*>} The single key if `count` is undefined, 
      * or an array of keys of `count` length
@@ -572,41 +654,6 @@ class Enmap extends Map {
   }
 
   /**
-     * Calls the `delete()` method on all items that have it.
-     * @param {boolean} bulk Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one.
-     */
-  deleteAll(bulk = true) {
-    if (this.persistent) {
-      if (bulk) {
-        this.db.bulkDelete();
-      } else {
-        for (const key of this.keys()) {
-          this.db.delete(key);
-        }
-      }
-    }
-    this.clear();
-  }
-
-  /**
-     * Calls the `delete()` method on all items that have it.
-     * @param {boolean} bulk Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one.
-     * @return {Promise} Returns a promise that is resolved when the database is cleared.
-     */
-  async deleteAllAsync(bulk = true) {
-    if (bulk) {
-      await this.db.bulkDelete();
-    } else {
-      const promises = [];
-      for (const key of this.keys()) {
-        promises.push(this.db.delete(key));
-      }
-      await Promise.all(promises);
-    }
-    return this.clear();
-  }
-
-  /**
      * Checks if this Enmap shares identical key-value pairings with another.
      * This is different to checking for equality using equal-signs, because
      * the Enmaps may be different objects, but contain the same data.
@@ -626,3 +673,18 @@ class Enmap extends Map {
 }
 
 module.exports = Enmap;
+
+/**
+ * @external forEach
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/forEach}
+ */
+
+/**
+ * @external keys
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/keys}
+ */
+
+/**
+ * @external values
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/values}
+ */
