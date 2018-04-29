@@ -186,8 +186,15 @@
       same "printed page" as the copyright notice for easier
       identification within third-party archives.
 
-   Copyright 2018 Évelyne Lachance <eslachance@gmail.com>
+  APPENDIX: Code from other projects
+   This project contains partial code from Discord.js version 10.
+   Project Link: https://github.com/discordjs/discord.js
+   Author: Amish Shaw (hydrabolt)
+   License: https://github.com/discordjs/discord.js/blob/master/LICENSE
 
+
+   Copyright 2018 Évelyne Lachance <eslachance@gmail.com>
+  
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
