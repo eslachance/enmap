@@ -181,6 +181,52 @@ class Enmap extends Map {
   }
 
   /**
+   * Push to an array value in Enmap.
+   * @param {string|number} key Required. The key of the array element to push to in Enmap. 
+   * This value MUST be a string or number.
+   * @param {*} val Required. The value to push to the array.
+   * @param {boolean} allowDupes Allow duplicate values in the array (default: false).
+   * @return {Map} The EnMap.
+   */
+  push(key, val, allowDupes = false) {
+    if (!this.has(key)) {
+      throw 'This key does not exist';
+    }
+    const data = super.get(key);
+    if (data.constructor.name !== 'Array') {
+      throw 'Method can only be used when the value is an Array';
+    }
+    if (!allowDupes && data.indexOf(val) > -1) return this;
+    data.push(val);
+    return super.set(key, data);
+  }
+
+  /**
+   * Push to an array element inside an Object or Array element in Enmap. 
+   * @param {string|number} key Required. The key of the element. 
+   * This value MUST be a string or number.
+   * @param {*} prop Required. The name of the array property to push to.
+   * @param {*} val Required. The value push to the array property.
+   * @param {boolean} allowDupes Allow duplicate values in the array (default: false).
+   * @return {Map} The EnMap.
+   */
+  pushIn(key, prop, val, allowDupes = false) {
+    if (!this.has(key)) {
+      throw 'This key does not exist';
+    }
+    const data = super.get(key);
+    if (typeof data !== 'object') {
+      throw 'Method can only be used when the value is an object';
+    }
+    if (data[prop].constructor.name !== 'Array') {
+      throw 'Method can only be used when the property is an Array';
+    }
+    if (!allowDupes && data[prop].indexOf(val) > -1) return this;
+    data[prop].push(val);
+    return super.set(key, data);
+  }
+
+  /**
    * Modify the property of a value inside the enmap, if the value is an object or array.
    * This is a shortcut to loading the key, changing the value, and setting it back.
    * @param {string|number} key Required. The key of the element to add to The Enmap or array. 
