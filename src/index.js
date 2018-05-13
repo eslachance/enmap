@@ -216,7 +216,7 @@ class Enmap extends Map {
     }
     const data = super.get(key);
     if (typeof data !== 'object') {
-      throw 'Method can only be used when the value is an object';
+      throw 'Method can only be used when the value is an object or array';
     }
     if (data[prop].constructor.name !== 'Array') {
       throw 'Method can only be used when the property is an Array';
@@ -224,6 +224,61 @@ class Enmap extends Map {
     if (!allowDupes && data[prop].indexOf(val) > -1) return this;
     data[prop].push(val);
     return super.set(key, data);
+  }
+
+  /**
+   * Remove a value in an Array or Object element in Enmap. Note that this only works for
+   * values, not keys. Complex values such as objects and arrays will not be removed this way.
+   * @param {string|number} key Required. The key of the element to remove from in Enmap. 
+   * This value MUST be a string or number.
+   * @param {*} val Required. The value to remove from the array or object.
+   * @param {boolean} allowDupes Allow duplicate values in the array (default: false).
+   * @return {Map} The EnMap.
+   */
+  remove(key, val) {
+    if (!this.has(key)) {
+      throw 'This key does not exist';
+    }
+    const data = super.get(key);
+    if (typeof data !== 'object') {
+      throw 'Method can only be used when the value is an object or array';
+    }
+    if (data.constructor.name === 'Array') {
+      const index = data.indexOf(val);
+      return super.set(key, data.slice(index, 1));
+    } else {
+      delete data[key];
+      return super.set(key, data);
+    }
+  }
+
+  /**
+   * Remove a value from an Array or Object property inside an Array or Object element in Enmap.
+   * Confusing? Sure is. 
+   * @param {string|number} key Required. The key of the element. 
+   * This value MUST be a string or number.
+   * @param {*} prop Required. The name of the array property to remove from.
+   * @param {*} val Required. The value to remove from the array property.
+   * @return {Map} The EnMap.
+   */
+  removeFrom(key, prop, val) {
+    if (!this.has(key)) {
+      throw 'This key does not exist';
+    }
+    const data = super.get(key);
+    if (typeof data !== 'object') {
+      throw 'Method can only be used when the value is an object or array';
+    }
+    if (data[prop].constructor.name === 'Array') {
+      let propdata = data[prop];
+      const index = propdata.indexOf(val);
+      propdata = propdata.slice(index, 1);
+      data[prop] = propdata;
+      return super.set(key, data);
+    } else {
+      delete data[prop][key];
+      return super.set(key, data);
+    }
   }
 
   /**
