@@ -23,6 +23,8 @@ class Enmap extends Map {
     }
   }
 
+  /* GENERAL-USE METHODS & HELPERS */
+
   /**
    * Initialize multiple Enmaps easily.
    * @param {Array<string>} names Array of strings. Each array entry will create a separate enmap with that name.
@@ -58,21 +60,11 @@ class Enmap extends Map {
   }
 
   /**
-   * Retrieves a key from the enmap. If fetchAll is false, returns a promise.
-   * @param {string|number} key The key to retrieve from the enmap.
-   * @example
-   * const myKeyValue = enmap.get("myKey");
-   * console.log(myKeyValue);
-   * @return {*|Promise<*>} The value or a promise containing the value.
+   * Fetches every key from the persistent enmap and loads them into the current enmap value.
+   * @return {Map} The enmap containing all values.
    */
-  get(key) {
-    if (this.has(key)) {
-      return super.get(key);
-    }
-    if (this.fetchAll) {
-      return null;
-    }
-    return this.fetch(key);
+  fetchEverything() {
+    return this.db.fetchEverything();
   }
 
   /**
@@ -92,12 +84,17 @@ class Enmap extends Map {
   }
 
   /**
-   * Fetches every key from the persistent enmap and loads them into the current enmap value.
-   * @return {Map} The enmap containing all values.
+   * Generates an automatic numerical key for inserting a new value. 
+   * @return {number} The generated key number.
    */
-  fetchEverything() {
-    return this.db.fetchEverything();
+  autonum() {
+    const start = this.get('internal::autonum') || 0;
+    let highest = this.getHighestAutonum(start);
+    this.set('internal::autonum', ++highest);
+    return highest;
   }
+
+  /* METHODS THAT SET THINGS IN ENMAP */
 
   /**
    * Set the value in Enmap.
@@ -158,26 +155,28 @@ class Enmap extends Map {
   }
 
   /**
-   * Returns the specific property within a stored value. If the value isn't an object or array, returns the unchanged data
-   * If the key does not exist or the value is not an object, throws an error.
-   * @param {string|number} key Required. The key of the element to get from The Enmap. 
-   * @param {*} prop Required. The property to retrieve from the object or array.
-   * @return {*} The value of the property obtained.
+   * Modify the property of a value inside the enmap, if the value is an object or array.
+   * This is a shortcut to loading the key, changing the value, and setting it back.
+   * @param {string|number} key Required. The key of the element to add to The Enmap or array. 
+   * This value MUST be a string or number.
+   * @param {*} prop Required. The property to modify inside the value object or array.
+   * @param {*} val Required. The value to apply to the specified property.
+   * @param {boolean} save Optional. Whether to save to persistent DB (used as false in init)
+   * @return {Map} The EnMap.
    */
-  getProp(key, prop) {
-    if (this.fetchAll) {
-      if (this.has(key)) {
-        const data = super.get(key);
-        return typeof data === 'object' ? data[prop] || null : data;
-      } else {
-        throw 'This key does not exist';
-      }
-    } else {
-      return this.fetch(key).then(data => {
-        if (!data) throw 'This key does not exist';
-        return typeof data === 'object' ? data[prop] || null : data;
-      });
+  setProp(key, prop, val) {
+    if (!this.has(key)) {
+      throw 'This key does not exist';
     }
+    const data = super.get(key);
+    if (typeof data !== 'object') {
+      throw 'Method can only be used when the value is an object';
+    }
+    data[prop] = val;
+    if (this.persistent) {
+      this.db.set(key, data);
+    }
+    return super.set(key, data);
   }
 
   /**
@@ -224,6 +223,165 @@ class Enmap extends Map {
     if (!allowDupes && data[prop].indexOf(val) > -1) return this;
     data[prop].push(val);
     return super.set(key, data);
+  }
+
+  /* METHODS THAT GETS THINGS FROM ENMAP */
+
+  /**
+   * Retrieves a key from the enmap. If fetchAll is false, returns a promise.
+   * @param {string|number} key The key to retrieve from the enmap.
+   * @example
+   * const myKeyValue = enmap.get("myKey");
+   * console.log(myKeyValue);
+   * @return {*|Promise<*>} The value or a promise containing the value.
+   */
+  get(key) {
+    if (this.has(key)) {
+      return super.get(key);
+    }
+    if (this.fetchAll) {
+      return null;
+    }
+    return this.fetch(key);
+  }
+
+  /**
+   * Returns the specific property within a stored value. If the value isn't an object or array, returns the unchanged data
+   * If the key does not exist or the value is not an object, throws an error.
+   * @param {string|number} key Required. The key of the element to get from The Enmap. 
+   * @param {*} prop Required. The property to retrieve from the object or array.
+   * @return {*} The value of the property obtained.
+   */
+  getProp(key, prop) {
+    if (this.fetchAll) {
+      if (this.has(key)) {
+        const data = super.get(key);
+        return typeof data === 'object' ? data[prop] || null : data;
+      } else {
+        throw 'This key does not exist';
+      }
+    } else {
+      return this.fetch(key).then(data => {
+        if (!data) throw 'This key does not exist';
+        return typeof data === 'object' ? data[prop] || null : data;
+      });
+    }
+  }
+
+  /**
+   * Internal method used by autonum().
+   * Loops on incremental numerical values until it finds a free key
+   * of that value in the Enamp. 
+   * @param {Integer} start The starting value to look for.
+   * @return {Integer} The first non-existant value found.
+   */
+  getHighestAutonum(start = 0) {
+    let highest = start;
+    while (this.has(highest)) {
+      highest++;
+    }
+    return highest;
+  }
+
+  /* BOOLEAN METHODS THAT CHECKS FOR THINGS IN ENMAP */
+
+  /**
+   * Returns whether or not the key exists in the Enmap.
+   * @param {string|number} key Required. The key of the element to add to The Enmap or array. 
+   * This value MUST be a string or number.
+   * @returns {Promise<boolean>}
+   */
+  has(key) {
+    if (this.fetchAll) return super.has(key);
+    return this.db.hasAsync(key);
+  }
+
+  /**
+   * Returns whether or not the property exists within an object or array value in enmap.
+   * @param {string|number} key Required. The key of the element to check in the Enmap or array. 
+   * @param {*} prop Required. The property to verify inside the value object or array.
+   * @return {boolean} Whether the property exists.
+   */
+  hasProp(key, prop) {
+    if (this.fetchAll) {
+      if (!this.has(key)) {
+        throw 'This key does not exist';
+      }
+      const data = super.get(key);
+      if (typeof data !== 'object') {
+        throw 'The value of this key is not an object.';
+      }
+      return data.hasOwnProperty(prop);
+    } else {
+      return this.fetch(key).then(data => {
+        if (!data) throw 'This key does not exist';
+        if (typeof data !== 'object') {
+          throw 'The value of this key is not an object.';
+        }
+        return data.hasOwnProperty(prop);
+      });
+    }
+  }
+
+  /* METHODS THAT DELETE THINGS FROM ENMAP */
+
+  /**
+   * Deletes a key in the Enmap.
+   * @param {string|number} key Required. The key of the element to delete from The Enmap. 
+   * @param {boolean} bulk Internal property used by the purge method.  
+   */
+  delete(key) {
+    if (this.persistent) {
+      this.db.delete(key);
+    }
+    super.delete(key);
+  }
+
+  /**
+   * 
+   * @param {string|number} key Required. The key of the element to delete from The Enmap. 
+   * @param {boolean} bulk Internal property used by the purge method.  
+   */
+  async deleteAsync(key) {
+    await this.db.delete(key);
+    super.delete(key);
+  }
+
+  /**
+   * Calls the `delete()` method on all items that have it.
+   * @param {boolean} bulk Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one.
+   */
+  deleteAll(bulk = true) {
+    if (this.persistent) {
+      if (bulk) {
+        this.db.bulkDelete();
+      } else {
+        for (const key of this.keys()) {
+          this.db.delete(key);
+        }
+      }
+    }
+    super.clear();
+  }
+
+  clear() { return this.deleteAll; }
+
+  /**
+     * Calls the `delete()` method on all items that have it.
+     * @param {boolean} bulk Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one.
+     * @return {Promise} Returns a promise that is resolved when the database is cleared.
+     */
+  async deleteAllAsync(bulk = true) {
+    if (bulk) {
+      await this.db.bulkDelete();
+    } else {
+      const promises = [];
+      for (const key of this.keys()) {
+        promises.push(this.db.delete(key));
+      }
+      await Promise.all(promises);
+    }
+    return this.clear();
   }
 
   /**
@@ -282,69 +440,6 @@ class Enmap extends Map {
   }
 
   /**
-   * Modify the property of a value inside the enmap, if the value is an object or array.
-   * This is a shortcut to loading the key, changing the value, and setting it back.
-   * @param {string|number} key Required. The key of the element to add to The Enmap or array. 
-   * This value MUST be a string or number.
-   * @param {*} prop Required. The property to modify inside the value object or array.
-   * @param {*} val Required. The value to apply to the specified property.
-   * @param {boolean} save Optional. Whether to save to persistent DB (used as false in init)
-   * @return {Map} The EnMap.
-   */
-  setProp(key, prop, val) {
-    if (!this.has(key)) {
-      throw 'This key does not exist';
-    }
-    const data = super.get(key);
-    if (typeof data !== 'object') {
-      throw 'Method can only be used when the value is an object';
-    }
-    data[prop] = val;
-    if (this.persistent) {
-      this.db.set(key, data);
-    }
-    return super.set(key, data);
-  }
-
-  /**
-   * Returns whether or not the key exists in the Enmap.
-   * @param {string|number} key Required. The key of the element to add to The Enmap or array. 
-   * This value MUST be a string or number.
-   * @returns {Promise<boolean>}
-   */
-  has(key) {
-    if (this.fetchAll) return super.has(key);
-    return this.db.hasAsync(key);
-  }
-
-  /**
-   * Returns whether or not the property exists within an object or array value in enmap.
-   * @param {string|number} key Required. The key of the element to check in the Enmap or array. 
-   * @param {*} prop Required. The property to verify inside the value object or array.
-   * @return {boolean} Whether the property exists.
-   */
-  hasProp(key, prop) {
-    if (this.fetchAll) {
-      if (!this.has(key)) {
-        throw 'This key does not exist';
-      }
-      const data = super.get(key);
-      if (typeof data !== 'object') {
-        throw 'The value of this key is not an object.';
-      }
-      return data.hasOwnProperty(prop);
-    } else {
-      return this.fetch(key).then(data => {
-        if (!data) throw 'This key does not exist';
-        if (typeof data !== 'object') {
-          throw 'The value of this key is not an object.';
-        }
-        return data.hasOwnProperty(prop);
-      });
-    }
-  }
-
-  /**
    * Delete a property from an object or array value in Enmap.
    * @param {string|number} key Required. The key of the element to delete the property from in Enmap. 
    * @param {*} prop Required. The name of the property to remove from the object.
@@ -371,91 +466,6 @@ class Enmap extends Map {
         return this.set(key, data);
       });
     }
-  }
-
-  /**
-   * Deletes a key in the Enmap.
-   * @param {string|number} key Required. The key of the element to delete from The Enmap. 
-   * @param {boolean} bulk Internal property used by the purge method.  
-   */
-  delete(key) {
-    if (this.persistent) {
-      this.db.delete(key);
-    }
-    super.delete(key);
-  }
-
-  /**
-   * 
-   * @param {string|number} key Required. The key of the element to delete from The Enmap. 
-   * @param {boolean} bulk Internal property used by the purge method.  
-   */
-  async deleteAsync(key) {
-    await this.db.delete(key);
-    super.delete(key);
-  }
-
-  /**
-   * Generates an automatic numerical key for inserting a new value. 
-   * @return {number} The generated key number.
-   */
-  autonum() {
-    const start = this.get('internal::autonum') || 0;
-    let highest = this.getHighestAutonum(start);
-    this.set('internal::autonum', ++highest);
-    return highest;
-  }
-
-  /**
-   * Internal method used by autonum().
-   * Loops on incremental numerical values until it finds a free key
-   * of that value in the Enamp. 
-   * @param {Integer} start The starting value to look for.
-   * @return {Integer} The first non-existant value found.
-   */
-  getHighestAutonum(start = 0) {
-    let highest = start;
-    while (this.has(highest)) {
-      highest++;
-    }
-    return highest;
-  }
-
-  /**
-   * Calls the `delete()` method on all items that have it.
-   * @param {boolean} bulk Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one.
-   */
-  deleteAll(bulk = true) {
-    if (this.persistent) {
-      if (bulk) {
-        this.db.bulkDelete();
-      } else {
-        for (const key of this.keys()) {
-          this.db.delete(key);
-        }
-      }
-    }
-    super.clear();
-  }
-
-  clear() { return this.deleteAll; }
-
-  /**
-     * Calls the `delete()` method on all items that have it.
-     * @param {boolean} bulk Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one.
-     * @return {Promise} Returns a promise that is resolved when the database is cleared.
-     */
-  async deleteAllAsync(bulk = true) {
-    if (bulk) {
-      await this.db.bulkDelete();
-    } else {
-      const promises = [];
-      for (const key of this.keys()) {
-        promises.push(this.db.delete(key));
-      }
-      await Promise.all(promises);
-    }
-    return this.clear();
   }
 
   /*

@@ -53,7 +53,7 @@ Persistence requires an additional Provider module.
 Official Enmap Providers: 
 
 * [Enmap-SQLite](https://www.npmjs.com/package/enmap-sqlite) *Note: Against all odds, this provider DOES support sharding!*
-* [Enmap-Rethink](https://www.npmjs.com/package/enmap-rethink) *Note: Obviously, supports sharding.*
+* [Enmap-Rethink](https://www.npmjs.com/package/enmap-rethink) *Note: THE best for sharding: the only one that receives database updates on all shards (enmap-rethink 2.1.0 and higher)*
 * [Enmap-PGSQL](https://www.npmjs.com/package/enmap-pgsql) *Note: That's shorthand for "Postgresql". Supports sharding of course.*
 * [Enmap-Mongo](https://www.npmjs.com/package/enmap-mongo) *Note: Yay, MongoDB! Supports sharding, duh.*
 * [Enmap-Level](https://www.npmjs.com/package/enmap-level) *Note: LevelDB does not support multiple processes or shards!*
@@ -163,22 +163,26 @@ Can be made persistent
 
 * [Enmap](#Enmap) ⇐ <code>Map</code>
     * _instance_
-        * [.get(key)](#Enmap+get) ⇒ <code>\*</code> \| <code>Promise.&lt;\*&gt;</code>
-        * [.fetch(keyOrKeys)](#Enmap+fetch) ⇒ <code>\*</code> \| <code>Map</code>
         * [.fetchEverything()](#Enmap+fetchEverything) ⇒ <code>Map</code>
+        * [.fetch(keyOrKeys)](#Enmap+fetch) ⇒ <code>\*</code> \| <code>Map</code>
+        * [.autonum()](#Enmap+autonum) ⇒ <code>number</code>
         * [.set(key, val)](#Enmap+set) ⇒ <code>Map</code>
         * [.setAsync(key, val)](#Enmap+setAsync) ⇒ <code>Promise.&lt;Map&gt;</code>
-        * [.getProp(key, prop)](#Enmap+getProp) ⇒ <code>\*</code>
         * [.setProp(key, prop, val, save)](#Enmap+setProp) ⇒ <code>Map</code>
+        * [.push(key, val, allowDupes)](#Enmap+push) ⇒ <code>Map</code>
+        * [.pushIn(key, prop, val, allowDupes)](#Enmap+pushIn) ⇒ <code>Map</code>
+        * [.get(key)](#Enmap+get) ⇒ <code>\*</code> \| <code>Promise.&lt;\*&gt;</code>
+        * [.getProp(key, prop)](#Enmap+getProp) ⇒ <code>\*</code>
+        * [.getHighestAutonum(start)](#Enmap+getHighestAutonum) ⇒ <code>Integer</code>
         * [.has(key)](#Enmap+has) ⇒ <code>Promise.&lt;boolean&gt;</code>
         * [.hasProp(key, prop)](#Enmap+hasProp) ⇒ <code>boolean</code>
-        * [.deleteProp(key, prop)](#Enmap+deleteProp) ⇒ [<code>Promise.&lt;Enmap&gt;</code>](#Enmap) \| [<code>Enmap</code>](#Enmap)
         * [.delete(key, bulk)](#Enmap+delete)
         * [.deleteAsync(key, bulk)](#Enmap+deleteAsync)
-        * [.autonum()](#Enmap+autonum) ⇒ <code>number</code>
-        * [.getHighestAutonum(start)](#Enmap+getHighestAutonum) ⇒ <code>Integer</code>
         * [.deleteAll(bulk)](#Enmap+deleteAll)
         * [.deleteAllAsync(bulk)](#Enmap+deleteAllAsync) ⇒ <code>Promise</code>
+        * [.remove(key, val, allowDupes)](#Enmap+remove) ⇒ <code>Map</code>
+        * [.removeFrom(key, prop, val)](#Enmap+removeFrom) ⇒ <code>Map</code>
+        * [.deleteProp(key, prop)](#Enmap+deleteProp) ⇒ [<code>Promise.&lt;Enmap&gt;</code>](#Enmap) \| [<code>Enmap</code>](#Enmap)
         * [.array()](#Enmap+array) ⇒ <code>Array</code>
         * [.keyArray()](#Enmap+keyArray) ⇒ <code>Array</code>
         * [.random([count])](#Enmap+random) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
@@ -198,23 +202,13 @@ Can be made persistent
     * _static_
         * [.multi(names, Provider, options)](#Enmap.multi) ⇒ <code>Array.&lt;Map&gt;</code>
 
-<a name="Enmap+get"></a>
+<a name="Enmap+fetchEverything"></a>
 
-### enmap.get(key) ⇒ <code>\*</code> \| <code>Promise.&lt;\*&gt;</code>
-Retrieves a key from the enmap. If fetchAll is false, returns a promise.
+### enmap.fetchEverything() ⇒ <code>Map</code>
+Fetches every key from the persistent enmap and loads them into the current enmap value.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>\*</code> \| <code>Promise.&lt;\*&gt;</code> - The value or a promise containing the value.  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | The key to retrieve from the enmap. |
-
-**Example**  
-```js
-const myKeyValue = enmap.get("myKey");
-console.log(myKeyValue);
-```
+**Returns**: <code>Map</code> - The enmap containing all values.  
 <a name="Enmap+fetch"></a>
 
 ### enmap.fetch(keyOrKeys) ⇒ <code>\*</code> \| <code>Map</code>
@@ -227,13 +221,13 @@ Force fetch one or more key values from the enmap. If the database has changed, 
 | --- | --- | --- |
 | keyOrKeys | <code>string</code> \| <code>number</code> | A single key or array of keys to force fetch from the enmap database. |
 
-<a name="Enmap+fetchEverything"></a>
+<a name="Enmap+autonum"></a>
 
-### enmap.fetchEverything() ⇒ <code>Map</code>
-Fetches every key from the persistent enmap and loads them into the current enmap value.
+### enmap.autonum() ⇒ <code>number</code>
+Generates an automatic numerical key for inserting a new value.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>Map</code> - The enmap containing all values.  
+**Returns**: <code>number</code> - The generated key number.  
 <a name="Enmap+set"></a>
 
 ### enmap.set(key, val) ⇒ <code>Map</code>
@@ -268,20 +262,6 @@ Useless on non-persistent Enmaps.
 | key | <code>string</code> \| <code>number</code> | Required. The key of the element to add to The Enmap.  If the Enmap is persistent this value MUST be a string or number. |
 | val | <code>\*</code> | Required. The value of the element to add to The Enmap.  If the Enmap is persistent this value MUST be stringifiable as JSON. |
 
-<a name="Enmap+getProp"></a>
-
-### enmap.getProp(key, prop) ⇒ <code>\*</code>
-Returns the specific property within a stored value. If the value isn't an object or array, returns the unchanged data
-If the key does not exist or the value is not an object, throws an error.
-
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>\*</code> - The value of the property obtained.  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | Required. The key of the element to get from The Enmap. |
-| prop | <code>\*</code> | Required. The property to retrieve from the object or array. |
-
 <a name="Enmap+setProp"></a>
 
 ### enmap.setProp(key, prop, val, save) ⇒ <code>Map</code>
@@ -297,6 +277,80 @@ This is a shortcut to loading the key, changing the value, and setting it back.
 | prop | <code>\*</code> | Required. The property to modify inside the value object or array. |
 | val | <code>\*</code> | Required. The value to apply to the specified property. |
 | save | <code>boolean</code> | Optional. Whether to save to persistent DB (used as false in init) |
+
+<a name="Enmap+push"></a>
+
+### enmap.push(key, val, allowDupes) ⇒ <code>Map</code>
+Push to an array value in Enmap.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>Map</code> - The EnMap.  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> |  | Required. The key of the array element to push to in Enmap.  This value MUST be a string or number. |
+| val | <code>\*</code> |  | Required. The value to push to the array. |
+| allowDupes | <code>boolean</code> | <code>false</code> | Allow duplicate values in the array (default: false). |
+
+<a name="Enmap+pushIn"></a>
+
+### enmap.pushIn(key, prop, val, allowDupes) ⇒ <code>Map</code>
+Push to an array element inside an Object or Array element in Enmap.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>Map</code> - The EnMap.  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element.  This value MUST be a string or number. |
+| prop | <code>\*</code> |  | Required. The name of the array property to push to. |
+| val | <code>\*</code> |  | Required. The value push to the array property. |
+| allowDupes | <code>boolean</code> | <code>false</code> | Allow duplicate values in the array (default: false). |
+
+<a name="Enmap+get"></a>
+
+### enmap.get(key) ⇒ <code>\*</code> \| <code>Promise.&lt;\*&gt;</code>
+Retrieves a key from the enmap. If fetchAll is false, returns a promise.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>\*</code> \| <code>Promise.&lt;\*&gt;</code> - The value or a promise containing the value.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> | The key to retrieve from the enmap. |
+
+**Example**  
+```js
+const myKeyValue = enmap.get("myKey");
+console.log(myKeyValue);
+```
+<a name="Enmap+getProp"></a>
+
+### enmap.getProp(key, prop) ⇒ <code>\*</code>
+Returns the specific property within a stored value. If the value isn't an object or array, returns the unchanged data
+If the key does not exist or the value is not an object, throws an error.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>\*</code> - The value of the property obtained.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> | Required. The key of the element to get from The Enmap. |
+| prop | <code>\*</code> | Required. The property to retrieve from the object or array. |
+
+<a name="Enmap+getHighestAutonum"></a>
+
+### enmap.getHighestAutonum(start) ⇒ <code>Integer</code>
+Internal method used by autonum().
+Loops on incremental numerical values until it finds a free key
+of that value in the Enamp.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>Integer</code> - The first non-existant value found.  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| start | <code>Integer</code> | <code>0</code> | The starting value to look for. |
 
 <a name="Enmap+has"></a>
 
@@ -322,19 +376,6 @@ Returns whether or not the property exists within an object or array value in en
 | key | <code>string</code> \| <code>number</code> | Required. The key of the element to check in the Enmap or array. |
 | prop | <code>\*</code> | Required. The property to verify inside the value object or array. |
 
-<a name="Enmap+deleteProp"></a>
-
-### enmap.deleteProp(key, prop) ⇒ [<code>Promise.&lt;Enmap&gt;</code>](#Enmap) \| [<code>Enmap</code>](#Enmap)
-Delete a property from an object or array value in Enmap.
-
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: [<code>Promise.&lt;Enmap&gt;</code>](#Enmap) \| [<code>Enmap</code>](#Enmap) - If fetchAll is true, return the Enmap. Otherwise return a promise containing the Enmap.  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | Required. The key of the element to delete the property from in Enmap. |
-| prop | <code>\*</code> | Required. The name of the property to remove from the object. |
-
 <a name="Enmap+delete"></a>
 
 ### enmap.delete(key, bulk)
@@ -356,27 +397,6 @@ Deletes a key in the Enmap.
 | --- | --- | --- |
 | key | <code>string</code> \| <code>number</code> | Required. The key of the element to delete from The Enmap. |
 | bulk | <code>boolean</code> | Internal property used by the purge method. |
-
-<a name="Enmap+autonum"></a>
-
-### enmap.autonum() ⇒ <code>number</code>
-Generates an automatic numerical key for inserting a new value.
-
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>number</code> - The generated key number.  
-<a name="Enmap+getHighestAutonum"></a>
-
-### enmap.getHighestAutonum(start) ⇒ <code>Integer</code>
-Internal method used by autonum().
-Loops on incremental numerical values until it finds a free key
-of that value in the Enamp.
-
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>Integer</code> - The first non-existant value found.  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| start | <code>Integer</code> | <code>0</code> | The starting value to look for. |
 
 <a name="Enmap+deleteAll"></a>
 
@@ -400,6 +420,49 @@ Calls the `delete()` method on all items that have it.
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
 | bulk | <code>boolean</code> | <code>true</code> | Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one. |
+
+<a name="Enmap+remove"></a>
+
+### enmap.remove(key, val, allowDupes) ⇒ <code>Map</code>
+Remove a value in an Array or Object element in Enmap. Note that this only works for
+values, not keys. Complex values such as objects and arrays will not be removed this way.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>Map</code> - The EnMap.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> | Required. The key of the element to remove from in Enmap.  This value MUST be a string or number. |
+| val | <code>\*</code> | Required. The value to remove from the array or object. |
+| allowDupes | <code>boolean</code> | Allow duplicate values in the array (default: false). |
+
+<a name="Enmap+removeFrom"></a>
+
+### enmap.removeFrom(key, prop, val) ⇒ <code>Map</code>
+Remove a value from an Array or Object property inside an Array or Object element in Enmap.
+Confusing? Sure is.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>Map</code> - The EnMap.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> | Required. The key of the element.  This value MUST be a string or number. |
+| prop | <code>\*</code> | Required. The name of the array property to remove from. |
+| val | <code>\*</code> | Required. The value to remove from the array property. |
+
+<a name="Enmap+deleteProp"></a>
+
+### enmap.deleteProp(key, prop) ⇒ [<code>Promise.&lt;Enmap&gt;</code>](#Enmap) \| [<code>Enmap</code>](#Enmap)
+Delete a property from an object or array value in Enmap.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: [<code>Promise.&lt;Enmap&gt;</code>](#Enmap) \| [<code>Enmap</code>](#Enmap) - If fetchAll is true, return the Enmap. Otherwise return a promise containing the Enmap.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> | Required. The key of the element to delete the property from in Enmap. |
+| prop | <code>\*</code> | Required. The name of the property to remove from the object. |
 
 <a name="Enmap+array"></a>
 
