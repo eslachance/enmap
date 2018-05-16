@@ -173,10 +173,7 @@ class Enmap extends Map {
       throw 'Method can only be used when the value is an object';
     }
     data[prop] = val;
-    if (this.persistent) {
-      this.db.set(key, data);
-    }
-    return super.set(key, data);
+    return this.set(key, data);
   }
 
   /**
@@ -197,7 +194,7 @@ class Enmap extends Map {
     }
     if (!allowDupes && data.indexOf(val) > -1) return this;
     data.push(val);
-    return super.set(key, data);
+    return this.set(key, data);
   }
 
   /**
@@ -222,7 +219,7 @@ class Enmap extends Map {
     }
     if (!allowDupes && data[prop].indexOf(val) > -1) return this;
     data[prop].push(val);
-    return super.set(key, data);
+    return this.set(key, data);
   }
 
   /* METHODS THAT GETS THINGS FROM ENMAP */
@@ -397,17 +394,17 @@ class Enmap extends Map {
     if (!this.has(key)) {
       throw 'This key does not exist';
     }
-    const data = super.get(key);
+    let data = super.get(key);
     if (typeof data !== 'object') {
       throw 'Method can only be used when the value is an object or array';
     }
     if (data.constructor.name === 'Array') {
       const index = data.indexOf(val);
-      return super.set(key, data.slice(index, 1));
+      data = data.slice(index, 1);
     } else {
       delete data[key];
-      return super.set(key, data);
     }
+    return this.set(key, data);
   }
 
   /**
@@ -427,16 +424,18 @@ class Enmap extends Map {
     if (typeof data !== 'object') {
       throw 'Method can only be used when the value is an object or array';
     }
+    if (!data[prop]) {
+      throw 'Property does not exist';
+    }
     if (data[prop].constructor.name === 'Array') {
       let propdata = data[prop];
       const index = propdata.indexOf(val);
       propdata = propdata.slice(index, 1);
       data[prop] = propdata;
-      return super.set(key, data);
     } else {
-      delete data[prop][key];
-      return super.set(key, data);
+      delete data[prop][val];
     }
+    return this.set(key, data);
   }
 
   /**
