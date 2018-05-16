@@ -243,8 +243,7 @@ class Enmap extends Map {
   }
 
   /**
-   * Returns the specific property within a stored value. If the value isn't an object or array, returns the unchanged data
-   * If the key does not exist or the value is not an object, throws an error.
+   * Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
    * @param {string|number} key Required. The key of the element to get from The Enmap. 
    * @param {*} prop Required. The property to retrieve from the object or array.
    * @return {*} The value of the property obtained.
@@ -253,14 +252,19 @@ class Enmap extends Map {
     if (this.fetchAll) {
       if (this.has(key)) {
         const data = super.get(key);
-        return typeof data === 'object' ? data[prop] || null : data;
+        if (typeof data !== 'object') {
+          throw 'Method can only be used when the value is an object or array';
+        }
+        return data[prop];
       } else {
         throw 'This key does not exist';
       }
     } else {
       return this.fetch(key).then(data => {
-        if (!data) throw 'This key does not exist';
-        return typeof data === 'object' ? data[prop] || null : data;
+        if (typeof data !== 'object') {
+          throw 'Method can only be used when the value is an object or array';
+        }
+        return data[prop];
       });
     }
   }
@@ -305,14 +309,14 @@ class Enmap extends Map {
         throw 'This key does not exist';
       }
       const data = super.get(key);
-      if (typeof data !== 'object') {
+      if (data.constructor.name !== 'Object') {
         throw 'The value of this key is not an object.';
       }
       return data.hasOwnProperty(prop);
     } else {
       return this.fetch(key).then(data => {
         if (!data) throw 'This key does not exist';
-        if (typeof data !== 'object') {
+        if (data.constructor.name !== 'Object') {
           throw 'The value of this key is not an object.';
         }
         return data.hasOwnProperty(prop);
