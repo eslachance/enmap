@@ -101,7 +101,7 @@ class Enmap extends Map {
    * enmap.changed((keyName, oldValue, newValue) => {
    *   console.log(`Value of ${key} has changed from: \n${oldValue}\nto\n${newValue});
    * })
-   * @param {Function} cb A callback function that will be called whenever data changes in the enmap. 
+   * @param {Function} cb A callback function that will be called whenever data changes in the enmap.
    */
   changed(cb) {
     this.changedCB = cb;
