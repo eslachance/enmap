@@ -94,6 +94,19 @@ class Enmap extends Map {
     return highest;
   }
 
+  /**
+   * Function called whenever data changes within Enmap after the initial load.
+   * Can be used to detect if another part of your code changed a value in enmap and react on it.
+   * @example
+   * enmap.changed((keyName, oldValue, newValue) => {
+   *   console.log(`Value of ${key} has changed from: \n${oldValue}\nto\n${newValue});
+   * })
+   * @param {Function} cb A callback function that will be called whenever data changes in the enmap. 
+   */
+  changed(cb) {
+    this.changedCB = cb;
+  }
+
   /* METHODS THAT SET THINGS IN ENMAP */
 
   /**
@@ -122,6 +135,10 @@ class Enmap extends Map {
     if (val.constructor.name === 'Array') {
       insert = [...insert];
     }
+    const oldValue = this.get(key) || null;
+    if (typeof this.changedCB === 'function') {
+      this.changedCB(key, oldValue, insert);
+    }
     if (this.persistent) {
       this.db.set(key, insert);
     }
@@ -149,6 +166,10 @@ class Enmap extends Map {
     }
     if (val.constructor.name === 'Array') {
       insert = [...insert];
+    }
+    const oldValue = this.get(key) || null;
+    if (typeof this.changedCB === 'function') {
+      this.changedCB(key, oldValue, insert);
     }
     super.set(key, insert);
     return this.db.set(key, insert);
@@ -335,6 +356,10 @@ class Enmap extends Map {
     if (this.persistent) {
       this.db.delete(key);
     }
+    const oldValue = this.get(key) || null;
+    if (typeof this.changedCB === 'function') {
+      this.changedCB(key, oldValue, null);
+    }
     super.delete(key);
   }
 
@@ -345,6 +370,10 @@ class Enmap extends Map {
    */
   async deleteAsync(key) {
     await this.db.delete(key);
+    const oldValue = this.get(key) || null;
+    if (typeof this.changedCB === 'function') {
+      this.changedCB(key, oldValue, null);
+    }
     super.delete(key);
   }
 

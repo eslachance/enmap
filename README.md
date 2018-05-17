@@ -166,6 +166,7 @@ Can be made persistent
         * [.fetchEverything()](#Enmap+fetchEverything) ⇒ <code>Map</code>
         * [.fetch(keyOrKeys)](#Enmap+fetch) ⇒ <code>\*</code> \| <code>Map</code>
         * [.autonum()](#Enmap+autonum) ⇒ <code>number</code>
+        * [.changed(cb)](#Enmap+changed)
         * [.set(key, val)](#Enmap+set) ⇒ <code>Map</code>
         * [.setAsync(key, val)](#Enmap+setAsync) ⇒ <code>Promise.&lt;Map&gt;</code>
         * [.setProp(key, prop, val, save)](#Enmap+setProp) ⇒ <code>Map</code>
@@ -228,6 +229,24 @@ Generates an automatic numerical key for inserting a new value.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: <code>number</code> - The generated key number.  
+<a name="Enmap+changed"></a>
+
+### enmap.changed(cb)
+Function called whenever data changes within Enmap after the initial load.
+Can be used to detect if another part of your code changed a value in enmap and react on it.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| cb | <code>function</code> | A callback function that will be called whenever data changes in the enmap. |
+
+**Example**  
+```js
+enmap.changed((keyName, oldValue, newValue) => {
+  console.log(`Value of ${key} has changed from: \n${oldValue}\nto\n${newValue});
+})
+```
 <a name="Enmap+set"></a>
 
 ### enmap.set(key, val) ⇒ <code>Map</code>
@@ -327,8 +346,7 @@ console.log(myKeyValue);
 <a name="Enmap+getProp"></a>
 
 ### enmap.getProp(key, prop) ⇒ <code>\*</code>
-Returns the specific property within a stored value. If the value isn't an object or array, returns the unchanged data
-If the key does not exist or the value is not an object, throws an error.
+Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: <code>\*</code> - The value of the property obtained.  
