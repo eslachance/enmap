@@ -245,7 +245,7 @@ Can be used to detect if another part of your code changed a value in enmap and 
 ```js
 enmap.changed((keyName, oldValue, newValue) => {
   console.log(`Value of ${key} has changed from: \n${oldValue}\nto\n${newValue});
-})
+});
 ```
 <a name="Enmap+set"></a>
 
@@ -293,7 +293,7 @@ This is a shortcut to loading the key, changing the value, and setting it back.
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>string</code> \| <code>number</code> | Required. The key of the element to add to The Enmap or array.  This value MUST be a string or number. |
-| prop | <code>\*</code> | Required. The property to modify inside the value object or array. |
+| prop | <code>\*</code> | Required. The property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | val | <code>\*</code> | Required. The value to apply to the specified property. |
 | save | <code>boolean</code> | Optional. Whether to save to persistent DB (used as false in init) |
 
@@ -322,7 +322,7 @@ Push to an array element inside an Object or Array element in Enmap.
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
 | key | <code>string</code> \| <code>number</code> |  | Required. The key of the element.  This value MUST be a string or number. |
-| prop | <code>\*</code> |  | Required. The name of the array property to push to. |
+| prop | <code>\*</code> |  | Required. The name of the array property to push to. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | val | <code>\*</code> |  | Required. The value push to the array property. |
 | allowDupes | <code>boolean</code> | <code>false</code> | Allow duplicate values in the array (default: false). |
 
@@ -354,7 +354,7 @@ Returns the specific property within a stored value. If the key does not exist o
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>string</code> \| <code>number</code> | Required. The key of the element to get from The Enmap. |
-| prop | <code>\*</code> | Required. The property to retrieve from the object or array. |
+| prop | <code>\*</code> | Required. The property to retrieve from the object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 <a name="Enmap+getHighestAutonum"></a>
 
@@ -392,7 +392,7 @@ Returns whether or not the property exists within an object or array value in en
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>string</code> \| <code>number</code> | Required. The key of the element to check in the Enmap or array. |
-| prop | <code>\*</code> | Required. The property to verify inside the value object or array. |
+| prop | <code>\*</code> | Required. The property to verify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 <a name="Enmap+delete"></a>
 
@@ -466,7 +466,7 @@ Confusing? Sure is.
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>string</code> \| <code>number</code> | Required. The key of the element.  This value MUST be a string or number. |
-| prop | <code>\*</code> | Required. The name of the array property to remove from. |
+| prop | <code>\*</code> | Required. The name of the array property to remove from. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | val | <code>\*</code> | Required. The value to remove from the array property. |
 
 <a name="Enmap+deleteProp"></a>
@@ -480,7 +480,7 @@ Delete a property from an object or array value in Enmap.
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>string</code> \| <code>number</code> | Required. The key of the element to delete the property from in Enmap. |
-| prop | <code>\*</code> | Required. The name of the property to remove from the object. |
+| prop | <code>\*</code> | Required. The name of the property to remove from the object. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 <a name="Enmap+array"></a>
 

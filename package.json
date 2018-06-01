@@ -18,7 +18,9 @@
   "keywords": [],
   "author": "Evelyne Lachance",
   "license": "Apache",
-  "dependencies": {},
+  "dependencies": {
+    "dot-prop": "^4.2.0"
+  },
   "devDependencies": {
     "enmap-level": "^1.0.1",
     "enmap-sqlite": "^1.0.1",
