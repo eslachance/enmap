@@ -435,13 +435,13 @@ class Enmap extends Map {
     if (!this.has(key)) {
       throw 'This key does not exist';
     }
-    let data = super.get(key);
+    const data = super.get(key);
     if (typeof data !== 'object') {
       throw 'Method can only be used when the value is an object or array';
     }
     if (data.constructor.name === 'Array') {
       const index = data.indexOf(val);
-      data = data.slice(index, 1);
+      data.splice(index, 1);
     } else {
       delete data[key];
     }
@@ -466,12 +466,12 @@ class Enmap extends Map {
     if (typeof data !== 'object') {
       throw 'Method can only be used when the value is an object or array';
     }
-    let propValue = dotProp.get(data, prop);
+    const propValue = dotProp.get(data, prop);
     if (!propValue) {
       throw 'Property does not exist';
     }
     if (propValue.constructor.name === 'Array') {
-      propValue = propValue.slice(propValue.indexOf(val), 1);
+      propValue.splice(propValue.indexOf(val), 1);
       dotProp.set(data, prop, propValue);
     } else if (propValue.constructor.name === 'Object') {
       dotProp.delete(data, `${prop}.${val}`);
