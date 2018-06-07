@@ -263,7 +263,7 @@ class Enmap extends Map {
     if (this.has(key)) {
       return super.get(key);
     }
-    if (this.fetchAll) {
+    if (this.fetchAll || !this.persistent) {
       return null;
     }
     return this.fetch(key);
@@ -277,7 +277,7 @@ class Enmap extends Map {
    * @return {*} The value of the property obtained.
    */
   getProp(key, prop) {
-    if (this.fetchAll) {
+    if (this.fetchAll || !this.persistent) {
       if (this.has(key)) {
         const data = super.get(key);
         if (typeof data !== 'object') {
@@ -321,7 +321,7 @@ class Enmap extends Map {
    * @returns {Promise<boolean>}
    */
   has(key) {
-    if (this.fetchAll) return super.has(key);
+    if (this.fetchAll || !this.persistent) return super.has(key);
     return this.db.hasAsync(key);
   }
 
@@ -333,7 +333,7 @@ class Enmap extends Map {
    * @return {boolean} Whether the property exists.
    */
   hasProp(key, prop) {
-    if (this.fetchAll) {
+    if (this.fetchAll || !this.persistent) {
       if (!this.has(key)) {
         throw 'This key does not exist';
       }
@@ -489,7 +489,7 @@ class Enmap extends Map {
    * @returns {Promise<Enmap>|Enmap} If fetchAll is true, return the Enmap. Otherwise return a promise containing the Enmap.
    */
   deleteProp(key, prop) {
-    if (this.fetchAll) {
+    if (this.fetchAll || !this.persistent) {
       if (!this.has(key)) {
         throw 'This key does not exist';
       }
