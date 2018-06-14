@@ -4,7 +4,7 @@ Enhanced Maps are a data structure that can be used to store data in memory that
 
 ## FAQs
 
-### Q: So what's Enmap
+### Q: So, what's Enmap?
 
 **A**: Enmaps are the Javascript Map() data structure with additional utility methods.
 
