@@ -190,7 +190,7 @@ class Enmap extends Map {
    */
   setProp(key, prop, val) {
     if (!this.has(key)) {
-      throw 'This key does not exist';
+      throw `The key ${key} does not exist in the enmap ${this.name}`;
     }
     const data = super.get(key);
     if (typeof data !== 'object') {
@@ -210,7 +210,7 @@ class Enmap extends Map {
    */
   push(key, val, allowDupes = false) {
     if (!this.has(key)) {
-      throw 'This key does not exist';
+      throw `The key ${key} does not exist in the enmap ${this.name}`;
     }
     const data = super.get(key);
     if (data.constructor.name !== 'Array') {
@@ -233,7 +233,7 @@ class Enmap extends Map {
    */
   pushIn(key, prop, val, allowDupes = false) {
     if (!this.has(key)) {
-      throw 'This key does not exist';
+      throw `The key ${key} does not exist in the enmap ${this.name}`;
     }
     const data = super.get(key);
     if (typeof data !== 'object') {
@@ -247,6 +247,42 @@ class Enmap extends Map {
     propValue.push(val);
     dotProp.set(data, prop, propValue);
     return this.set(key, data);
+  }
+
+  _mathop(base, op, opand) {
+    if (!base || !op || !opand) throw `Math Operation requires base, operation, and right operand`;
+    switch (op) {
+    case 'add' :
+    case 'addition' :
+    case '+' :
+      return base + opand;
+    case 'sub' :
+    case 'subtract' :
+    case '-' :
+      return base - opand;
+    case 'mult' :
+    case 'multiply' :
+    case '*' :
+      return base * opand;
+    case 'div' :
+    case 'divide' :
+    case '/' :
+      return base / opand;
+    case 'exp' :
+      return Math.pow(base, opand);
+    case 'mod' :
+    case 'modulo' :
+    case '%' :
+      return base % opand;
+    }
+    return null;
+  }
+
+  math(key, operation, operand = null) {
+    if (!this.has(key)) {
+      throw `The key ${key} does not exist in the enmap ${this.name}`;
+    }
+    return this.set(key, this._mathop(this.get(key), operation, operand));
   }
 
   /* METHODS THAT GETS THINGS FROM ENMAP */
