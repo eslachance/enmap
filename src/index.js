@@ -157,7 +157,7 @@ class Enmap extends Map {
    * @return {Promise<Map>} The Enmap.
    */
   setAsync(key, val) {
-    if (val == null) throw `Value provided for ${key} was null or undefined. Please provide a value.`;
+    if (val == null) throw `Value provided for ${key} was null or undefined in ${this.db.name}. Please provide a value.`;
     let insert = val;
     if (val.constructor.name === 'Object') {
       const temp = {};
@@ -190,7 +190,7 @@ class Enmap extends Map {
    */
   setProp(key, prop, val) {
     if (!this.has(key)) {
-      throw `The key ${key} does not exist in the enmap ${this.name}`;
+      throw `The key ${key} does not exist in the enmap ${this.db.name}`;
     }
     const data = super.get(key);
     if (typeof data !== 'object') {
@@ -210,7 +210,7 @@ class Enmap extends Map {
    */
   push(key, val, allowDupes = false) {
     if (!this.has(key)) {
-      throw `The key ${key} does not exist in the enmap ${this.name}`;
+      throw `The key ${key} does not exist in the enmap ${this.db.name}`;
     }
     const data = super.get(key);
     if (data.constructor.name !== 'Array') {
@@ -233,7 +233,7 @@ class Enmap extends Map {
    */
   pushIn(key, prop, val, allowDupes = false) {
     if (!this.has(key)) {
-      throw `The key ${key} does not exist in the enmap ${this.name}`;
+      throw `The key ${key} does not exist in the enmap ${this.db.name}`;
     }
     const data = super.get(key);
     if (typeof data !== 'object') {
@@ -250,7 +250,7 @@ class Enmap extends Map {
   }
 
   _mathop(base, op, opand) {
-    if (!base || !op || !opand) throw `Math Operation requires base, operation, and right operand`;
+    if (!base || !op) throw 'Math Operation requires base and operation';
     switch (op) {
     case 'add' :
     case 'addition' :
@@ -269,6 +269,8 @@ class Enmap extends Map {
     case '/' :
       return base / opand;
     case 'exp' :
+    case 'exponent' :
+    case '^' :
       return Math.pow(base, opand);
     case 'mod' :
     case 'modulo' :
@@ -280,7 +282,10 @@ class Enmap extends Map {
 
   math(key, operation, operand = null) {
     if (!this.has(key)) {
-      throw `The key ${key} does not exist in the enmap ${this.name}`;
+      throw `The key ${key} does not exist in the enmap ${this.db.name}`;
+    }
+    if (operation === 'random' || operation === 'rand') {
+      return Math.random() * operand;
     }
     return this.set(key, this._mathop(this.get(key), operation, operand));
   }
@@ -321,7 +326,7 @@ class Enmap extends Map {
         }
         return dotProp.get(data, prop);
       } else {
-        throw 'This key does not exist';
+        throw `The key ${key} does not exist in the enmap ${this.db.name}`;
       }
     } else {
       return this.fetch(key).then(data => {
@@ -371,7 +376,7 @@ class Enmap extends Map {
   hasProp(key, prop) {
     if (this.fetchAll || !this.persistent) {
       if (!this.has(key)) {
-        throw 'This key does not exist';
+        throw `The key ${key} does not exist in the enmap ${this.db.name}`;
       }
       const data = super.get(key);
       if (data.constructor.name !== 'Object') {
@@ -380,7 +385,7 @@ class Enmap extends Map {
       return dotProp.has(data, prop);
     } else {
       return this.fetch(key).then(data => {
-        if (!data) throw 'This key does not exist';
+        if (!data) throw `The key ${key} does not exist in the enmap ${this.db.name}`;
         if (data.constructor.name !== 'Object') {
           throw 'The value of this key is not an object.';
         }
@@ -469,7 +474,7 @@ class Enmap extends Map {
    */
   remove(key, val) {
     if (!this.has(key)) {
-      throw 'This key does not exist';
+      throw `The key ${key} does not exist in the enmap ${this.db.name}`;
     }
     const data = super.get(key);
     if (typeof data !== 'object') {
@@ -496,7 +501,7 @@ class Enmap extends Map {
    */
   removeFrom(key, prop, val) {
     if (!this.has(key)) {
-      throw 'This key does not exist';
+      throw `The key ${key} does not exist in the enmap ${this.db.name}`;
     }
     const data = super.get(key);
     if (typeof data !== 'object') {
@@ -527,7 +532,7 @@ class Enmap extends Map {
   deleteProp(key, prop) {
     if (this.fetchAll || !this.persistent) {
       if (!this.has(key)) {
-        throw 'This key does not exist';
+        throw `The key ${key} does not exist in the enmap ${this.db.name}`;
       }
       const data = super.get(key);
       if (typeof data !== 'object') {
@@ -537,7 +542,7 @@ class Enmap extends Map {
       return this.set(key, data);
     } else {
       return this.fetch(key).then(data => {
-        if (!data) throw 'This key does not exist';
+        if (!data) throw `The key ${key} does not exist in the enmap ${this.db.name}`;
         if (typeof data !== 'object') {
           throw 'The value of this key is not an object.';
         }
