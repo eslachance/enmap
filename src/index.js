@@ -93,7 +93,9 @@ class Enmap extends Map {
   }
 
   /**
-   * Generates an automatic numerical key for inserting a new value. 
+   * Generates an automatic numerical key for inserting a new value.
+   * @example
+   * enmap.set(enmap.autonum(), "This is a new value");
    * @return {number} The generated key number.
    */
   autonum() {
@@ -167,6 +169,13 @@ class Enmap extends Map {
    * @param {string} path Optional. The path to the property to modify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @param {boolean} allowDupes Optional. Allow duplicate values in the array (default: false).
+   * @example
+   * // Assuming
+   * enmap.set("simpleArray", [1, 2, 3, 4]);
+   * enmap.set("arrayInObject", {sub: [1, 2, 3, 4]});
+   * 
+   * enmap.push("simpleArray", 5); // adds 5 at the end of the array
+   * enmap.push("arrayInObject", "five", "sub"); adds "five" at the end of the sub array
    * @return {Map} The EnMap.
    */
   push(key, val, path = null, allowDupes = false) {
@@ -192,20 +201,47 @@ class Enmap extends Map {
    * @param {string} operation Which mathematical operation to execute. Supports most
    * math ops: =, -, *, /, %, ^, and english spelling of those operations.
    * @param {number} operand The right operand of the operation.
+   * @param {string} path Optional. The property path to execute the operation on, if the value is an object or array.
+   * @example
+   * // Assuming
+   * points.set("number", 42);
+   * points.set("numberInObject", {sub: { anInt: 5 }});
+   * 
+   * points.math("number", "/", 2); // 21
+   * points.math("number", "add", 5); // 26
+   * points.math("number", "modulo", 3); // 2
+   * points.math("numberInObject", "+", 10, "sub.anInt");
+   * 
    * @return {Map} The EnMap.
    */
-  math(key, operation, operand) {
-    this[_check](key, 'Number');
-    if (operation === 'random' || operation === 'rand') {
-      return this.set(key, Math.round(Math.random() * operand));
+  math(key, operation, operand, path = null) {
+    this[_check](key, 'Number', path);
+    if (!path) {
+      if (operation === 'random' || operation === 'rand') {
+        return this.set(key, Math.round(Math.random() * operand));
+      }
+      return this.set(key, this[_mathop](this.get(key), operation, operand));
+    } else {
+      const data = this.get(key);
+      const propValue = dotProp.get(data, path);
+      if (operation === 'random' || operation === 'rand') {
+        return this.set(key, Math.round(Math.random() * propValue), path);
+      }
+      return this.set(key, this[_mathop](propValue, operation, operand), path);
     }
-    return this.set(key, this[_mathop](this.get(key), operation, operand));
   }
 
   /**
    * Increments a key's value or property by 1. Value must be a number, or a path to a number.
    * @param {string|number} key The enmap key where the value to increment is stored.
    * @param {string} path Optional. The property path to increment, if the value is an object or array.
+   * @example
+   * // Assuming
+   * points.set("number", 42);
+   * points.set("numberInObject", {sub: { anInt: 5 }});
+   * 
+   * points.inc("number"); // 43
+   * points.inc("numberInObject", "sub.anInt"); // {sub: { anInt: 6 }}
    * @return {Map} The EnMap.
    */
   inc(key, path = null) {
@@ -225,6 +261,13 @@ class Enmap extends Map {
    * Decrements a key's value or property by 1. Value must be a number, or a path to a number.
    * @param {string|number} key The enmap key where the value to decrement is stored.
    * @param {string} path Optional. The property path to decrement, if the value is an object or array.
+   * @example
+   * // Assuming
+   * points.set("number", 42);
+   * points.set("numberInObject", {sub: { anInt: 5 }});
+   * 
+   * points.dec("number"); // 41
+   * points.dec("numberInObject", "sub.anInt"); // {sub: { anInt: 4 }}
    * @return {Map} The EnMap.
    */
   dec(key, path = null) {
@@ -250,6 +293,8 @@ class Enmap extends Map {
    * @example
    * const myKeyValue = enmap.get("myKey");
    * console.log(myKeyValue);
+   * 
+   * const someSubValue = enmap.get("anObjectKey", "someprop.someOtherSubProp");
    * @return {*} The value for this key.
    */
   get(key, path = null) {
@@ -266,9 +311,15 @@ class Enmap extends Map {
   /**
    * Returns whether or not the key exists in the Enmap.
    * @param {string|number} key Required. The key of the element to add to The Enmap or array. 
+   * This value MUST be a string or number.
    * @param {string} path Optional. The property to verify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
-   * This value MUST be a string or number.
+   * @example
+   * if(enmap.has("myKey")) {
+   *   // key is there
+   * }
+   * 
+   * if(!enmap.has("myOtherKey", "oneProp.otherProp.SubProp")) return false;
    * @returns {boolean}
    */
   has(key, path = null) {
