@@ -127,10 +127,16 @@ class Enmap extends Map {
    * @param {string} path Optional. The path to the property to modify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @example
+   * // Direct Value Examples
    * enmap.set('simplevalue', 'this is a string');
    * enmap.set('isEnmapGreat', true);
    * enmap.set('TheAnswer', 42);
    * enmap.set('IhazObjects', { color: 'black', action: 'paint', desire: true });
+   * enmap.set('ArraysToo', [1, "two", "tree", "foor"])
+   * 
+   * // Settings Properties
+   * enmap.set('IhazObjects', 'color', 'blue'); //modified previous object
+   * enmap.set('ArraysToo', 2, 'three'); // changes "tree" to "three" in array.   
    * @return {Map} The Enmap.
    */
   set(key, val, path = null) {
@@ -142,19 +148,7 @@ class Enmap extends Map {
     } else {
       data = val;
     }
-    let insert;
-    if (data.constructor.name === 'Object') {
-      const temp = {};
-      for (const prop in data) {
-        temp[prop] = data[prop];
-      }
-      insert = temp;
-    }
-    if (data.constructor.name === 'Array') {
-      insert = [...data];
-    } else {
-      insert = data;
-    }
+    const insert = JSON.parse(JSON.stringify(data));
     const oldValue = this.get(key) || null;
     if (typeof this.changedCB === 'function') {
       this.changedCB(key, oldValue, insert);
@@ -365,7 +359,7 @@ class Enmap extends Map {
   /* INTERNAL (Private) METHODS */
 
 
-  /**
+  /*
    * INTERNAL method used by autonum().
    * Loops on incremental numerical values until it finds a free key
    * of that value in the Enamp. 
@@ -380,7 +374,7 @@ class Enmap extends Map {
     return highest;
   }
 
-  /**
+  /*
    * INTERNAL method to verify the type of a key or property
    * Will THROW AN ERROR on wrong type, to simplify code.
    * @param {string|number} key Required. The key of the element to check
@@ -405,7 +399,7 @@ class Enmap extends Map {
     }
   }
 
-  /**
+  /*
   * INTERNAL method to execute a mathematical operation. Cuz... javascript. 
   * And I didn't want to import mathjs!
   * @param {number} base the lefthand operand.
