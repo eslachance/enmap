@@ -150,15 +150,14 @@ class Enmap extends Map {
     } else {
       data = val;
     }
-    const insert = JSON.parse(JSON.stringify(data));
     const oldValue = this.get(key) || null;
     if (typeof this.changedCB === 'function') {
-      this.changedCB(key, oldValue, insert);
+      this.changedCB(key, oldValue, data);
     }
     if (this.persistent) {
-      this.db.set(key, insert);
+      this.db.set(key, JSON.parse(JSON.stringify(data)));
     }
-    return super.set(key, insert);
+    return super.set(key, data);
   }
 
   /**
