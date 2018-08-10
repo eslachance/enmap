@@ -145,20 +145,20 @@ class Enmap extends Map {
   set(key, val, path = null) {
     if (val == null) throw `Value provided for ${key} was null or undefined. Please provide a value.`;
     let data = super.get(key);
-    if (path) {
+    const oldValue = super.has(key) ? data : null;
+    if (path != null) {
       _.set(data, path, val);
     } else {
       data = val;
     }
     const insert = JSON.parse(JSON.stringify(data));
-    const oldValue = this.get(key) || null;
     if (typeof this.changedCB === 'function') {
       this.changedCB(key, oldValue, insert);
     }
     if (this.persistent) {
       this.db.set(key, insert);
     }
-    return super.set(key, _.cloneDeep(val));
+    return super.set(key, _.cloneDeep(insert));
   }
 
   setProp(key, path, val) {
@@ -185,7 +185,7 @@ class Enmap extends Map {
   push(key, val, path = null, allowDupes = false) {
     this[_check](key, 'Array', path);
     const data = super.get(key);
-    if (path) {
+    if (path != null) {
       const propValue = _.get(data, path);
       if (!allowDupes && propValue.indexOf(val) > -1) return this;
       propValue.push(val);
@@ -306,7 +306,7 @@ class Enmap extends Map {
    * @return {*} The value for this key.
    */
   get(key, path = null) {
-    if (path) {
+    if (path != null) {
       this[_check](key, 'Object');
       const data = super.get(key);
       return _.get(data, path);
@@ -335,7 +335,7 @@ class Enmap extends Map {
    * @returns {boolean}
    */
   has(key, path = null) {
-    if (path) {
+    if (path != null) {
       this[_check](key, 'Object');
       const data = super.get(key);
       return _.has(data, path);
@@ -356,20 +356,31 @@ class Enmap extends Map {
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    */
   delete(key, path = null) {
-    if (path) {
-      this[_check](key, 'Object', path);
-      const data = super.get(key);
-      _.delete(data, path);
+    const oldValue = this.get(key);
+    if (path != null) {
+      let data = this.get(key);
+      path = _.toPath(path);
+      const last = path.pop();
+      const propValue = path.length ? _.get(data, path) : data;
+      if (_.isArray(propValue)) {
+        propValue.splice(last, 1);
+      } else {
+        delete propValue[last];
+      }
+      if (path.length) {
+        _.set(data, path, propValue);
+      } else {
+        data = propValue;
+      }
       this.set(key, data);
     } else {
       super.delete(key);
-    }
-    if (this.persistent && !path) {
-      this.db.delete(key);
-    }
-    const oldValue = this.get(key) || null;
-    if (typeof this.changedCB === 'function') {
-      this.changedCB(key, oldValue, null);
+      if (this.persistent) {
+        this.db.delete(key);
+      }
+      if (typeof this.changedCB === 'function') {
+        this.changedCB(key, oldValue, null);
+      }
     }
   }
 
@@ -410,7 +421,7 @@ class Enmap extends Map {
   remove(key, val, path = null) {
     this[_check](key, ['Array', 'Object']);
     const data = super.get(key);
-    if (path) {
+    if (path != null) {
       const propValue = _.get(data, path);
       if (propValue.constructor.name === 'Array') {
         propValue.splice(propValue.indexOf(val), 1);
@@ -460,7 +471,7 @@ class Enmap extends Map {
     if (!this.has(key)) throw new Err(`The key "${key}" does not exist in the enmap "${this.name}"`);
     if (!type) return;
     if (type.constructor.name !== 'Array') type = [type];
-    if (path) {
+    if (path != null) {
       this[_check](key, 'Object');
       const data = super.get(key);
       if (!data) {
@@ -470,7 +481,7 @@ class Enmap extends Map {
         throw new Err(`The property "${path}" in key "${key}" is not of type "${type.join('" or "')}" in the enmap "${this.name}" (key was of type "${_.get(data, path).constructor.name}")`);
       }
     } else if (!type.includes(this.get(key).constructor.name)) {
-      throw new Err(`The key "${key}" is not of correct type in the enmap "${this.name}" (key was of type "${this.get(key).constructor.name}")`);
+      throw new Err(`The key "${key}" is not of type "${type.join('" or "')}" in the enmap "${this.name}" (key was of type "${this.get(key).constructor.name}")`);
     }
   }
 
