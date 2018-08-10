@@ -1,4 +1,5 @@
-const dotProp = require('dot-prop');
+const _ = require('lodash');
+const Err = require('./error.js');
 
 const _mathop = Symbol('mathop');
 const _getHighestAutonum = Symbol('getHighestAutonum');
@@ -70,16 +71,16 @@ class Enmap extends Map {
 
   /**
    * Fetches every key from the persistent enmap and loads them into the current enmap value.
-   * @return {Map} The enmap containing all values.
+   * @return {Promise<Map>} The enmap containing all values, as a promise..
    */
-  fetchEverything() {
-    return this.db.fetchEverything();
+  async fetchEverything() {
+    return await this.db.fetchEverything();
   }
 
   /**
    * Force fetch one or more key values from the enmap. If the database has changed, that new value is used.
    * @param {string|number} keyOrKeys A single key or array of keys to force fetch from the enmap database.
-   * @return {*|Map} A single value if requested, or a non-persistent enmap of keys if an array is requested.
+   * @return {Promise<*|Map>} A single value if requested, or a non-persistent enmap of keys if an array is requested.
    */
   async fetch(keyOrKeys) {
     if (!Array.isArray(keyOrKeys)) {
@@ -145,8 +146,7 @@ class Enmap extends Map {
     if (val == null) throw `Value provided for ${key} was null or undefined. Please provide a value.`;
     let data = super.get(key);
     if (path) {
-      this[_check](key, ['Array', 'Object']);
-      dotProp.set(data, path, val);
+      _.set(data, path, val);
     } else {
       data = val;
     }
@@ -158,7 +158,11 @@ class Enmap extends Map {
     if (this.persistent) {
       this.db.set(key, insert);
     }
-    return super.set(key, insert);
+    return super.set(key, _.cloneDeep(val));
+  }
+
+  setProp(key, path, val) {
+    return this.set(key, val, path);
   }
 
   /**
@@ -182,15 +186,19 @@ class Enmap extends Map {
     this[_check](key, 'Array', path);
     const data = super.get(key);
     if (path) {
-      const propValue = dotProp.get(data, path);
+      const propValue = _.get(data, path);
       if (!allowDupes && propValue.indexOf(val) > -1) return this;
       propValue.push(val);
-      dotProp.set(data, path, propValue);
+      _.set(data, path, propValue);
     } else {
       if (!allowDupes && data.indexOf(val) > -1) return this;
       data.push(val);
     }
     return this.set(key, data);
+  }
+
+  pushIn(key, path, val, allowDupes = false) {
+    return this.push(key, val, path, allowDupes);
   }
 
   // AWESOME MATHEMATICAL METHODS
@@ -223,7 +231,7 @@ class Enmap extends Map {
       return this.set(key, this[_mathop](this.get(key), operation, operand));
     } else {
       const data = this.get(key);
-      const propValue = dotProp.get(data, path);
+      const propValue = _.get(data, path);
       if (operation === 'random' || operation === 'rand') {
         return this.set(key, Math.round(Math.random() * propValue), path);
       }
@@ -251,8 +259,8 @@ class Enmap extends Map {
       return this.set(key, ++val);
     } else {
       const data = this.get(key);
-      let propValue = dotProp.get(data, path);
-      dotProp.set(data, path, ++propValue);
+      let propValue = _.get(data, path);
+      _.set(data, path, ++propValue);
       return this.set(key, data);
     }
   }
@@ -277,8 +285,8 @@ class Enmap extends Map {
       return this.set(key, --val);
     } else {
       const data = this.get(key);
-      let propValue = dotProp.get(data, path);
-      dotProp.set(data, path, --propValue);
+      let propValue = _.get(data, path);
+      _.set(data, path, --propValue);
       return this.set(key, data);
     }
   }
@@ -301,9 +309,13 @@ class Enmap extends Map {
     if (path) {
       this[_check](key, 'Object');
       const data = super.get(key);
-      return dotProp.get(data, path);
+      return _.get(data, path);
     }
     return super.get(key);
+  }
+
+  getProp(key, path) {
+    return this.get(key, path);
   }
 
   /* BOOLEAN METHODS THAT CHECKS FOR THINGS IN ENMAP */
@@ -326,9 +338,13 @@ class Enmap extends Map {
     if (path) {
       this[_check](key, 'Object');
       const data = super.get(key);
-      return dotProp.has(data, path);
+      return _.has(data, path);
     }
     return super.has(key);
+  }
+
+  hasProp(key, path) {
+    return this.has(key, path);
   }
 
   /* METHODS THAT DELETE THINGS FROM ENMAP */
@@ -343,7 +359,7 @@ class Enmap extends Map {
     if (path) {
       this[_check](key, 'Object', path);
       const data = super.get(key);
-      dotProp.delete(data, path);
+      _.delete(data, path);
       this.set(key, data);
     } else {
       super.delete(key);
@@ -355,6 +371,10 @@ class Enmap extends Map {
     if (typeof this.changedCB === 'function') {
       this.changedCB(key, oldValue, null);
     }
+  }
+
+  deleteProp(key, path) {
+    return this.delete(key, path);
   }
 
   /**
@@ -391,12 +411,12 @@ class Enmap extends Map {
     this[_check](key, ['Array', 'Object']);
     const data = super.get(key);
     if (path) {
-      const propValue = dotProp.get(data, path);
+      const propValue = _.get(data, path);
       if (propValue.constructor.name === 'Array') {
         propValue.splice(propValue.indexOf(val), 1);
-        dotProp.set(data, path, propValue);
+        _.set(data, path, propValue);
       } else if (propValue.constructor.name === 'Object') {
-        dotProp.delete(data, `${path}.${val}`);
+        _.delete(data, `${path}.${val}`);
       }
     } else if (data.constructor.name === 'Array') {
       const index = data.indexOf(val);
@@ -405,6 +425,10 @@ class Enmap extends Map {
       delete data[val];
     }
     return this.set(key, data);
+  }
+
+  removeFrom(key, path, val) {
+    return this.remove(key, val, path);
   }
 
   /* INTERNAL (Private) METHODS */
@@ -432,21 +456,21 @@ class Enmap extends Map {
    * @param {string} type Required. The javascript constructor to check
    * @param {string} path Optional. The dotProp path to the property in the object enmap.
    */
-  [_check](key, type, path = '') {
-    if (!this.has(key)) throw `The key "${key}" does not exist in the enmap "${this.name}"`;
+  [_check](key, type, path = null) {
+    if (!this.has(key)) throw new Err(`The key "${key}" does not exist in the enmap "${this.name}"`);
     if (!type) return;
     if (type.constructor.name !== 'Array') type = [type];
     if (path) {
       this[_check](key, 'Object');
       const data = super.get(key);
       if (!data) {
-        throw `The property "${path}" does not exist in the key "${key}" in the enmap "${this.name}"`;
+        throw new Err(`The property "${path}" does not exist in the key "${key}" in the enmap "${this.name}"`);
       }
-      if (!type.includes(dotProp.get(data, path).constructor.name)) {
-        throw `The property "${path}" in "${key}" is not of type "${type}" in the enmap "${this.name}" (key was of type "${dotProp.get(data, path).constructor.name}")`;
+      if (!type.includes(_.get(data, path).constructor.name)) {
+        throw new Err(`The property "${path}" in key "${key}" is not of type "${type.join('" or "')}" in the enmap "${this.name}" (key was of type "${_.get(data, path).constructor.name}")`);
       }
     } else if (!type.includes(this.get(key).constructor.name)) {
-      throw new Error(`The key "${key}" is not of correct type in the enmap "${this.name}" (key was of type "${this.get(key).constructor.name}")`);
+      throw new Err(`The key "${key}" is not of correct type in the enmap "${this.name}" (key was of type "${this.get(key).constructor.name}")`);
     }
   }
 

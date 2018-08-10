@@ -19,7 +19,8 @@
   "author": "Evelyne Lachance",
   "license": "Apache",
   "dependencies": {
-    "dot-prop": "^4.2.0"
+    "dot-prop": "^4.2.0",
+    "lodash": "^4.17.10"
   },
   "devDependencies": {
     "enmap-level": "^1.0.1",
