@@ -154,36 +154,28 @@ const myColl = new Enmap({ provider: new EnmapSQLite({ name: 'test' }) });
 
 ## API Documentation
 
-### Enmap ⇒ <code>Map</code>
-A enhanced Map structure with additional utility methods.
-Can be made persistent
-
-**Kind**: global class  
-**Extends**: <code>Map</code>  
-
 * [Enmap](#Enmap) ⇐ <code>Map</code>
     * _instance_
-        * [.fetchEverything()](#Enmap+fetchEverything) ⇒ <code>Map</code>
-        * [.fetch(keyOrKeys)](#Enmap+fetch) ⇒ <code>\*</code> \| <code>Map</code>
+        * [.fetchEverything()](#Enmap+fetchEverything) ⇒ <code>Promise.&lt;Map&gt;</code>
+        * [.fetch(keyOrKeys)](#Enmap+fetch) ⇒ <code>Promise.&lt;(\*\|Map)&gt;</code>
         * [.autonum()](#Enmap+autonum) ⇒ <code>number</code>
         * [.changed(cb)](#Enmap+changed)
-        * [.set(key, val)](#Enmap+set) ⇒ <code>Map</code>
-        * [.setAsync(key, val)](#Enmap+setAsync) ⇒ <code>Promise.&lt;Map&gt;</code>
-        * [.setProp(key, prop, val, save)](#Enmap+setProp) ⇒ <code>Map</code>
-        * [.push(key, val, allowDupes)](#Enmap+push) ⇒ <code>Map</code>
-        * [.pushIn(key, prop, val, allowDupes)](#Enmap+pushIn) ⇒ <code>Map</code>
-        * [.get(key)](#Enmap+get) ⇒ <code>\*</code> \| <code>Promise.&lt;\*&gt;</code>
-        * [.getProp(key, prop)](#Enmap+getProp) ⇒ <code>\*</code>
-        * [.getHighestAutonum(start)](#Enmap+getHighestAutonum) ⇒ <code>Integer</code>
-        * [.has(key)](#Enmap+has) ⇒ <code>Promise.&lt;boolean&gt;</code>
-        * [.hasProp(key, prop)](#Enmap+hasProp) ⇒ <code>boolean</code>
-        * [.delete(key, bulk)](#Enmap+delete)
-        * [.deleteAsync(key, bulk)](#Enmap+deleteAsync)
+        * [.set(key, val, path)](#Enmap+set) ⇒ <code>Map</code>
+        * [.setProp(key, path, val)](#Enmap+setProp) ⇒ <code>Map</code>
+        * [.push(key, val, path, allowDupes)](#Enmap+push) ⇒ <code>Map</code>
+        * [.pushIn(key, path, val, allowDupes)](#Enmap+pushIn) ⇒ <code>Map</code>
+        * [.math(key, operation, operand, path)](#Enmap+math) ⇒ <code>Map</code>
+        * [.inc(key, path)](#Enmap+inc) ⇒ <code>Map</code>
+        * [.dec(key, path)](#Enmap+dec) ⇒ <code>Map</code>
+        * [.get(key, path)](#Enmap+get) ⇒ <code>\*</code>
+        * [.getProp(key, path)](#Enmap+getProp) ⇒ <code>\*</code>
+        * [.has(key, path)](#Enmap+has) ⇒ <code>boolean</code>
+        * [.hasProp(key, path)](#Enmap+hasProp) ⇒ <code>boolean</code>
+        * [.delete(key, path)](#Enmap+delete)
+        * [.deleteProp(key, path)](#Enmap+deleteProp)
         * [.deleteAll(bulk)](#Enmap+deleteAll)
-        * [.deleteAllAsync(bulk)](#Enmap+deleteAllAsync) ⇒ <code>Promise</code>
-        * [.remove(key, val, allowDupes)](#Enmap+remove) ⇒ <code>Map</code>
-        * [.removeFrom(key, prop, val)](#Enmap+removeFrom) ⇒ <code>Map</code>
-        * [.deleteProp(key, prop)](#Enmap+deleteProp) ⇒ [<code>Promise.&lt;Enmap&gt;</code>](#Enmap) \| [<code>Enmap</code>](#Enmap)
+        * [.remove(key, val, path)](#Enmap+remove) ⇒ <code>Map</code>
+        * [.removeFrom(key, path, val)](#Enmap+removeFrom) ⇒ <code>Map</code>
         * [.array()](#Enmap+array) ⇒ <code>Array</code>
         * [.keyArray()](#Enmap+keyArray) ⇒ <code>Array</code>
         * [.random([count])](#Enmap+random) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
@@ -205,18 +197,18 @@ Can be made persistent
 
 <a name="Enmap+fetchEverything"></a>
 
-### enmap.fetchEverything() ⇒ <code>Map</code>
+### enmap.fetchEverything() ⇒ <code>Promise.&lt;Map&gt;</code>
 Fetches every key from the persistent enmap and loads them into the current enmap value.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>Map</code> - The enmap containing all values.  
+**Returns**: <code>Promise.&lt;Map&gt;</code> - The enmap containing all values, as a promise..  
 <a name="Enmap+fetch"></a>
 
-### enmap.fetch(keyOrKeys) ⇒ <code>\*</code> \| <code>Map</code>
+### enmap.fetch(keyOrKeys) ⇒ <code>Promise.&lt;(\*\|Map)&gt;</code>
 Force fetch one or more key values from the enmap. If the database has changed, that new value is used.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>\*</code> \| <code>Map</code> - A single value if requested, or a non-persistent enmap of keys if an array is requested.  
+**Returns**: <code>Promise.&lt;(\*\|Map)&gt;</code> - A single value if requested, or a non-persistent enmap of keys if an array is requested.  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -229,6 +221,10 @@ Generates an automatic numerical key for inserting a new value.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: <code>number</code> - The generated key number.  
+**Example**  
+```js
+enmap.set(enmap.autonum(), "This is a new value");
+```
 <a name="Enmap+changed"></a>
 
 ### enmap.changed(cb)
@@ -249,41 +245,34 @@ enmap.changed((keyName, oldValue, newValue) => {
 ```
 <a name="Enmap+set"></a>
 
-### enmap.set(key, val) ⇒ <code>Map</code>
+### enmap.set(key, val, path) ⇒ <code>Map</code>
 Set the value in Enmap.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: <code>Map</code> - The Enmap.  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | Required. The key of the element to add to The Enmap.  If the Enmap is persistent this value MUST be a string or number. |
-| val | <code>\*</code> | Required. The value of the element to add to The Enmap.  If the Enmap is persistent this value MUST be stringifiable as JSON. |
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to add to The Enmap.  If the Enmap is persistent this value MUST be a string or number. |
+| val | <code>\*</code> |  | Required. The value of the element to add to The Enmap.  If the Enmap is persistent this value MUST be stringifiable as JSON. |
+| path | <code>string</code> | <code>null</code> | Optional. The path to the property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 **Example**  
 ```js
+// Direct Value Examples
 enmap.set('simplevalue', 'this is a string');
 enmap.set('isEnmapGreat', true);
 enmap.set('TheAnswer', 42);
 enmap.set('IhazObjects', { color: 'black', action: 'paint', desire: true });
+enmap.set('ArraysToo', [1, "two", "tree", "foor"])
+
+// Settings Properties
+enmap.set('IhazObjects', 'color', 'blue'); //modified previous object
+enmap.set('ArraysToo', 2, 'three'); // changes "tree" to "three" in array.   
 ```
-<a name="Enmap+setAsync"></a>
-
-### enmap.setAsync(key, val) ⇒ <code>Promise.&lt;Map&gt;</code>
-Set the value in Enmap, but returns a promise that resolves once writte to the database.
-Useless on non-persistent Enmaps.
-
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>Promise.&lt;Map&gt;</code> - The Enmap.  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | Required. The key of the element to add to The Enmap.  If the Enmap is persistent this value MUST be a string or number. |
-| val | <code>\*</code> | Required. The value of the element to add to The Enmap.  If the Enmap is persistent this value MUST be stringifiable as JSON. |
-
 <a name="Enmap+setProp"></a>
 
-### enmap.setProp(key, prop, val, save) ⇒ <code>Map</code>
+### enmap.setProp(key, path, val) ⇒ <code>Map</code>
 Modify the property of a value inside the enmap, if the value is an object or array.
 This is a shortcut to loading the key, changing the value, and setting it back.
 
@@ -293,13 +282,12 @@ This is a shortcut to loading the key, changing the value, and setting it back.
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>string</code> \| <code>number</code> | Required. The key of the element to add to The Enmap or array.  This value MUST be a string or number. |
-| prop | <code>\*</code> | Required. The property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| path | <code>\*</code> | Required. The property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | val | <code>\*</code> | Required. The value to apply to the specified property. |
-| save | <code>boolean</code> | Optional. Whether to save to persistent DB (used as false in init) |
 
 <a name="Enmap+push"></a>
 
-### enmap.push(key, val, allowDupes) ⇒ <code>Map</code>
+### enmap.push(key, val, path, allowDupes) ⇒ <code>Map</code>
 Push to an array value in Enmap.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
@@ -309,11 +297,21 @@ Push to an array value in Enmap.
 | --- | --- | --- | --- |
 | key | <code>string</code> \| <code>number</code> |  | Required. The key of the array element to push to in Enmap.  This value MUST be a string or number. |
 | val | <code>\*</code> |  | Required. The value to push to the array. |
-| allowDupes | <code>boolean</code> | <code>false</code> | Allow duplicate values in the array (default: false). |
+| path | <code>string</code> | <code>null</code> | Optional. The path to the property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| allowDupes | <code>boolean</code> | <code>false</code> | Optional. Allow duplicate values in the array (default: false). |
 
+**Example**  
+```js
+// Assuming
+enmap.set("simpleArray", [1, 2, 3, 4]);
+enmap.set("arrayInObject", {sub: [1, 2, 3, 4]});
+
+enmap.push("simpleArray", 5); // adds 5 at the end of the array
+enmap.push("arrayInObject", "five", "sub"); adds "five" at the end of the sub array
+```
 <a name="Enmap+pushIn"></a>
 
-### enmap.pushIn(key, prop, val, allowDupes) ⇒ <code>Map</code>
+### enmap.pushIn(key, path, val, allowDupes) ⇒ <code>Map</code>
 Push to an array element inside an Object or Array element in Enmap.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
@@ -322,30 +320,103 @@ Push to an array element inside an Object or Array element in Enmap.
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
 | key | <code>string</code> \| <code>number</code> |  | Required. The key of the element.  This value MUST be a string or number. |
-| prop | <code>\*</code> |  | Required. The name of the array property to push to. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| path | <code>\*</code> |  | Required. The name of the array property to push to. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | val | <code>\*</code> |  | Required. The value push to the array property. |
 | allowDupes | <code>boolean</code> | <code>false</code> | Allow duplicate values in the array (default: false). |
 
+<a name="Enmap+math"></a>
+
+### enmap.math(key, operation, operand, path) ⇒ <code>Map</code>
+Executes a mathematical operation on a value and saves it in the enmap.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>Map</code> - The EnMap.  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> |  | The enmap key on which to execute the math operation. |
+| operation | <code>string</code> |  | Which mathematical operation to execute. Supports most math ops: =, -, *, /, %, ^, and english spelling of those operations. |
+| operand | <code>number</code> |  | The right operand of the operation. |
+| path | <code>string</code> | <code>null</code> | Optional. The property path to execute the operation on, if the value is an object or array. |
+
+**Example**  
+```js
+// Assuming
+points.set("number", 42);
+points.set("numberInObject", {sub: { anInt: 5 }});
+
+points.math("number", "/", 2); // 21
+points.math("number", "add", 5); // 26
+points.math("number", "modulo", 3); // 2
+points.math("numberInObject", "+", 10, "sub.anInt");
+```
+<a name="Enmap+inc"></a>
+
+### enmap.inc(key, path) ⇒ <code>Map</code>
+Increments a key's value or property by 1. Value must be a number, or a path to a number.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>Map</code> - The EnMap.  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> |  | The enmap key where the value to increment is stored. |
+| path | <code>string</code> | <code>null</code> | Optional. The property path to increment, if the value is an object or array. |
+
+**Example**  
+```js
+// Assuming
+points.set("number", 42);
+points.set("numberInObject", {sub: { anInt: 5 }});
+
+points.inc("number"); // 43
+points.inc("numberInObject", "sub.anInt"); // {sub: { anInt: 6 }}
+```
+<a name="Enmap+dec"></a>
+
+### enmap.dec(key, path) ⇒ <code>Map</code>
+Decrements a key's value or property by 1. Value must be a number, or a path to a number.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>Map</code> - The EnMap.  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> |  | The enmap key where the value to decrement is stored. |
+| path | <code>string</code> | <code>null</code> | Optional. The property path to decrement, if the value is an object or array. |
+
+**Example**  
+```js
+// Assuming
+points.set("number", 42);
+points.set("numberInObject", {sub: { anInt: 5 }});
+
+points.dec("number"); // 41
+points.dec("numberInObject", "sub.anInt"); // {sub: { anInt: 4 }}
+```
 <a name="Enmap+get"></a>
 
-### enmap.get(key) ⇒ <code>\*</code> \| <code>Promise.&lt;\*&gt;</code>
+### enmap.get(key, path) ⇒ <code>\*</code>
 Retrieves a key from the enmap. If fetchAll is false, returns a promise.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>\*</code> \| <code>Promise.&lt;\*&gt;</code> - The value or a promise containing the value.  
+**Returns**: <code>\*</code> - The value for this key.  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | The key to retrieve from the enmap. |
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> |  | The key to retrieve from the enmap. |
+| path | <code>string</code> | <code>null</code> | Optional. The property to retrieve from the object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 **Example**  
 ```js
 const myKeyValue = enmap.get("myKey");
 console.log(myKeyValue);
+
+const someSubValue = enmap.get("anObjectKey", "someprop.someOtherSubProp");
 ```
 <a name="Enmap+getProp"></a>
 
-### enmap.getProp(key, prop) ⇒ <code>\*</code>
+### enmap.getProp(key, path) ⇒ <code>\*</code>
 Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
@@ -354,36 +425,31 @@ Returns the specific property within a stored value. If the key does not exist o
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>string</code> \| <code>number</code> | Required. The key of the element to get from The Enmap. |
-| prop | <code>\*</code> | Required. The property to retrieve from the object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
-
-<a name="Enmap+getHighestAutonum"></a>
-
-### enmap.getHighestAutonum(start) ⇒ <code>Integer</code>
-Internal method used by autonum().
-Loops on incremental numerical values until it finds a free key
-of that value in the Enamp.
-
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>Integer</code> - The first non-existant value found.  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| start | <code>Integer</code> | <code>0</code> | The starting value to look for. |
+| path | <code>\*</code> | Required. The property to retrieve from the object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 <a name="Enmap+has"></a>
 
-### enmap.has(key) ⇒ <code>Promise.&lt;boolean&gt;</code>
+### enmap.has(key, path) ⇒ <code>boolean</code>
 Returns whether or not the key exists in the Enmap.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | Required. The key of the element to add to The Enmap or array.  This value MUST be a string or number. |
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to add to The Enmap or array.  This value MUST be a string or number. |
+| path | <code>string</code> | <code>null</code> | Optional. The property to verify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
+**Example**  
+```js
+if(enmap.has("myKey")) {
+  // key is there
+}
+
+if(!enmap.has("myOtherKey", "oneProp.otherProp.SubProp")) return false;
+```
 <a name="Enmap+hasProp"></a>
 
-### enmap.hasProp(key, prop) ⇒ <code>boolean</code>
+### enmap.hasProp(key, path) ⇒ <code>boolean</code>
 Returns whether or not the property exists within an object or array value in enmap.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
@@ -392,29 +458,31 @@ Returns whether or not the property exists within an object or array value in en
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>string</code> \| <code>number</code> | Required. The key of the element to check in the Enmap or array. |
-| prop | <code>\*</code> | Required. The property to verify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| path | <code>\*</code> | Required. The property to verify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 <a name="Enmap+delete"></a>
 
-### enmap.delete(key, bulk)
+### enmap.delete(key, path)
 Deletes a key in the Enmap.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | Required. The key of the element to delete from The Enmap. |
-| bulk | <code>boolean</code> | Internal property used by the purge method. |
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to delete from The Enmap. |
+| path | <code>string</code> | <code>null</code> | Optional. The name of the property to remove from the object. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
-<a name="Enmap+deleteAsync"></a>
+<a name="Enmap+deleteProp"></a>
 
-### enmap.deleteAsync(key, bulk)
+### enmap.deleteProp(key, path)
+Delete a property from an object or array value in Enmap.
+
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | Required. The key of the element to delete from The Enmap. |
-| bulk | <code>boolean</code> | Internal property used by the purge method. |
+| key | <code>string</code> \| <code>number</code> | Required. The key of the element to delete the property from in Enmap. |
+| path | <code>\*</code> | Required. The name of the property to remove from the object. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 <a name="Enmap+deleteAll"></a>
 
@@ -427,36 +495,24 @@ Calls the `delete()` method on all items that have it.
 | --- | --- | --- | --- |
 | bulk | <code>boolean</code> | <code>true</code> | Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one. |
 
-<a name="Enmap+deleteAllAsync"></a>
-
-### enmap.deleteAllAsync(bulk) ⇒ <code>Promise</code>
-Calls the `delete()` method on all items that have it.
-
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>Promise</code> - Returns a promise that is resolved when the database is cleared.  
-
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| bulk | <code>boolean</code> | <code>true</code> | Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one. |
-
 <a name="Enmap+remove"></a>
 
-### enmap.remove(key, val, allowDupes) ⇒ <code>Map</code>
+### enmap.remove(key, val, path) ⇒ <code>Map</code>
 Remove a value in an Array or Object element in Enmap. Note that this only works for
 values, not keys. Complex values such as objects and arrays will not be removed this way.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: <code>Map</code> - The EnMap.  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | Required. The key of the element to remove from in Enmap.  This value MUST be a string or number. |
-| val | <code>\*</code> | Required. The value to remove from the array or object. |
-| allowDupes | <code>boolean</code> | Allow duplicate values in the array (default: false). |
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to remove from in Enmap.  This value MUST be a string or number. |
+| val | <code>\*</code> |  | Required. The value to remove from the array or object. |
+| path | <code>string</code> | <code>null</code> | Optional. The name of the array property to remove from. Can be a path with dot notation, such as "prop1.subprop2.subprop3". If not presents, removes directly from the value. |
 
 <a name="Enmap+removeFrom"></a>
 
-### enmap.removeFrom(key, prop, val) ⇒ <code>Map</code>
+### enmap.removeFrom(key, path, val) ⇒ <code>Map</code>
 Remove a value from an Array or Object property inside an Array or Object element in Enmap.
 Confusing? Sure is.
 
@@ -466,21 +522,8 @@ Confusing? Sure is.
 | Param | Type | Description |
 | --- | --- | --- |
 | key | <code>string</code> \| <code>number</code> | Required. The key of the element.  This value MUST be a string or number. |
-| prop | <code>\*</code> | Required. The name of the array property to remove from. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| path | <code>\*</code> | Required. The name of the array property to remove from. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | val | <code>\*</code> | Required. The value to remove from the array property. |
-
-<a name="Enmap+deleteProp"></a>
-
-### enmap.deleteProp(key, prop) ⇒ [<code>Promise.&lt;Enmap&gt;</code>](#Enmap) \| [<code>Enmap</code>](#Enmap)
-Delete a property from an object or array value in Enmap.
-
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: [<code>Promise.&lt;Enmap&gt;</code>](#Enmap) \| [<code>Enmap</code>](#Enmap) - If fetchAll is true, return the Enmap. Otherwise return a promise containing the Enmap.  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | Required. The key of the element to delete the property from in Enmap. |
-| prop | <code>\*</code> | Required. The name of the property to remove from the object. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 <a name="Enmap+array"></a>
 

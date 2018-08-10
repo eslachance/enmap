@@ -161,6 +161,16 @@ class Enmap extends Map {
     return super.set(key, _.cloneDeep(insert));
   }
 
+  /**
+   * Modify the property of a value inside the enmap, if the value is an object or array.
+   * This is a shortcut to loading the key, changing the value, and setting it back.
+   * @param {string|number} key Required. The key of the element to add to The Enmap or array. 
+   * This value MUST be a string or number.
+   * @param {*} path Required. The property to modify inside the value object or array.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @param {*} val Required. The value to apply to the specified property.
+   * @return {Map} The EnMap.
+   */
   setProp(key, path, val) {
     return this.set(key, val, path);
   }
@@ -197,6 +207,16 @@ class Enmap extends Map {
     return this.set(key, data);
   }
 
+  /**
+   * Push to an array element inside an Object or Array element in Enmap. 
+   * @param {string|number} key Required. The key of the element. 
+   * This value MUST be a string or number.
+   * @param {*} path Required. The name of the array property to push to.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @param {*} val Required. The value push to the array property.
+   * @param {boolean} allowDupes Allow duplicate values in the array (default: false).
+   * @return {Map} The EnMap.
+   */
   pushIn(key, path, val, allowDupes = false) {
     return this.push(key, val, path, allowDupes);
   }
@@ -314,6 +334,13 @@ class Enmap extends Map {
     return super.get(key);
   }
 
+  /**
+   * Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
+   * @param {string|number} key Required. The key of the element to get from The Enmap. 
+   * @param {*} path Required. The property to retrieve from the object or array.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @return {*} The value of the property obtained.
+   */
   getProp(key, path) {
     return this.get(key, path);
   }
@@ -343,6 +370,13 @@ class Enmap extends Map {
     return super.has(key);
   }
 
+  /**
+   * Returns whether or not the property exists within an object or array value in enmap.
+   * @param {string|number} key Required. The key of the element to check in the Enmap or array. 
+   * @param {*} path Required. The property to verify inside the value object or array.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @return {boolean} Whether the property exists.
+   */
   hasProp(key, path) {
     return this.has(key, path);
   }
@@ -384,8 +418,14 @@ class Enmap extends Map {
     }
   }
 
+  /**
+   * Delete a property from an object or array value in Enmap.
+   * @param {string|number} key Required. The key of the element to delete the property from in Enmap. 
+   * @param {*} path Required. The name of the property to remove from the object.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   */
   deleteProp(key, path) {
-    return this.delete(key, path);
+    this.delete(key, path);
   }
 
   /**
@@ -438,6 +478,16 @@ class Enmap extends Map {
     return this.set(key, data);
   }
 
+  /**
+   * Remove a value from an Array or Object property inside an Array or Object element in Enmap.
+   * Confusing? Sure is. 
+   * @param {string|number} key Required. The key of the element. 
+   * This value MUST be a string or number.
+   * @param {*} path Required. The name of the array property to remove from.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @param {*} val Required. The value to remove from the array property.
+   * @return {Map} The EnMap.
+   */
   removeFrom(key, path, val) {
     return this.remove(key, val, path);
   }
