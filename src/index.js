@@ -7,7 +7,7 @@ const _check = Symbol('check');
 
 /**
  * A enhanced Map structure with additional utility methods.
- * Can be made persistent 
+ * Can be made persistent
  * @extends {Map}
  */
 class Enmap extends Map {
@@ -45,12 +45,12 @@ class Enmap extends Map {
    * const Enmap = require('enmap');
    * const Provider = require('enmap-mongo');
    * const { settings, tags, blacklist } = Enmap.multi(['settings', 'tags', 'blacklist'], Provider, { url: "some connection URL here" });
-   * 
+   *
    * // Attaching to an existing object (for instance some API's client)
    * const Enmap = require("enmap");
    * const Provider = require("enmap-mongo");
    * Object.assign(client, Enmap.multi(["settings", "tags", "blacklist"], Provider, { url: "some connection URL here" }));
-   * 
+   *
    * @returns {Array<Map>} An array of initialized Enmaps.
    */
   static multi(names, Provider, options = {}) {
@@ -123,9 +123,9 @@ class Enmap extends Map {
 
   /**
    * Set the value in Enmap.
-   * @param {string|number} key Required. The key of the element to add to The Enmap. 
+   * @param {string|number} key Required. The key of the element to add to The Enmap.
    * If the Enmap is persistent this value MUST be a string or number.
-   * @param {*} val Required. The value of the element to add to The Enmap. 
+   * @param {*} val Required. The value of the element to add to The Enmap.
    * If the Enmap is persistent this value MUST be stringifiable as JSON.
    * @param {string} path Optional. The path to the property to modify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -136,10 +136,10 @@ class Enmap extends Map {
    * enmap.set('TheAnswer', 42);
    * enmap.set('IhazObjects', { color: 'black', action: 'paint', desire: true });
    * enmap.set('ArraysToo', [1, "two", "tree", "foor"])
-   * 
+   *
    * // Settings Properties
    * enmap.set('IhazObjects', 'color', 'blue'); //modified previous object
-   * enmap.set('ArraysToo', 2, 'three'); // changes "tree" to "three" in array.   
+   * enmap.set('ArraysToo', 2, 'three'); // changes "tree" to "three" in array.
    * @return {Map} The Enmap.
    */
   set(key, val, path = null) {
@@ -155,7 +155,7 @@ class Enmap extends Map {
       this.changedCB(key, oldValue, data);
     }
     if (this.persistent) {
-      this.db.set(key, JSON.parse(JSON.stringify(data)));
+      this.db.set(key, data);
     }
     return super.set(key, _.cloneDeep(data));
   }
@@ -163,7 +163,7 @@ class Enmap extends Map {
   /**
    * Modify the property of a value inside the enmap, if the value is an object or array.
    * This is a shortcut to loading the key, changing the value, and setting it back.
-   * @param {string|number} key Required. The key of the element to add to The Enmap or array. 
+   * @param {string|number} key Required. The key of the element to add to The Enmap or array.
    * This value MUST be a string or number.
    * @param {*} path Required. The property to modify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -176,7 +176,7 @@ class Enmap extends Map {
 
   /**
    * Push to an array value in Enmap.
-   * @param {string|number} key Required. The key of the array element to push to in Enmap. 
+   * @param {string|number} key Required. The key of the array element to push to in Enmap.
    * This value MUST be a string or number.
    * @param {*} val Required. The value to push to the array.
    * @param {string} path Optional. The path to the property to modify inside the value object or array.
@@ -186,7 +186,7 @@ class Enmap extends Map {
    * // Assuming
    * enmap.set("simpleArray", [1, 2, 3, 4]);
    * enmap.set("arrayInObject", {sub: [1, 2, 3, 4]});
-   * 
+   *
    * enmap.push("simpleArray", 5); // adds 5 at the end of the array
    * enmap.push("arrayInObject", "five", "sub"); adds "five" at the end of the sub array
    * @return {Map} The EnMap.
@@ -207,8 +207,8 @@ class Enmap extends Map {
   }
 
   /**
-   * Push to an array element inside an Object or Array element in Enmap. 
-   * @param {string|number} key Required. The key of the element. 
+   * Push to an array element inside an Object or Array element in Enmap.
+   * @param {string|number} key Required. The key of the element.
    * This value MUST be a string or number.
    * @param {*} path Required. The name of the array property to push to.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -233,12 +233,12 @@ class Enmap extends Map {
    * // Assuming
    * points.set("number", 42);
    * points.set("numberInObject", {sub: { anInt: 5 }});
-   * 
+   *
    * points.math("number", "/", 2); // 21
    * points.math("number", "add", 5); // 26
    * points.math("number", "modulo", 3); // 2
    * points.math("numberInObject", "+", 10, "sub.anInt");
-   * 
+   *
    * @return {Map} The EnMap.
    */
   math(key, operation, operand, path = null) {
@@ -266,7 +266,7 @@ class Enmap extends Map {
    * // Assuming
    * points.set("number", 42);
    * points.set("numberInObject", {sub: { anInt: 5 }});
-   * 
+   *
    * points.inc("number"); // 43
    * points.inc("numberInObject", "sub.anInt"); // {sub: { anInt: 6 }}
    * @return {Map} The EnMap.
@@ -292,7 +292,7 @@ class Enmap extends Map {
    * // Assuming
    * points.set("number", 42);
    * points.set("numberInObject", {sub: { anInt: 5 }});
-   * 
+   *
    * points.dec("number"); // 41
    * points.dec("numberInObject", "sub.anInt"); // {sub: { anInt: 4 }}
    * @return {Map} The EnMap.
@@ -320,7 +320,7 @@ class Enmap extends Map {
    * @example
    * const myKeyValue = enmap.get("myKey");
    * console.log(myKeyValue);
-   * 
+   *
    * const someSubValue = enmap.get("anObjectKey", "someprop.someOtherSubProp");
    * @return {*} The value for this key.
    */
@@ -335,7 +335,7 @@ class Enmap extends Map {
 
   /**
    * Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
-   * @param {string|number} key Required. The key of the element to get from The Enmap. 
+   * @param {string|number} key Required. The key of the element to get from The Enmap.
    * @param {*} path Required. The property to retrieve from the object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @return {*} The value of the property obtained.
@@ -348,7 +348,7 @@ class Enmap extends Map {
 
   /**
    * Returns whether or not the key exists in the Enmap.
-   * @param {string|number} key Required. The key of the element to add to The Enmap or array. 
+   * @param {string|number} key Required. The key of the element to add to The Enmap or array.
    * This value MUST be a string or number.
    * @param {string} path Optional. The property to verify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -356,7 +356,7 @@ class Enmap extends Map {
    * if(enmap.has("myKey")) {
    *   // key is there
    * }
-   * 
+   *
    * if(!enmap.has("myOtherKey", "oneProp.otherProp.SubProp")) return false;
    * @returns {boolean}
    */
@@ -371,7 +371,7 @@ class Enmap extends Map {
 
   /**
    * Returns whether or not the property exists within an object or array value in enmap.
-   * @param {string|number} key Required. The key of the element to check in the Enmap or array. 
+   * @param {string|number} key Required. The key of the element to check in the Enmap or array.
    * @param {*} path Required. The property to verify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @return {boolean} Whether the property exists.
@@ -419,7 +419,7 @@ class Enmap extends Map {
 
   /**
    * Delete a property from an object or array value in Enmap.
-   * @param {string|number} key Required. The key of the element to delete the property from in Enmap. 
+   * @param {string|number} key Required. The key of the element to delete the property from in Enmap.
    * @param {*} path Required. The name of the property to remove from the object.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    */
@@ -449,7 +449,7 @@ class Enmap extends Map {
   /**
    * Remove a value in an Array or Object element in Enmap. Note that this only works for
    * values, not keys. Complex values such as objects and arrays will not be removed this way.
-   * @param {string|number} key Required. The key of the element to remove from in Enmap. 
+   * @param {string|number} key Required. The key of the element to remove from in Enmap.
    * This value MUST be a string or number.
    * @param {*} val Required. The value to remove from the array or object.
    * @param {string} path Optional. The name of the array property to remove from.
@@ -479,8 +479,8 @@ class Enmap extends Map {
 
   /**
    * Remove a value from an Array or Object property inside an Array or Object element in Enmap.
-   * Confusing? Sure is. 
-   * @param {string|number} key Required. The key of the element. 
+   * Confusing? Sure is.
+   * @param {string|number} key Required. The key of the element.
    * This value MUST be a string or number.
    * @param {*} path Required. The name of the array property to remove from.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -497,7 +497,7 @@ class Enmap extends Map {
   /*
    * INTERNAL method used by autonum().
    * Loops on incremental numerical values until it finds a free key
-   * of that value in the Enamp. 
+   * of that value in the Enamp.
    * @param {Integer} start The starting value to look for.
    * @return {Integer} The first non-existant value found.
    */
@@ -535,7 +535,7 @@ class Enmap extends Map {
   }
 
   /*
-  * INTERNAL method to execute a mathematical operation. Cuz... javascript. 
+  * INTERNAL method to execute a mathematical operation. Cuz... javascript.
   * And I didn't want to import mathjs!
   * @param {number} base the lefthand operand.
   * @param {string} op the operation.
@@ -577,7 +577,7 @@ class Enmap extends Map {
   /*
   BELOW IS DISCORD.JS COLLECTION CODE
   Per notes in the LICENSE file, this project contains code from Amish Shah's Discord.js
-  library. The code is from the Collections object, in discord.js version 11. 
+  library. The code is from the Collections object, in discord.js version 11.
 
   All below code is sourced from Collections.
   https://github.com/discordjs/discord.js/blob/stable/src/util/Collection.js
@@ -586,7 +586,7 @@ class Enmap extends Map {
   /**
    * Creates an ordered array of the values of this Enmap.
    * The array will only be reconstructed if an item is added to or removed from the Enmap,
-   * or if you change the length of the array itself. If you don't want this caching behaviour, 
+   * or if you change the length of the array itself. If you don't want this caching behaviour,
    * use `Array.from(enmap.values())` instead.
    * @returns {Array}
    */
@@ -596,8 +596,8 @@ class Enmap extends Map {
 
   /**
      * Creates an ordered array of the keys of this Enmap
-     * The array will only be reconstructed if an item is added to or removed from the Enmap, 
-     * or if you change the length of the array itself. If you don't want this caching behaviour, 
+     * The array will only be reconstructed if an item is added to or removed from the Enmap,
+     * or if you change the length of the array itself. If you don't want this caching behaviour,
      * use `Array.from(enmap.keys())` instead.
      * @returns {Array}
      */
@@ -628,7 +628,7 @@ class Enmap extends Map {
   /**
      * Obtains random key(s) from this Enmap. This relies on {@link Enmap#keyArray}
      * @param {number} [count] Number of keys to obtain randomly
-     * @returns {*|Array<*>} The single key if `count` is undefined, 
+     * @returns {*|Array<*>} The single key if `count` is undefined,
      * or an array of keys of `count` length
      */
   randomKey(count) {
