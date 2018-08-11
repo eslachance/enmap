@@ -27,21 +27,16 @@ class Enmap extends Map {
     });
 
     if (options.provider) {
+      Object.defineProperty(this, 'db', { value: options.provider, writable: false, enumerable: false, configurable: false });
       Object.defineProperties(this, {
         persistent: { value: true, writable: false, enumerable: false, configurable: false },
-        db: { value: options.provider, writable: false, enumerable: false, configurable: false },
         defer: { value: this.db.defer, writable: false, enumerable: false, configurable: false },
         name: { value: this.db.name, writable: false, enumerable: false, configurable: false }
       });
       this.db.fetchAll = this.fetchAll;
       this.db.init(this);
     } else {
-      Object.defineProperty(this, 'name', {
-        value: 'MemoryBasedEnmap',
-        writable: false,
-        enumerable: false,
-        configurable: false
-      });
+      Object.defineProperty(this, 'name', { value: 'MemoryBasedEnmap', writable: false, enumerable: false, configurable: false });
     }
   }
 
