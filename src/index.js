@@ -19,17 +19,29 @@ class Enmap extends Map {
     }
     super(iterable);
 
-    this.fetchAll = options.fetchAll !== undefined ? options.fetchAll : true;
+    Object.defineProperty(this, 'fetchAll', {
+      value: options.fetchAll !== undefined ? options.fetchAll : true,
+      writable: false,
+      enumerable: false,
+      configurable: false
+    });
 
     if (options.provider) {
-      this.persistent = true;
-      this.db = options.provider;
+      Object.defineProperties(this, {
+        persistent: { value: true, writable: false, enumerable: false, configurable: false },
+        db: { value: options.provider, writable: false, enumerable: false, configurable: false },
+        defer: { value: this.db.defer, writable: false, enumerable: false, configurable: false },
+        name: { value: this.db.name, writable: false, enumerable: false, configurable: false }
+      });
       this.db.fetchAll = this.fetchAll;
-      this.defer = this.db.defer;
       this.db.init(this);
-      this.name = this.db.name;
     } else {
-      this.name = 'MemoryBasedEnmap';
+      Object.defineProperty(this, 'name', {
+        value: 'MemoryBasedEnmap',
+        writable: false,
+        enumerable: false,
+        configurable: false
+      });
     }
   }
 
@@ -91,6 +103,18 @@ class Enmap extends Map {
       super.set(key, value);
       return [key, value];
     })));
+  }
+
+  /**
+   * Removes a key from the cache - useful when using the fetchAll feature.
+   * @param {*} keyOrArrayOfKeys A single key or array of keys to remove from the cache.
+   */
+  evict(keyOrArrayOfKeys) {
+    if (_.isArray(keyOrArrayOfKeys)) {
+      keyOrArrayOfKeys.forEach(key => super.delete(key));
+    } else {
+      super.delete(keyOrArrayOfKeys);
+    }
   }
 
   /**
@@ -171,6 +195,7 @@ class Enmap extends Map {
    * @return {Map} The EnMap.
    */
   setProp(key, path, val) {
+    if (path == undefined) throw new Err(`No path provided to set a property in "${key}" of enmap "${this.name}"`);
     return this.set(key, val, path);
   }
 
@@ -217,6 +242,7 @@ class Enmap extends Map {
    * @return {Map} The EnMap.
    */
   pushIn(key, path, val, allowDupes = false) {
+    if (path == undefined) throw new Err(`No path provided to push a value in "${key}" of enmap "${this.name}"`);
     return this.push(key, val, path, allowDupes);
   }
 
@@ -341,6 +367,7 @@ class Enmap extends Map {
    * @return {*} The value of the property obtained.
    */
   getProp(key, path) {
+    if (path == undefined) throw new Err(`No path provided get a property from "${key}" of enmap "${this.name}"`);
     return this.get(key, path);
   }
 
@@ -377,6 +404,7 @@ class Enmap extends Map {
    * @return {boolean} Whether the property exists.
    */
   hasProp(key, path) {
+    if (path == undefined) throw new Err(`No path provided to check for a property in "${key}" of enmap "${this.name}"`);
     return this.has(key, path);
   }
 
@@ -424,6 +452,7 @@ class Enmap extends Map {
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    */
   deleteProp(key, path) {
+    if (path == undefined) throw new Err(`No path provided to delete a property in "${key}" of enmap "${this.name}"`);
     this.delete(key, path);
   }
 
@@ -488,6 +517,7 @@ class Enmap extends Map {
    * @return {Map} The EnMap.
    */
   removeFrom(key, path, val) {
+    if (path == undefined) throw new Err(`No path provided to remove an array element in "${key}" of enmap "${this.name}"`);
     return this.remove(key, val, path);
   }
 
