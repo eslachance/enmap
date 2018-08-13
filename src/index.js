@@ -129,7 +129,7 @@ class Enmap extends Map {
     }
     const table = this.db.prepare(`SELECT count(*) FROM sqlite_master WHERE type='table' AND name = '${this.name}';`).get();
     if (!table['count(*)']) {
-      this.db.prepare(`CREATE TABLE ${this.name} (key text PRIMARY KEY, value text)`).run();
+      this.db.prepare(`CREATE TABLE ${this.name} (key text PRIMARY KEY, value text, type text)`).run();
       this.db.pragma('synchronous = 1');
       this.db.pragma('journal_mode = wal');
     }
@@ -300,7 +300,6 @@ class Enmap extends Map {
 
     if (this.persistent) {
       const insert = typeof val === 'object' ? JSON.stringify(val) : val;
-      console.log(insert.constructor.name)
       this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, insert);
     }
     return super.set(key, _.cloneDeep(data));
@@ -551,6 +550,7 @@ class Enmap extends Map {
    * @param {string|number} key Required. The key of the element to delete from The Enmap.
    * @param {string} path Optional. The name of the property to remove from the object.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @returns {Enmap} The enmap.
    */
   delete(key, path = null) {
     this[_readyCheck]();
