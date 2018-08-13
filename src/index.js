@@ -1,9 +1,18 @@
+// Require SQLite
+const { Pool } = require('better-sqlite-pool');
+const { resolve, sep } = require('path');
+const fs = require('fs');
+
 const _ = require('lodash');
 const Err = require('./error.js');
 
 const _mathop = Symbol('mathop');
 const _getHighestAutonum = Symbol('getHighestAutonum');
 const _check = Symbol('check');
+const _validateName = Symbol('validateName');
+const _fetchCheck = Symbol('fetchCheck');
+const _parseData = Symbol('parseData');
+const _readyCheck = Symbol('readyCheck');
 
 /**
  * A enhanced Map structure with additional utility methods.
@@ -19,25 +28,116 @@ class Enmap extends Map {
     }
     super(iterable);
 
-    Object.defineProperty(this, 'fetchAll', {
-      value: options.fetchAll !== undefined ? options.fetchAll : true,
+    Object.defineProperty(this, 'persistent', {
+      value: options.persistent || false,
+      writable: false,
+      enumerable: true,
+      configurable: false
+    });
+
+    if (this.persistent) {
+      if (!options.name) throw new Error('Must provide options.name');
+
+      if (!options.dataDir) {
+        if (!fs.existsSync('./data')) {
+          fs.mkdirSync('./data');
+        }
+      }
+      const dataDir = resolve(process.cwd(), options.dataDir || 'data');
+      const pool = new Pool(`${dataDir}${sep}enmap.sqlite`);
+
+      Object.defineProperties(this, {
+        name: {
+          value: options.name,
+          writable: true,
+          enumerable: false,
+          configurable: false
+        },
+        fetchAll: {
+          value: options.fetchAll,
+          writable: true,
+          enumerable: false,
+          configurable: false
+        },
+        pool: {
+          value: pool,
+          writable: false,
+          enumerable: false,
+          configurable: false
+        },
+        autoFetch: {
+          value: options.autoFetch != undefined ? options.autoFetch : true,
+          writable: true,
+          enumerable: false,
+          configurable: false
+        },
+        defer: {
+          value: new Promise((res) => { this.ready = res; }),
+          writable: false,
+          enumerable: false,
+          configurable: false
+        }
+      });
+      this[_validateName]();
+      this.init(pool);
+    }
+  }
+
+  /**
+   * Internal Method. Verifies if a key needs to be fetched from the database.
+   * If persistent enmap and autoFetch is on, retrieves the key.
+   * @param {string|number} key The key to check or fetch.
+   */
+  [_fetchCheck](key) {
+    if (!this.persistent || (this.fetchAll && !this.autoFetch)) return;
+    this.fetch(key);
+  }
+
+  /**
+   * Internal Method. Parses JSON data if JSON, or return original data.
+   * @param {*} data The data to check/parse
+   * @returns {*} An object or the original data.
+   */
+  [_parseData](data) {
+    if (data[0] === '[' || data[0] === '{') {
+      return JSON.parse(data);
+    } else {
+      return data;
+    }
+  }
+
+  [_readyCheck]() {
+    if (!this.isReady) throw new Err('Database is not ready. Refer to the readme to use enmap.defer', 'ReadyError');
+  }
+
+  /**
+   * Internal method called on persistent Enmaps to load data from the underlying database.
+   * @param {Map} pool In order to set data to the Enmap, one must be provided.
+   * @returns {Promise} Returns the defer promise to await the ready state.
+   */
+  async init(pool) {
+    Object.defineProperty(this, 'db', {
+      value: await pool.acquire(),
       writable: false,
       enumerable: false,
       configurable: false
     });
-
-    if (options.provider) {
-      Object.defineProperty(this, 'db', { value: options.provider, writable: false, enumerable: false, configurable: false });
-      Object.defineProperties(this, {
-        persistent: { value: true, writable: false, enumerable: false, configurable: false },
-        defer: { value: this.db.defer, writable: false, enumerable: false, configurable: false },
-        name: { value: this.db.name, writable: false, enumerable: false, configurable: false }
-      });
-      this.db.fetchAll = this.fetchAll;
-      this.db.init(this);
+    if (this.db) {
+      this.isReady = true;
     } else {
-      Object.defineProperty(this, 'name', { value: 'MemoryBasedEnmap', writable: false, enumerable: false, configurable: false });
+      throw new Err('Database Could Not Be Opened', 'ConnectionError');
     }
+    const table = this.db.prepare(`SELECT count(*) FROM sqlite_master WHERE type='table' AND name = '${this.name}';`).get();
+    if (!table['count(*)']) {
+      this.db.prepare(`CREATE TABLE ${this.name} (key text PRIMARY KEY, value text)`).run();
+      this.db.pragma('synchronous = 1');
+      this.db.pragma('journal_mode = wal');
+    }
+    if (this.autoFetch) {
+      await this.fetchEverything();
+    }
+    this.ready();
+    return this.defer;
   }
 
   /* GENERAL-USE METHODS & HELPERS */
@@ -45,7 +145,6 @@ class Enmap extends Map {
   /**
    * Initialize multiple Enmaps easily.
    * @param {Array<string>} names Array of strings. Each array entry will create a separate enmap with that name.
-   * @param {EnmapProvider} Provider Valid EnmapProvider object.
    * @param {Object} options Options object to pass to the provider. See provider documentation for its options.
    * @example
    * // Using local variables and the mongodb provider.
@@ -60,17 +159,14 @@ class Enmap extends Map {
    *
    * @returns {Array<Map>} An array of initialized Enmaps.
    */
-  static multi(names, Provider, options = {}) {
+  static multi(names, options = {}) {
     if (!names.length || names.length < 1) {
-      throw new Error('"names" argument must be an array of string names.');
-    }
-    if (!Provider) {
-      throw new Error('Second argument must be a valid EnmapProvider.');
+      throw new Err('"names" argument must be an array of string names.', 'TypeError');
     }
 
     const returnvalue = {};
     for (const name of names) {
-      const enmap = new Enmap({ provider: new Provider(Object.assign(options, { name })) });
+      const enmap = new Enmap(Object.assign(options, { name }));
       returnvalue[name] = enmap;
     }
     return returnvalue;
@@ -80,29 +176,41 @@ class Enmap extends Map {
    * Fetches every key from the persistent enmap and loads them into the current enmap value.
    * @return {Promise<Map>} The enmap containing all values, as a promise..
    */
-  async fetchEverything() {
-    return await this.db.fetchEverything();
+  fetchEverything() {
+    this[_readyCheck]();
+    const rows = this.db.prepare(`SELECT * FROM ${this.name};`).all();
+    for (const row of rows) {
+      super.set(row.key, this[_parseData](row.value));
+    }
+    return this;
   }
 
+  // *** FIX THIS *** //
   /**
    * Force fetch one or more key values from the enmap. If the database has changed, that new value is used.
    * @param {string|number} keyOrKeys A single key or array of keys to force fetch from the enmap database.
    * @return {Promise<*|Map>} A single value if requested, or a non-persistent enmap of keys if an array is requested.
    */
-  async fetch(keyOrKeys) {
-    if (!Array.isArray(keyOrKeys)) {
-      return this.db.fetch(keyOrKeys);
+  fetch(keyOrKeys) {
+    this[_readyCheck]();
+    if (_.isArray(keyOrKeys)) {
+      const data = this.db.prepare(`SELECT * FROM ${this.name} WHERE key IN (${'?, '.repeat(keyOrKeys.length).slice(0, -2)})`).all(keyOrKeys);
+      for (const row of data) {
+        super.set(row.key, this[_parseData](row.value));
+      }
+      return this;
+    } else {
+      const data = this.db.prepare(`SELECT * FROM ${this.name} WHERE key = ?;`).get(keyOrKeys);
+      if (!data) return null;
+      super.set(keyOrKeys, this[_parseData](data.value));
+      return this[_parseData](data.value);
     }
-    return new this.constructor(await Promise.all(keyOrKeys.map(async key => {
-      const value = await this.db.fetch(key);
-      super.set(key, value);
-      return [key, value];
-    })));
   }
 
   /**
-   * Removes a key from the cache - useful when using the fetchAll feature.
+   * Removes a key from the cache - useful when disabling autoFetch.
    * @param {*} keyOrArrayOfKeys A single key or array of keys to remove from the cache.
+   * @returns {Enmap} The enmap.
    */
   evict(keyOrArrayOfKeys) {
     if (_.isArray(keyOrArrayOfKeys)) {
@@ -110,6 +218,7 @@ class Enmap extends Map {
     } else {
       super.delete(keyOrArrayOfKeys);
     }
+    return this;
   }
 
   /**
@@ -119,6 +228,7 @@ class Enmap extends Map {
    * @return {number} The generated key number.
    */
   autonum() {
+    this[_fetchCheck]('internal::autonum');
     const start = this.get('internal::autonum') || 0;
     let highest = this[_getHighestAutonum](start);
     this.set('internal::autonum', ++highest);
@@ -136,6 +246,15 @@ class Enmap extends Map {
    */
   changed(cb) {
     this.changedCB = cb;
+  }
+
+  /**
+   * Shuts down the underlying persistent enmap database.
+   * @return {Promise<*>} The promise of the database closing operation.
+   */
+  close() {
+    this[_readyCheck]();
+    return this.pool.close();
   }
 
   /* METHODS THAT SET THINGS IN ENMAP */
@@ -159,10 +278,15 @@ class Enmap extends Map {
    * // Settings Properties
    * enmap.set('IhazObjects', 'color', 'blue'); //modified previous object
    * enmap.set('ArraysToo', 2, 'three'); // changes "tree" to "three" in array.
-   * @return {Map} The Enmap.
+   * @returns {Enmap} The enmap.
    */
   set(key, val, path = null) {
+    this[_readyCheck]();
+    this[_fetchCheck](key);
     if (val == null) throw `Value provided for ${key} was null or undefined. Please provide a value.`;
+    if (!key || !['String', 'Number'].includes(key.constructor.name)) {
+      throw new Error('Enmap require keys to be strings or numbers.');
+    }
     let data = super.get(key);
     const oldValue = super.has(key) ? data : null;
     if (path != null) {
@@ -173,8 +297,11 @@ class Enmap extends Map {
     if (typeof this.changedCB === 'function') {
       this.changedCB(key, oldValue, data);
     }
+
     if (this.persistent) {
-      this.db.set(key, data);
+      const insert = typeof val === 'object' ? JSON.stringify(val) : val;
+      console.log(insert.constructor.name)
+      this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, insert);
     }
     return super.set(key, _.cloneDeep(data));
   }
@@ -187,9 +314,10 @@ class Enmap extends Map {
    * @param {*} path Required. The property to modify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @param {*} val Required. The value to apply to the specified property.
-   * @return {Map} The EnMap.
+   * @returns {Enmap} The enmap.
    */
   setProp(key, path, val) {
+    this[_readyCheck]();
     if (path == undefined) throw new Err(`No path provided to set a property in "${key}" of enmap "${this.name}"`);
     return this.set(key, val, path);
   }
@@ -209,9 +337,10 @@ class Enmap extends Map {
    *
    * enmap.push("simpleArray", 5); // adds 5 at the end of the array
    * enmap.push("arrayInObject", "five", "sub"); adds "five" at the end of the sub array
-   * @return {Map} The EnMap.
+   * @returns {Enmap} The enmap.
    */
   push(key, val, path = null, allowDupes = false) {
+    this[_readyCheck]();
     this[_check](key, 'Array', path);
     const data = super.get(key);
     if (path != null) {
@@ -234,9 +363,10 @@ class Enmap extends Map {
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @param {*} val Required. The value push to the array property.
    * @param {boolean} allowDupes Allow duplicate values in the array (default: false).
-   * @return {Map} The EnMap.
+   * @returns {Enmap} The enmap.
    */
   pushIn(key, path, val, allowDupes = false) {
+    this[_readyCheck]();
     if (path == undefined) throw new Err(`No path provided to push a value in "${key}" of enmap "${this.name}"`);
     return this.push(key, val, path, allowDupes);
   }
@@ -263,6 +393,7 @@ class Enmap extends Map {
    * @return {Map} The EnMap.
    */
   math(key, operation, operand, path = null) {
+    this[_readyCheck]();
     this[_check](key, 'Number', path);
     if (!path) {
       if (operation === 'random' || operation === 'rand') {
@@ -293,6 +424,7 @@ class Enmap extends Map {
    * @return {Map} The EnMap.
    */
   inc(key, path = null) {
+    this[_readyCheck]();
     this[_check](key, 'Number', path);
     if (!path) {
       let val = this.get(key);
@@ -319,6 +451,7 @@ class Enmap extends Map {
    * @return {Map} The EnMap.
    */
   dec(key, path = null) {
+    this[_readyCheck]();
     this[_check](key, 'Number', path);
     if (!path) {
       let val = this.get(key);
@@ -346,12 +479,14 @@ class Enmap extends Map {
    * @return {*} The value for this key.
    */
   get(key, path = null) {
+    this[_readyCheck]();
+    this[_fetchCheck](key);
     if (path != null) {
       this[_check](key, 'Object');
       const data = super.get(key);
       return _.get(data, path);
     }
-    return super.get(key);
+    return this[_parseData](super.get(key));
   }
 
   /**
@@ -362,6 +497,8 @@ class Enmap extends Map {
    * @return {*} The value of the property obtained.
    */
   getProp(key, path) {
+    this[_readyCheck]();
+    this[_fetchCheck](key);
     if (path == undefined) throw new Err(`No path provided get a property from "${key}" of enmap "${this.name}"`);
     return this.get(key, path);
   }
@@ -383,6 +520,8 @@ class Enmap extends Map {
    * @returns {boolean}
    */
   has(key, path = null) {
+    this[_readyCheck]();
+    this[_fetchCheck](key);
     if (path != null) {
       this[_check](key, 'Object');
       const data = super.get(key);
@@ -399,6 +538,8 @@ class Enmap extends Map {
    * @return {boolean} Whether the property exists.
    */
   hasProp(key, path) {
+    this[_readyCheck]();
+    this[_fetchCheck](key);
     if (path == undefined) throw new Err(`No path provided to check for a property in "${key}" of enmap "${this.name}"`);
     return this.has(key, path);
   }
@@ -412,6 +553,8 @@ class Enmap extends Map {
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    */
   delete(key, path = null) {
+    this[_readyCheck]();
+    this[_fetchCheck](key);
     const oldValue = this.get(key);
     if (path != null) {
       let data = this.get(key);
@@ -432,12 +575,13 @@ class Enmap extends Map {
     } else {
       super.delete(key);
       if (this.persistent) {
-        this.db.delete(key);
+        return this.db.prepare(`DELETE FROM ${this.name} WHERE key = '${key}'`).run();
       }
       if (typeof this.changedCB === 'function') {
         this.changedCB(key, oldValue, null);
       }
     }
+    return this;
   }
 
   /**
@@ -447,28 +591,24 @@ class Enmap extends Map {
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    */
   deleteProp(key, path) {
+    this[_readyCheck]();
+    this[_fetchCheck](key);
     if (path == undefined) throw new Err(`No path provided to delete a property in "${key}" of enmap "${this.name}"`);
     this.delete(key, path);
   }
 
   /**
-   * Calls the `delete()` method on all items that have it.
-   * @param {boolean} bulk Optional. Defaults to True. whether to use the provider's "bulk" delete feature if it has one.
+   * Deletes everything from the enmap. If persistent, clears the database of all its data for this table.
    */
-  deleteAll(bulk = true) {
+  deleteAll() {
+    this[_readyCheck]();
     if (this.persistent) {
-      if (bulk) {
-        this.db.bulkDelete();
-      } else {
-        for (const key of this.keys()) {
-          this.db.delete(key);
-        }
-      }
+      this.db.prepare(`DELETE FROM ${this.name};`).run();
     }
     super.clear();
   }
 
-  clear(bulk = true) { return this.deleteAll(bulk); }
+  clear() { return this.deleteAll(); }
 
   /**
    * Remove a value in an Array or Object element in Enmap. Note that this only works for
@@ -482,6 +622,8 @@ class Enmap extends Map {
    * @return {Map} The EnMap.
    */
   remove(key, val, path = null) {
+    this[_readyCheck]();
+    this[_fetchCheck](key);
     this[_check](key, ['Array', 'Object']);
     const data = super.get(key);
     if (path != null) {
@@ -512,6 +654,7 @@ class Enmap extends Map {
    * @return {Map} The EnMap.
    */
   removeFrom(key, path, val) {
+    this[_readyCheck]();
     if (path == undefined) throw new Err(`No path provided to remove an array element in "${key}" of enmap "${this.name}"`);
     return this.remove(key, val, path);
   }
@@ -527,6 +670,7 @@ class Enmap extends Map {
    * @return {Integer} The first non-existant value found.
    */
   [_getHighestAutonum](start = 0) {
+    this[_readyCheck]();
     let highest = start;
     while (this.has(highest)) {
       highest++;
@@ -596,6 +740,14 @@ class Enmap extends Map {
       return base % opand;
     }
     return null;
+  }
+
+  /**
+   * Internal method used to validate persistent enmap names (valid Windows filenames)
+   * @private
+   */
+  [_validateName]() {
+    this.name = this.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
   }
 
 
