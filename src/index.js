@@ -94,16 +94,13 @@ class Enmap extends Map {
   }
 
   /**
-   * Internal Method. Parses JSON data if JSON, or return original data.
+   * Internal Method. Parses JSON data.
+   * Reserved for future use (logical checking)
    * @param {*} data The data to check/parse
    * @returns {*} An object or the original data.
    */
   [_parseData](data) {
-    if (data[0] === '[' || data[0] === '{') {
-      return JSON.parse(data);
-    } else {
-      return data;
-    }
+    return JSON.parse(data);
   }
 
   [_readyCheck]() {
@@ -297,10 +294,8 @@ class Enmap extends Map {
     if (typeof this.changedCB === 'function') {
       this.changedCB(key, oldValue, data);
     }
-
     if (this.persistent) {
-      const insert = typeof val === 'object' ? JSON.stringify(val) : val;
-      this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, insert);
+      this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, JSON.stringify(val));
     }
     return super.set(key, _.cloneDeep(data));
   }
