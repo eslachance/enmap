@@ -13,6 +13,7 @@ const _validateName = Symbol('validateName');
 const _fetchCheck = Symbol('fetchCheck');
 const _parseData = Symbol('parseData');
 const _readyCheck = Symbol('readyCheck');
+const _clone = Symbol('clone');
 
 /**
  * A enhanced Map structure with additional utility methods.
@@ -136,6 +137,13 @@ class Enmap extends Map {
    */
   [_parseData](data) {
     return JSON.parse(data);
+  }
+
+  [_clone](data) {
+    if (this.cloneLevel === 'none') return data;
+    if (this.cloneLevel === 'shallow') return _.clone(data);
+    if (this.cloneLevel === 'deep') return _.cloneDeep(data);
+    throw new Err('Invalid cloneLevel. What did you *do*, this shouldn\'t happen!', 'ReadyError');
   }
 
   /**
@@ -340,7 +348,7 @@ class Enmap extends Map {
     if (this.persistent) {
       this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, JSON.stringify(data));
     }
-    return super.set(key, _.cloneDeep(data));
+    return super.set(key, this[_clone](data));
   }
 
   /**
