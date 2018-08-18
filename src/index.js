@@ -31,7 +31,23 @@ class Enmap extends Map {
     Object.defineProperty(this, 'persistent', {
       value: options.persistent || false,
       writable: false,
-      enumerable: true,
+      enumerable: false,
+      configurable: false
+    });
+
+    let cloneLevel;
+    if (options.cloneLevel) {
+      const accepted = ['none', 'shallow', 'deep'];
+      if (!accepted.includes(cloneLevel)) throw new Err('Unknown Clone Level. Options are none, shallow, deep. Default is deep.', 'OptionsError');
+      cloneLevel = options.cloneLevel; // eslint-disable-line prefer-destructuring
+    } else {
+      cloneLevel = 'deep';
+    }
+
+    Object.defineProperty(this, 'cloneLevel', {
+      value: cloneLevel,
+      writable: true,
+      enumerable: false,
       configurable: false
     });
 
@@ -54,7 +70,7 @@ class Enmap extends Map {
           configurable: false
         },
         fetchAll: {
-          value: options.fetchAll,
+          value: options.fetchAll != undefined ? options.fetchAll : true,
           writable: true,
           enumerable: false,
           configurable: false
@@ -72,7 +88,13 @@ class Enmap extends Map {
           configurable: false
         },
         defer: {
-          value: new Promise((res) => { this.ready = res; }),
+          value: new Promise((res) =>
+            Object.defineProperty(this, 'ready', {
+              value: res,
+              writable: false,
+              enumerable: false,
+              configurable: false
+            })),
           writable: false,
           enumerable: false,
           configurable: false
@@ -80,6 +102,19 @@ class Enmap extends Map {
       });
       this[_validateName]();
       this.init(pool);
+    } else {
+      Object.defineProperty(this, 'name', {
+        value: 'MemoryEnmap',
+        writable: false,
+        enumerable: false,
+        configurable: false
+      });
+      Object.defineProperty(this, 'isReady', {
+        value: true,
+        writable: false,
+        enumerable: false,
+        configurable: false
+      });
     }
   }
 
@@ -89,7 +124,7 @@ class Enmap extends Map {
    * @param {string|number} key The key to check or fetch.
    */
   [_fetchCheck](key) {
-    if (!this.persistent || (this.fetchAll && !this.autoFetch)) return;
+    if (!this.persistent || !this.autoFetch) return;
     this.fetch(key);
   }
 
@@ -103,6 +138,9 @@ class Enmap extends Map {
     return JSON.parse(data);
   }
 
+  /**
+   * Internal Method. Verifies that the database is ready, assuming persistence is used.
+   */
   [_readyCheck]() {
     if (!this.isReady) throw new Err('Database is not ready. Refer to the readme to use enmap.defer', 'ReadyError');
   }
@@ -120,7 +158,12 @@ class Enmap extends Map {
       configurable: false
     });
     if (this.db) {
-      this.isReady = true;
+      Object.defineProperty(this, 'isReady', {
+        value: true,
+        writable: false,
+        enumerable: false,
+        configurable: false
+      });
     } else {
       throw new Err('Database Could Not Be Opened', 'ConnectionError');
     }
@@ -130,7 +173,7 @@ class Enmap extends Map {
       this.db.pragma('synchronous = 1');
       this.db.pragma('journal_mode = wal');
     }
-    if (this.autoFetch) {
+    if (this.fetchAll) {
       await this.fetchEverything();
     }
     this.ready();
@@ -295,7 +338,7 @@ class Enmap extends Map {
       this.changedCB(key, oldValue, data);
     }
     if (this.persistent) {
-      this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, JSON.stringify(val));
+      this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, JSON.stringify(data));
     }
     return super.set(key, _.cloneDeep(data));
   }
@@ -480,7 +523,7 @@ class Enmap extends Map {
       const data = super.get(key);
       return _.get(data, path);
     }
-    return this[_parseData](super.get(key));
+    return super.get(key);
   }
 
   /**

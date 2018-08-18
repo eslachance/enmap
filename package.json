@@ -1,6 +1,6 @@
 {
   "name": "enmap",
-  "version": "3.1.1",
+  "version": "4.0.0beta",
   "description": "",
   "main": "index.js",
   "types": "index.d.ts",
