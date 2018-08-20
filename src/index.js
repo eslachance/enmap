@@ -39,7 +39,7 @@ class Enmap extends Map {
     let cloneLevel;
     if (options.cloneLevel) {
       const accepted = ['none', 'shallow', 'deep'];
-      if (!accepted.includes(cloneLevel)) throw new Err('Unknown Clone Level. Options are none, shallow, deep. Default is deep.', 'OptionsError');
+      if (!accepted.includes(options.cloneLevel)) throw new Err('Unknown Clone Level. Options are none, shallow, deep. Default is deep.', 'EnmapOptionsError');
       cloneLevel = options.cloneLevel; // eslint-disable-line prefer-destructuring
     } else {
       cloneLevel = 'deep';
@@ -53,7 +53,7 @@ class Enmap extends Map {
     });
 
     if (this.persistent) {
-      if (!options.name) throw new Error('Must provide options.name');
+      if (!options.name) throw new Err('Must provide a name for persistent Enmaps', 'EnmapOptionsError');
 
       if (!options.dataDir) {
         if (!fs.existsSync('./data')) {
@@ -71,7 +71,7 @@ class Enmap extends Map {
           configurable: false
         },
         fetchAll: {
-          value: options.fetchAll != undefined ? options.fetchAll : true,
+          value: !_.isNil(options.fetchAll) ? options.fetchAll : true,
           writable: true,
           enumerable: false,
           configurable: false
@@ -83,7 +83,7 @@ class Enmap extends Map {
           configurable: false
         },
         autoFetch: {
-          value: options.autoFetch != undefined ? options.autoFetch : true,
+          value: !_.isNil(options.autoFetch) ? options.autoFetch : true,
           writable: true,
           enumerable: false,
           configurable: false
@@ -143,14 +143,14 @@ class Enmap extends Map {
     if (this.cloneLevel === 'none') return data;
     if (this.cloneLevel === 'shallow') return _.clone(data);
     if (this.cloneLevel === 'deep') return _.cloneDeep(data);
-    throw new Err('Invalid cloneLevel. What did you *do*, this shouldn\'t happen!', 'ReadyError');
+    throw new Err('Invalid cloneLevel. What did you *do*, this shouldn\'t happen!', 'EnmapOptionsError');
   }
 
   /**
    * Internal Method. Verifies that the database is ready, assuming persistence is used.
    */
   [_readyCheck]() {
-    if (!this.isReady) throw new Err('Database is not ready. Refer to the readme to use enmap.defer', 'ReadyError');
+    if (!this.isReady) throw new Err('Database is not ready. Refer to the readme to use enmap.defer', 'EnmapReadyError');
   }
 
   /**
@@ -173,7 +173,7 @@ class Enmap extends Map {
         configurable: false
       });
     } else {
-      throw new Err('Database Could Not Be Opened', 'ConnectionError');
+      throw new Err('Database Could Not Be Opened', 'EnmapDBConnectionError');
     }
     const table = this.db.prepare(`SELECT count(*) FROM sqlite_master WHERE type='table' AND name = '${this.name}';`).get();
     if (!table['count(*)']) {
@@ -209,7 +209,7 @@ class Enmap extends Map {
    */
   static multi(names, options = {}) {
     if (!names.length || names.length < 1) {
-      throw new Err('"names" argument must be an array of string names.', 'TypeError');
+      throw new Err('"names" argument must be an array of string names.', 'EnmapTypeError');
     }
 
     const returnvalue = {};
@@ -331,18 +331,17 @@ class Enmap extends Map {
   set(key, val, path = null) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (val == null) throw `Value provided for ${key} was null or undefined. Please provide a value.`;
     if (!key || !['String', 'Number'].includes(key.constructor.name)) {
       throw new Error('Enmap require keys to be strings or numbers.');
     }
     let data = super.get(key);
     const oldValue = super.has(key) ? data : null;
-    if (path != null) {
+    if (!_.isNil(path)) {
       _.set(data, path, val);
     } else {
       data = val;
     }
-    if (typeof this.changedCB === 'function') {
+    if (_.isFunction(this.changedCB)) {
       this.changedCB(key, oldValue, data);
     }
     if (this.persistent) {
@@ -363,7 +362,7 @@ class Enmap extends Map {
    */
   setProp(key, path, val) {
     this[_readyCheck]();
-    if (path == undefined) throw new Err(`No path provided to set a property in "${key}" of enmap "${this.name}"`);
+    if (_.isNil(path)) throw new Err(`No path provided to set a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.set(key, val, path);
   }
 
@@ -388,7 +387,7 @@ class Enmap extends Map {
     this[_readyCheck]();
     this[_check](key, 'Array', path);
     const data = super.get(key);
-    if (path != null) {
+    if (!_.isNil(path)) {
       const propValue = _.get(data, path);
       if (!allowDupes && propValue.indexOf(val) > -1) return this;
       propValue.push(val);
@@ -412,7 +411,7 @@ class Enmap extends Map {
    */
   pushIn(key, path, val, allowDupes = false) {
     this[_readyCheck]();
-    if (path == undefined) throw new Err(`No path provided to push a value in "${key}" of enmap "${this.name}"`);
+    if (_.isNil(path)) throw new Err(`No path provided to push a value in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.push(key, val, path, allowDupes);
   }
 
@@ -440,7 +439,7 @@ class Enmap extends Map {
   math(key, operation, operand, path = null) {
     this[_readyCheck]();
     this[_check](key, 'Number', path);
-    if (!path) {
+    if (_.isNil(path)) {
       if (operation === 'random' || operation === 'rand') {
         return this.set(key, Math.round(Math.random() * operand));
       }
@@ -471,7 +470,7 @@ class Enmap extends Map {
   inc(key, path = null) {
     this[_readyCheck]();
     this[_check](key, 'Number', path);
-    if (!path) {
+    if (_.isNil(path)) {
       let val = this.get(key);
       return this.set(key, ++val);
     } else {
@@ -498,7 +497,7 @@ class Enmap extends Map {
   dec(key, path = null) {
     this[_readyCheck]();
     this[_check](key, 'Number', path);
-    if (!path) {
+    if (_.isNil(path)) {
       let val = this.get(key);
       return this.set(key, --val);
     } else {
@@ -526,7 +525,7 @@ class Enmap extends Map {
   get(key, path = null) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (path != null) {
+    if (!_.isNil(path)) {
       this[_check](key, 'Object');
       const data = super.get(key);
       return _.get(data, path);
@@ -544,7 +543,7 @@ class Enmap extends Map {
   getProp(key, path) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (path == undefined) throw new Err(`No path provided get a property from "${key}" of enmap "${this.name}"`);
+    if (_.isNil(path)) throw new Err(`No path provided get a property from "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.get(key, path);
   }
 
@@ -567,7 +566,7 @@ class Enmap extends Map {
   has(key, path = null) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (path != null) {
+    if (!_.isNil(path)) {
       this[_check](key, 'Object');
       const data = super.get(key);
       return _.has(data, path);
@@ -585,7 +584,7 @@ class Enmap extends Map {
   hasProp(key, path) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (path == undefined) throw new Err(`No path provided to check for a property in "${key}" of enmap "${this.name}"`);
+    if (_.isNil(path)) throw new Err(`No path provided to check for a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.has(key, path);
   }
 
@@ -602,7 +601,7 @@ class Enmap extends Map {
     this[_readyCheck]();
     this[_fetchCheck](key);
     const oldValue = this.get(key);
-    if (path != null) {
+    if (!_.isNil(path)) {
       let data = this.get(key);
       path = _.toPath(path);
       const last = path.pop();
@@ -639,7 +638,7 @@ class Enmap extends Map {
   deleteProp(key, path) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (path == undefined) throw new Err(`No path provided to delete a property in "${key}" of enmap "${this.name}"`);
+    if (_.isNil(path)) throw new Err(`No path provided to delete a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     this.delete(key, path);
   }
 
@@ -672,18 +671,18 @@ class Enmap extends Map {
     this[_fetchCheck](key);
     this[_check](key, ['Array', 'Object']);
     const data = super.get(key);
-    if (path != null) {
+    if (!_.isNil(path)) {
       const propValue = _.get(data, path);
-      if (propValue.constructor.name === 'Array') {
+      if (_.isArray(propValue)) {
         propValue.splice(propValue.indexOf(val), 1);
         _.set(data, path, propValue);
-      } else if (propValue.constructor.name === 'Object') {
+      } else if (_.isObject(propValue)) {
         _.delete(data, `${path}.${val}`);
       }
-    } else if (data.constructor.name === 'Array') {
+    } else if (_.isArray(data)) {
       const index = data.indexOf(val);
       data.splice(index, 1);
-    } else if (data.constructor.name === 'Object') {
+    } else if (_.isObject(data)) {
       delete data[val];
     }
     return this.set(key, data);
@@ -701,7 +700,7 @@ class Enmap extends Map {
    */
   removeFrom(key, path, val) {
     this[_readyCheck]();
-    if (path == undefined) throw new Err(`No path provided to remove an array element in "${key}" of enmap "${this.name}"`);
+    if (_.isNil(path)) throw new Err(`No path provided to remove an array element in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.remove(key, val, path);
   }
 
@@ -734,13 +733,10 @@ class Enmap extends Map {
   [_check](key, type, path = null) {
     if (!this.has(key)) throw new Err(`The key "${key}" does not exist in the enmap "${this.name}"`);
     if (!type) return;
-    if (type.constructor.name !== 'Array') type = [type];
-    if (path != null) {
+    if (!_.isArray(type)) type = [type];
+    if (!_.isNil(path)) {
       this[_check](key, 'Object');
       const data = super.get(key);
-      if (!data) {
-        throw new Err(`The property "${path}" does not exist in the key "${key}" in the enmap "${this.name}"`);
-      }
       if (!type.includes(_.get(data, path).constructor.name)) {
         throw new Err(`The property "${path}" in key "${key}" is not of type "${type.join('" or "')}" in the enmap "${this.name}" (key was of type "${_.get(data, path).constructor.name}")`);
       }
@@ -758,7 +754,7 @@ class Enmap extends Map {
   * @return {number} the result.
   */
   [_mathop](base, op, opand) {
-    if (!base || !op) throw 'Math Operation requires base and operation';
+    if (base == undefined || op == undefined || opand == undefined) throw new Err('Math Operation requires base and operation', 'TypeError');
     switch (op) {
     case 'add' :
     case 'addition' :
