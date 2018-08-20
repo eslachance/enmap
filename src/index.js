@@ -568,7 +568,11 @@ class Enmap extends Map {
   * @return {number} the result.
   */
   [_mathop](base, op, opand) {
+<<<<<<< HEAD
     if (base == undefined || op == undefined || opand == undefined) throw new Err('Math Operation requires base and operation', 'TypeError');
+=======
+    if (base == undefined || op == undefined || opand == undefined) throw 'Math Operation requires base and operation';
+>>>>>>> 92aa786400c8610f888ae19ee28219c35aa00a37
     switch (op) {
     case 'add' :
     case 'addition' :
