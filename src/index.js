@@ -125,6 +125,7 @@ class Enmap extends Map {
    * @param {string|number} key The key to check or fetch.
    */
   [_fetchCheck](key) {
+    if (this.has(key)) return;
     if (!this.persistent || !this.autoFetch) return;
     this.fetch(key);
   }
@@ -253,6 +254,24 @@ class Enmap extends Map {
       super.set(keyOrKeys, this[_parseData](data.value));
       return this[_parseData](data.value);
     }
+  }
+
+  /**
+   * Retrieves the number of rows in the database for this enmap, even if they aren't fetched.
+   * @return {integer} The number of rows in the database.
+   */
+  get count() {
+    const data = this.db.prepare(`SELECT count(*) FROM '${this.name}';`).get();
+    return data['count(*)'];
+  }
+
+  /**
+   * Retrieves all the indexes (keys) in the database for this enmap, even if they aren't fetched.
+   * @return {array<string>} Array of all indexes (keys) in the enmap, cached or not.
+   */
+  get indexes() {
+    const rows = this.db.prepare(`SELECT key FROM '${this.name}';`).get();
+    return rows.map(row => row.key);
   }
 
   /**
