@@ -77,6 +77,52 @@ class Enmap extends Map {
   }
 
   /**
+   * Migrates an Enmap from version 3 or lower to a Version 4 enmap, which is locked to sqlite backend only.
+   * Version 4 uses a different way of storing data, so is not directly compatible with version 3 data.
+   * Note that this migration also makes the data unuseable with version 3, so it should only be used to migrate once.
+   * @example
+   * // This example migrates from enmap-mongo to the new format.
+   * // Assumes: npm install enmap@3.1.4 enmap-sqlite@latest enmap-mongo@latest
+   * const Enmap = require("enmap");
+   * const Provider = require("enmap-mongo");
+   * const SQLite = require("enmap-sqlite");
+   *
+   * let options = {
+   *  name: 'test',
+   *  dbName: 'enmap',
+   *  url: 'mongodb://username:password@localhost:27017/enmap'
+   * };
+   *
+   * const source = new Provider(options);
+   * const target = new SQLite({"name": "points"});
+   *
+   * Enmap.migrate(source, target);
+   * @param {Provider} source A valid Enmap provider. Can be any existing provider.
+   * @param {Provider} target An SQLite Enmap Provider. Cannot work without enmap-sqlite as the target.
+   */
+  static async migrate(source, target) {
+    if (!source || !target) throw `Both source and target are required.`;
+    if (source.constructor.name !== 'EnmapProvider') throw new Err('Source must be a valid Enmap Provider (not an initialized enmap)');
+    if (target.constructor.name !== 'EnmapProvider') throw new Err('Target must be a valid Enmap Provider (not an initialized enmap)');
+    const sourceMap = new Enmap({ provider: source });
+    const targetMap = new Enmap({ fetchAll: false, provider: target });
+    await sourceMap.defer;
+    await targetMap.defer;
+    if (!targetMap.db.pool.path.includes('enmap.sqlite')) {
+      throw new Err('Target enmap is not an sqlite database. The migrate method is only to migrate from a 3.0 enmap to 4.0 sqlite enmap!');
+    }
+    console.log(`${sourceMap.size} keys loaded from source enmap`);
+    const insertArray = [];
+    sourceMap.keyArray().forEach(key => {
+      insertArray.push(targetMap.db.set(key, JSON.stringify(sourceMap.get(key))));
+    });
+    Promise.all(insertArray).then(inserts => {
+      console.log(`Inserted ${inserts.length} keys in target enmap.`);
+      process.exit(0);
+    });
+  }
+
+  /**
    * Fetches every key from the persistent enmap and loads them into the current enmap value.
    * @return {Promise<Map>} The enmap containing all values, as a promise..
    */

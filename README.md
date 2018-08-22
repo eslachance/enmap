@@ -175,6 +175,7 @@ Can be made persistent
     * _instance_
         * [.fetchEverything()](#Enmap+fetchEverything) ⇒ <code>Promise.&lt;Map&gt;</code>
         * [.fetch(keyOrKeys)](#Enmap+fetch) ⇒ <code>Promise.&lt;(\*\|Map)&gt;</code>
+        * [.evict(keyOrArrayOfKeys)](#Enmap+evict)
         * [.autonum()](#Enmap+autonum) ⇒ <code>number</code>
         * [.changed(cb)](#Enmap+changed)
         * [.set(key, val, path)](#Enmap+set) ⇒ <code>Map</code>
@@ -211,6 +212,7 @@ Can be made persistent
         * [.equals(enmap)](#Enmap+equals) ⇒ <code>boolean</code>
     * _static_
         * [.multi(names, Provider, options)](#Enmap.multi) ⇒ <code>Array.&lt;Map&gt;</code>
+        * [.migrate(source, target)](#Enmap.migrate)
 
 <a name="Enmap+fetchEverything"></a>
 
@@ -230,6 +232,17 @@ Force fetch one or more key values from the enmap. If the database has changed, 
 | Param | Type | Description |
 | --- | --- | --- |
 | keyOrKeys | <code>string</code> \| <code>number</code> | A single key or array of keys to force fetch from the enmap database. |
+
+<a name="Enmap+evict"></a>
+
+### enmap.evict(keyOrArrayOfKeys)
+Removes a key from the cache - useful when using the fetchAll feature.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| keyOrArrayOfKeys | <code>\*</code> | A single key or array of keys to remove from the cache. |
 
 <a name="Enmap+autonum"></a>
 
@@ -270,8 +283,8 @@ Set the value in Enmap.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to add to The Enmap.  If the Enmap is persistent this value MUST be a string or number. |
-| val | <code>\*</code> |  | Required. The value of the element to add to The Enmap.  If the Enmap is persistent this value MUST be stringifiable as JSON. |
+| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to add to The Enmap. If the Enmap is persistent this value MUST be a string or number. |
+| val | <code>\*</code> |  | Required. The value of the element to add to The Enmap. If the Enmap is persistent this value MUST be stringifiable as JSON. |
 | path | <code>string</code> | <code>null</code> | Optional. The path to the property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 **Example**  
@@ -285,7 +298,7 @@ enmap.set('ArraysToo', [1, "two", "tree", "foor"])
 
 // Settings Properties
 enmap.set('IhazObjects', 'color', 'blue'); //modified previous object
-enmap.set('ArraysToo', 2, 'three'); // changes "tree" to "three" in array.   
+enmap.set('ArraysToo', 2, 'three'); // changes "tree" to "three" in array.
 ```
 <a name="Enmap+setProp"></a>
 
@@ -298,7 +311,7 @@ This is a shortcut to loading the key, changing the value, and setting it back.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | Required. The key of the element to add to The Enmap or array.  This value MUST be a string or number. |
+| key | <code>string</code> \| <code>number</code> | Required. The key of the element to add to The Enmap or array. This value MUST be a string or number. |
 | path | <code>\*</code> | Required. The property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | val | <code>\*</code> | Required. The value to apply to the specified property. |
 
@@ -312,7 +325,7 @@ Push to an array value in Enmap.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | Required. The key of the array element to push to in Enmap.  This value MUST be a string or number. |
+| key | <code>string</code> \| <code>number</code> |  | Required. The key of the array element to push to in Enmap. This value MUST be a string or number. |
 | val | <code>\*</code> |  | Required. The value to push to the array. |
 | path | <code>string</code> | <code>null</code> | Optional. The path to the property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | allowDupes | <code>boolean</code> | <code>false</code> | Optional. Allow duplicate values in the array (default: false). |
@@ -336,7 +349,7 @@ Push to an array element inside an Object or Array element in Enmap.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element.  This value MUST be a string or number. |
+| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element. This value MUST be a string or number. |
 | path | <code>\*</code> |  | Required. The name of the array property to push to. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | val | <code>\*</code> |  | Required. The value push to the array property. |
 | allowDupes | <code>boolean</code> | <code>false</code> | Allow duplicate values in the array (default: false). |
@@ -453,7 +466,7 @@ Returns whether or not the key exists in the Enmap.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to add to The Enmap or array.  This value MUST be a string or number. |
+| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to add to The Enmap or array. This value MUST be a string or number. |
 | path | <code>string</code> | <code>null</code> | Optional. The property to verify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 **Example**  
@@ -523,7 +536,7 @@ values, not keys. Complex values such as objects and arrays will not be removed 
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to remove from in Enmap.  This value MUST be a string or number. |
+| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to remove from in Enmap. This value MUST be a string or number. |
 | val | <code>\*</code> |  | Required. The value to remove from the array or object. |
 | path | <code>string</code> | <code>null</code> | Optional. The name of the array property to remove from. Can be a path with dot notation, such as "prop1.subprop2.subprop3". If not presents, removes directly from the value. |
 
@@ -538,7 +551,7 @@ Confusing? Sure is.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | Required. The key of the element.  This value MUST be a string or number. |
+| key | <code>string</code> \| <code>number</code> | Required. The key of the element. This value MUST be a string or number. |
 | path | <code>\*</code> | Required. The name of the array property to remove from. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | val | <code>\*</code> | Required. The value to remove from the array property. |
 
@@ -547,7 +560,7 @@ Confusing? Sure is.
 ### enmap.array() ⇒ <code>Array</code>
 Creates an ordered array of the values of this Enmap.
 The array will only be reconstructed if an item is added to or removed from the Enmap,
-or if you change the length of the array itself. If you don't want this caching behaviour, 
+or if you change the length of the array itself. If you don't want this caching behaviour,
 use `Array.from(enmap.values())` instead.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
@@ -555,8 +568,8 @@ use `Array.from(enmap.values())` instead.
 
 ### enmap.keyArray() ⇒ <code>Array</code>
 Creates an ordered array of the keys of this Enmap
-The array will only be reconstructed if an item is added to or removed from the Enmap, 
-or if you change the length of the array itself. If you don't want this caching behaviour, 
+The array will only be reconstructed if an item is added to or removed from the Enmap,
+or if you change the length of the array itself. If you don't want this caching behaviour,
 use `Array.from(enmap.keys())` instead.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
@@ -579,7 +592,7 @@ or an array of values of `count` length
 Obtains random key(s) from this Enmap. This relies on [keyArray](#Enmap+keyArray)
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single key if `count` is undefined, 
+**Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single key if `count` is undefined,
 or an array of keys of `count` length  
 
 | Param | Type | Description |
@@ -792,4 +805,37 @@ const { settings, tags, blacklist } = Enmap.multi(['settings', 'tags', 'blacklis
 const Enmap = require("enmap");
 const Provider = require("enmap-mongo");
 Object.assign(client, Enmap.multi(["settings", "tags", "blacklist"], Provider, { url: "some connection URL here" }));
+```
+<a name="Enmap.migrate"></a>
+
+### Enmap.migrate(source, target)
+Migrates an Enmap from version 3 or lower to a Version 4 enmap, which is locked to sqlite backend only.
+Version 4 uses a different way of storing data, so is not directly compatible with version 3 data.
+Note that this migration also makes the data unuseable with version 3, so it should only be used to migrate once.
+
+**Kind**: static method of [<code>Enmap</code>](#Enmap)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| source | <code>Provider</code> | A valid Enmap provider. Can be any existing provider. |
+| target | <code>Provider</code> | An SQLite Enmap Provider. Cannot work without enmap-sqlite as the target. |
+
+**Example**  
+```js
+// This example migrates from enmap-mongo to the new format.
+// Assumes: npm install enmap@3.1.4 enmap-sqlite@latest enmap-mongo@latest
+const Enmap = require("enmap");
+const Provider = require("enmap-mongo");
+const SQLite = require("enmap-sqlite");
+
+let options = {
+ name: 'test',
+ dbName: 'enmap',
+ url: 'mongodb://username:password@localhost:27017/enmap'
+};
+
+const source = new Provider(options);
+const target = new SQLite({"name": "points"});
+
+Enmap.migrate(source, target);
 ```
