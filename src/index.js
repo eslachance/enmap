@@ -125,7 +125,7 @@ class Enmap extends Map {
    * @param {string|number} key The key to check or fetch.
    */
   [_fetchCheck](key) {
-    if (this.has(key)) return;
+    if (super.has(key)) return;
     if (!this.persistent || !this.autoFetch) return;
     this.fetch(key);
   }
