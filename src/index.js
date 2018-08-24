@@ -1,11 +1,18 @@
-// Require SQLite
+// better-sqlite-pool is better than directly using better-sqlite3 for multi-process purposes.
 const { Pool } = require('better-sqlite-pool');
+
+// Lodash should probably be a core lib but hey, it's useful!
+const _ = require('lodash');
+
+// Custom error codes with stack support.
+const Err = require('./error.js');
+
+// Native imports
 const { resolve, sep } = require('path');
 const fs = require('fs');
 
-const _ = require('lodash');
-const Err = require('./error.js');
-
+// Symbols are used to create "private" methods.
+// https://medium.com/front-end-hacking/private-methods-in-es6-and-writing-your-own-db-b2e30866521f
 const _mathop = Symbol('mathop');
 const _getHighestAutonum = Symbol('getHighestAutonum');
 const _check = Symbol('check');
@@ -29,6 +36,8 @@ class Enmap extends Map {
     }
     super(iterable);
 
+    // Object.defineProperty ensures that the property is "hidden" when outputting
+    // the enmap in console. Only actual map entries are shown using this method.
     Object.defineProperty(this, 'persistent', {
       value: options.persistent || false,
       writable: false,
@@ -564,6 +573,22 @@ class Enmap extends Map {
     this[_fetchCheck](key);
     if (_.isNil(path)) throw new Err(`No path provided get a property from "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.get(key, path);
+  }
+
+  /**
+   * Returns the key's value, or the default given, ensuring that the data is there.
+   * This is a shortcut to "if enmap doesn't have key, set it, then get it" which is a very common pattern.
+   * @param {string|number} key Required. The key you want to make sure exists.
+   * @param {*} defaultvalue Required. The value you want to save in the database and return as default.
+   * @return {*} The value from the database for the key, or the default value provided for a new key.
+   */
+  ensure(key, defaultvalue) {
+    this[_readyCheck]();
+    this[_fetchCheck](key);
+    if (_.isNil(defaultvalue)) throw new Err(`No default value provided on ensure method for "${key}" in "${this.name}"`, 'EnmapArgumentError');
+    if (super.has(key)) return super.get(key);
+    this.set(key, defaultvalue);
+    return defaultvalue;
   }
 
   /* BOOLEAN METHODS THAT CHECKS FOR THINGS IN ENMAP */
