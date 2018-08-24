@@ -36,15 +36,6 @@ class Enmap extends Map {
     }
     super(iterable);
 
-    // Object.defineProperty ensures that the property is "hidden" when outputting
-    // the enmap in console. Only actual map entries are shown using this method.
-    Object.defineProperty(this, 'persistent', {
-      value: options.persistent || false,
-      writable: false,
-      enumerable: false,
-      configurable: false
-    });
-
     let cloneLevel;
     if (options.cloneLevel) {
       const accepted = ['none', 'shallow', 'deep'];
@@ -54,6 +45,8 @@ class Enmap extends Map {
       cloneLevel = 'deep';
     }
 
+    // Object.defineProperty ensures that the property is "hidden" when outputting
+    // the enmap in console. Only actual map entries are shown using this method.
     Object.defineProperty(this, 'cloneLevel', {
       value: cloneLevel,
       writable: true,
@@ -61,8 +54,13 @@ class Enmap extends Map {
       configurable: false
     });
 
-    if (this.persistent) {
-      if (!options.name) throw new Err('Must provide a name for persistent Enmaps', 'EnmapOptionsError');
+    if (options.name) {
+      Object.defineProperty(this, 'persistent', {
+        value: true,
+        writable: false,
+        enumerable: false,
+        configurable: false
+      });
 
       if (!options.dataDir) {
         if (!fs.existsSync('./data')) {
