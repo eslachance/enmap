@@ -1,6 +1,6 @@
 {
   "name": "enmap",
-  "version": "3.1.4",
+  "version": "4.0.2",
   "description": "",
   "main": "index.js",
   "types": "index.d.ts",
@@ -19,6 +19,7 @@
   "author": "Evelyne Lachance",
   "license": "Apache",
   "dependencies": {
+    "better-sqlite-pool": "^0.1.2",
     "lodash": "^4.17.10"
   },
   "devDependencies": {

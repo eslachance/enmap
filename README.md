@@ -1,7 +1,8 @@
 # Enmap - Enhanced Maps
 
-Enhanced Maps are a data structure that can be used to store data in memory that can also be saved in a database behind the scenes. The data is synchronized to the database automatically, seamlessly, and asynchronously so it should not adversely affect your performance compared to using Maps for storage.
+Enhanced Maps are a data structure that can be used to store data in memory that can also be saved in a database behind the scenes. These operations are fast, safe, and painless.
 
+<<<<<<< HEAD
 ## FAQs
 
 ### Q: So what's Enmap
@@ -403,24 +404,23 @@ points.inc("number"); // 43
 points.inc("numberInObject", "sub.anInt"); // {sub: { anInt: 6 }}
 ```
 <a name="Enmap+dec"></a>
+=======
+The data is synchronized to the database automatically, seamlessly, and asynchronously for maximum effectiveness. The storage system used is an `sqlite` database which is fast,
+performant, can be easily backed up, and supports multiple simultaneous connections.
+>>>>>>> rewrite
 
-### enmap.dec(key, path) ⇒ <code>Map</code>
-Decrements a key's value or property by 1. Value must be a number, or a path to a number.
+## Documentation
 
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>Map</code> - The EnMap.  
+ * [Installation](https://evie.gitbook.io/enmap/v/4.0/install)
+ * [Basic Setup](https://evie.gitbook.io/enmap/v/4.0/usage)
+ * [API Reference](https://evie.gitbook.io/enmap/v/4.0/api)
+ * [Examples](https://evie.gitbook.io/enmap/v/4.0/examples)
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | The enmap key where the value to decrement is stored. |
-| path | <code>string</code> | <code>null</code> | Optional. The property path to decrement, if the value is an object or array. |
+## Support
 
-**Example**  
-```js
-// Assuming
-points.set("number", 42);
-points.set("numberInObject", {sub: { anInt: 5 }});
+Support is offered on my official [Evie.Codes Discord](https://discord.gg/N7ZKH3P).
 
+<<<<<<< HEAD
 points.dec("number"); // 41
 points.dec("numberInObject", "sub.anInt"); // {sub: { anInt: 4 }}
 ```
@@ -761,46 +761,36 @@ Combines this Enmap with others into a new Enmap. None of the source Enmaps are 
 | Param | Type | Description |
 | --- | --- | --- |
 | ...enmaps | [<code>Enmap</code>](#Enmap) | Enmaps to merge |
+=======
+## FAQs
+>>>>>>> rewrite
 
-**Example**  
-```js
-const newColl = someColl.concat(someOtherColl, anotherColl, ohBoyAColl);
-```
-<a name="Enmap+equals"></a>
+### Q: So what's Enmap
 
-### enmap.equals(enmap) ⇒ <code>boolean</code>
-Checks if this Enmap shares identical key-value pairings with another.
-This is different to checking for equality using equal-signs, because
-the Enmaps may be different objects, but contain the same data.
+**A**: Enmaps are the Javascript Map() data structure with additional utility methods. This started
+as a pretty straight clone of the [Discord.js Collections](https://discord.js.org/#/docs/main/stable/class/Collection)
+but since its creation has grown far beyond those methods alone.
 
-**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>boolean</code> - Whether the Enmaps have identical contents  
+### Q: What is "Persistent"?
 
-| Param | Type | Description |
-| --- | --- | --- |
-| enmap | [<code>Enmap</code>](#Enmap) | Enmap to compare with |
+**A**: With the use of the optional providers modules, any data added to the Enmap
+is stored not only in temporary memory but also backed up in a local database. This means that
+when you restart your project, your data is not lost and is loaded on startup.
 
-<a name="Enmap.multi"></a>
+### Q: How big can the Enmap be?
 
-### Enmap.multi(names, Provider, options) ⇒ <code>Array.&lt;Map&gt;</code>
-Initialize multiple Enmaps easily.
+**A**: The size of the memory used is directly proportional to the size of all the keys loaded in memory.
+The more data you have, the more complex it is, the more memory it can use. You can use the
+[fetchAll](https://evie.gitbook.io/enmap/v/4.0/usage/fetchall) options to reduce memory usage.
 
-**Kind**: static method of [<code>Enmap</code>](#Enmap)  
-**Returns**: <code>Array.&lt;Map&gt;</code> - An array of initialized Enmaps.  
+### Q: Who did you make this for?
 
-| Param | Type | Description |
-| --- | --- | --- |
-| names | <code>Array.&lt;string&gt;</code> | Array of strings. Each array entry will create a separate enmap with that name. |
-| Provider | <code>EnmapProvider</code> | Valid EnmapProvider object. |
-| options | <code>Object</code> | Options object to pass to the provider. See provider documentation for its options. |
+**A**: Well, myself because I do use it often. But also, I built it specifically for beginners in mind. 
+Enmap's main goal is to remain simple to use, as fast as possible, and a solid as possible.
 
-**Example**  
-```js
-// Using local variables and the mongodb provider.
-const Enmap = require('enmap');
-const Provider = require('enmap-mongo');
-const { settings, tags, blacklist } = Enmap.multi(['settings', 'tags', 'blacklist'], Provider, { url: "some connection URL here" });
+### Q: What's is used for?
 
+<<<<<<< HEAD
 // Attaching to an existing object (for instance some API's client)
 const Enmap = require("enmap");
 const Provider = require("enmap-mongo");
@@ -839,3 +829,8 @@ const target = new SQLite({"name": "points"});
 
 Enmap.migrate(source, target);
 ```
+=======
+**A**: Enmap is useful for storing very simple key/value data for easy retrieval, and also for more complex objects with many properties. 
+Mainly, because of who I originally made this for, it's used in Discord.js Bots to save currencies, content blocks, server settings, and
+user information for bans, blacklists, timers, warning systems, etc.
+>>>>>>> rewrite
