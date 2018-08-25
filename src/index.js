@@ -21,6 +21,7 @@ const _fetchCheck = Symbol('fetchCheck');
 const _parseData = Symbol('parseData');
 const _readyCheck = Symbol('readyCheck');
 const _clone = Symbol('clone');
+const _init = Symbol('init');
 
 /**
  * A enhanced Map structure with additional utility methods.
@@ -109,7 +110,7 @@ class Enmap extends Map {
         }
       });
       this[_validateName]();
-      this.init(pool);
+      this[_init](pool);
     } else {
       Object.defineProperty(this, 'name', {
         value: 'MemoryEnmap',
@@ -127,216 +128,8 @@ class Enmap extends Map {
   }
 
   /**
-   * Internal Method. Verifies if a key needs to be fetched from the database.
-   * If persistent enmap and autoFetch is on, retrieves the key.
-   * @param {string|number} key The key to check or fetch.
-   */
-  [_fetchCheck](key) {
-    if (super.has(key)) return;
-    if (!this.persistent || !this.autoFetch) return;
-    this.fetch(key);
-  }
-
-  /**
-   * Internal Method. Parses JSON data.
-   * Reserved for future use (logical checking)
-   * @param {*} data The data to check/parse
-   * @returns {*} An object or the original data.
-   */
-  [_parseData](data) {
-    return JSON.parse(data);
-  }
-
-  [_clone](data) {
-    if (this.cloneLevel === 'none') return data;
-    if (this.cloneLevel === 'shallow') return _.clone(data);
-    if (this.cloneLevel === 'deep') return _.cloneDeep(data);
-    throw new Err('Invalid cloneLevel. What did you *do*, this shouldn\'t happen!', 'EnmapOptionsError');
-  }
-
-  /**
-   * Internal Method. Verifies that the database is ready, assuming persistence is used.
-   */
-  [_readyCheck]() {
-    if (!this.isReady) throw new Err('Database is not ready. Refer to the readme to use enmap.defer', 'EnmapReadyError');
-  }
-
-  /**
-   * Internal method called on persistent Enmaps to load data from the underlying database.
-   * @param {Map} pool In order to set data to the Enmap, one must be provided.
-   * @returns {Promise} Returns the defer promise to await the ready state.
-   */
-  async init(pool) {
-    Object.defineProperty(this, 'db', {
-      value: await pool.acquire(),
-      writable: false,
-      enumerable: false,
-      configurable: false
-    });
-    if (this.db) {
-      Object.defineProperty(this, 'isReady', {
-        value: true,
-        writable: false,
-        enumerable: false,
-        configurable: false
-      });
-    } else {
-      throw new Err('Database Could Not Be Opened', 'EnmapDBConnectionError');
-    }
-    const table = this.db.prepare(`SELECT count(*) FROM sqlite_master WHERE type='table' AND name = '${this.name}';`).get();
-    if (!table['count(*)']) {
-      this.db.prepare(`CREATE TABLE ${this.name} (key text PRIMARY KEY, value text, type text)`).run();
-      this.db.pragma('synchronous = 1');
-      this.db.pragma('journal_mode = wal');
-    }
-    if (this.fetchAll) {
-      await this.fetchEverything();
-    }
-    this.ready();
-    return this.defer;
-  }
-
-  /* GENERAL-USE METHODS & HELPERS */
-
-  /**
-   * Initialize multiple Enmaps easily.
-   * @param {Array<string>} names Array of strings. Each array entry will create a separate enmap with that name.
-   * @param {Object} options Options object to pass to the provider. See provider documentation for its options.
-   * @example
-   * // Using local variables and the mongodb provider.
-   * const Enmap = require('enmap');
-   * const Provider = require('enmap-mongo');
-   * const { settings, tags, blacklist } = Enmap.multi(['settings', 'tags', 'blacklist'], Provider, { url: "some connection URL here" });
-   *
-   * // Attaching to an existing object (for instance some API's client)
-   * const Enmap = require("enmap");
-   * const Provider = require("enmap-mongo");
-   * Object.assign(client, Enmap.multi(["settings", "tags", "blacklist"], Provider, { url: "some connection URL here" }));
-   *
-   * @returns {Array<Map>} An array of initialized Enmaps.
-   */
-  static multi(names, options = {}) {
-    if (!names.length || names.length < 1) {
-      throw new Err('"names" argument must be an array of string names.', 'EnmapTypeError');
-    }
-
-    const returnvalue = {};
-    for (const name of names) {
-      const enmap = new Enmap(Object.assign(options, { name }));
-      returnvalue[name] = enmap;
-    }
-    return returnvalue;
-  }
-
-  /**
-   * Fetches every key from the persistent enmap and loads them into the current enmap value.
-   * @return {Promise<Map>} The enmap containing all values, as a promise..
-   */
-  fetchEverything() {
-    this[_readyCheck]();
-    const rows = this.db.prepare(`SELECT * FROM ${this.name};`).all();
-    for (const row of rows) {
-      super.set(row.key, this[_parseData](row.value));
-    }
-    return this;
-  }
-
-  // *** FIX THIS *** //
-  /**
-   * Force fetch one or more key values from the enmap. If the database has changed, that new value is used.
-   * @param {string|number} keyOrKeys A single key or array of keys to force fetch from the enmap database.
-   * @return {Promise<*|Map>} A single value if requested, or a non-persistent enmap of keys if an array is requested.
-   */
-  fetch(keyOrKeys) {
-    this[_readyCheck]();
-    if (_.isArray(keyOrKeys)) {
-      const data = this.db.prepare(`SELECT * FROM ${this.name} WHERE key IN (${'?, '.repeat(keyOrKeys.length).slice(0, -2)})`).all(keyOrKeys);
-      for (const row of data) {
-        super.set(row.key, this[_parseData](row.value));
-      }
-      return this;
-    } else {
-      const data = this.db.prepare(`SELECT * FROM ${this.name} WHERE key = ?;`).get(keyOrKeys);
-      if (!data) return null;
-      super.set(keyOrKeys, this[_parseData](data.value));
-      return this[_parseData](data.value);
-    }
-  }
-
-  /**
-   * Retrieves the number of rows in the database for this enmap, even if they aren't fetched.
-   * @return {integer} The number of rows in the database.
-   */
-  get count() {
-    const data = this.db.prepare(`SELECT count(*) FROM '${this.name}';`).get();
-    return data['count(*)'];
-  }
-
-  /**
-   * Retrieves all the indexes (keys) in the database for this enmap, even if they aren't fetched.
-   * @return {array<string>} Array of all indexes (keys) in the enmap, cached or not.
-   */
-  get indexes() {
-    const rows = this.db.prepare(`SELECT key FROM '${this.name}';`).get();
-    return rows.map(row => row.key);
-  }
-
-  /**
-   * Removes a key from the cache - useful when disabling autoFetch.
-   * @param {*} keyOrArrayOfKeys A single key or array of keys to remove from the cache.
-   * @returns {Enmap} The enmap.
-   */
-  evict(keyOrArrayOfKeys) {
-    if (_.isArray(keyOrArrayOfKeys)) {
-      keyOrArrayOfKeys.forEach(key => super.delete(key));
-    } else {
-      super.delete(keyOrArrayOfKeys);
-    }
-    return this;
-  }
-
-  /**
-   * Generates an automatic numerical key for inserting a new value.
-   * @example
-   * enmap.set(enmap.autonum(), "This is a new value");
-   * @return {number} The generated key number.
-   */
-  autonum() {
-    this[_fetchCheck]('internal::autonum');
-    const start = this.get('internal::autonum') || 0;
-    let highest = this[_getHighestAutonum](start);
-    this.set('internal::autonum', ++highest);
-    return highest;
-  }
-
-  /**
-   * Function called whenever data changes within Enmap after the initial load.
-   * Can be used to detect if another part of your code changed a value in enmap and react on it.
-   * @example
-   * enmap.changed((keyName, oldValue, newValue) => {
-   *   console.log(`Value of ${key} has changed from: \n${oldValue}\nto\n${newValue});
-   * });
-   * @param {Function} cb A callback function that will be called whenever data changes in the enmap.
-   */
-  changed(cb) {
-    this.changedCB = cb;
-  }
-
-  /**
-   * Shuts down the underlying persistent enmap database.
-   * @return {Promise<*>} The promise of the database closing operation.
-   */
-  close() {
-    this[_readyCheck]();
-    return this.pool.close();
-  }
-
-  /* METHODS THAT SET THINGS IN ENMAP */
-
-  /**
-   * Set the value in Enmap.
+   * Sets a value in Enmap.
    * @param {string|number} key Required. The key of the element to add to The Enmap.
-   * If the Enmap is persistent this value MUST be a string or number.
    * @param {*} val Required. The value of the element to add to The Enmap.
    * If the Enmap is persistent this value MUST be stringifiable as JSON.
    * @param {string} path Optional. The path to the property to modify inside the value object or array.
@@ -375,6 +168,137 @@ class Enmap extends Map {
     }
     return super.set(key, this[_clone](data));
   }
+
+  /**
+   * Retrieves a key from the enmap. If fetchAll is false, returns a promise.
+   * @param {string|number} key The key to retrieve from the enmap.
+   * @param {string} path Optional. The property to retrieve from the object or array.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @example
+   * const myKeyValue = enmap.get("myKey");
+   * console.log(myKeyValue);
+   *
+   * const someSubValue = enmap.get("anObjectKey", "someprop.someOtherSubProp");
+   * @return {*} The value for this key.
+   */
+  get(key, path = null) {
+    this[_readyCheck]();
+    this[_fetchCheck](key);
+    if (!_.isNil(path)) {
+      this[_check](key, 'Object');
+      const data = super.get(key);
+      return _.get(data, path);
+    }
+    return super.get(key);
+  }
+
+  /**
+   * Retrieves the number of rows in the database for this enmap, even if they aren't fetched.
+   * @return {integer} The number of rows in the database.
+   */
+  get count() {
+    const data = this.db.prepare(`SELECT count(*) FROM '${this.name}';`).get();
+    return data['count(*)'];
+  }
+
+  /**
+   * Retrieves all the indexes (keys) in the database for this enmap, even if they aren't fetched.
+   * @return {array<string>} Array of all indexes (keys) in the enmap, cached or not.
+   */
+  get indexes() {
+    const rows = this.db.prepare(`SELECT key FROM '${this.name}';`).get();
+    return rows.map(row => row.key);
+  }
+
+  /**
+   * Fetches every key from the persistent enmap and loads them into the current enmap value.
+   * @return {Enmap} The enmap containing all values.
+   */
+  fetchEverything() {
+    this[_readyCheck]();
+    const rows = this.db.prepare(`SELECT * FROM ${this.name};`).all();
+    for (const row of rows) {
+      super.set(row.key, this[_parseData](row.value));
+    }
+    return this;
+  }
+
+  /**
+   * Force fetch one or more key values from the enmap. If the database has changed, that new value is used.
+   * @param {string|number} keyOrKeys A single key or array of keys to force fetch from the enmap database.
+   * @return {Enmap} The Enmap, including the new fetched value(s).
+   */
+  fetch(keyOrKeys) {
+    this[_readyCheck]();
+    if (_.isArray(keyOrKeys)) {
+      const data = this.db.prepare(`SELECT * FROM ${this.name} WHERE key IN (${'?, '.repeat(keyOrKeys.length).slice(0, -2)})`).all(keyOrKeys);
+      for (const row of data) {
+        super.set(row.key, this[_parseData](row.value));
+      }
+      return this;
+    } else {
+      const data = this.db.prepare(`SELECT * FROM ${this.name} WHERE key = ?;`).get(keyOrKeys);
+      if (!data) return null;
+      super.set(keyOrKeys, this[_parseData](data.value));
+      return this[_parseData](data.value);
+    }
+  }
+
+  /**
+   * Removes a key or keys from the cache - useful when disabling autoFetch.
+   * @param {*} keyOrArrayOfKeys A single key or array of keys to remove from the cache.
+   * @returns {Enmap} The enmap minus the evicted keys.
+   */
+  evict(keyOrArrayOfKeys) {
+    if (_.isArray(keyOrArrayOfKeys)) {
+      keyOrArrayOfKeys.forEach(key => super.delete(key));
+    } else {
+      super.delete(keyOrArrayOfKeys);
+    }
+    return this;
+  }
+
+  /**
+   * Generates an automatic numerical key for inserting a new value.
+   * This is a "weak" method, it ensures the value isn't duplicated, but does not
+   * guarantee it's sequential (if a value is deleted, another can take its place).
+   * Useful for logging, but not much else.
+   * @example
+   * enmap.set(enmap.autonum(), "This is a new value");
+   * @return {number} The generated key number.
+   */
+  autonum() {
+    this[_fetchCheck]('internal::autonum');
+    const start = this.get('internal::autonum') || 0;
+    let highest = this[_getHighestAutonum](start);
+    this.set('internal::autonum', ++highest);
+    return highest;
+  }
+
+  /**
+   * Function called whenever data changes within Enmap after the initial load.
+   * Can be used to detect if another part of your code changed a value in enmap and react on it.
+   * @example
+   * enmap.changed((keyName, oldValue, newValue) => {
+   *   console.log(`Value of ${keyName} has changed from: \n${oldValue}\nto\n${newValue});
+   * });
+   * @param {Function} cb A callback function that will be called whenever data changes in the enmap.
+   */
+  changed(cb) {
+    this.changedCB = cb;
+  }
+
+  /**
+   * Shuts down the database. WARNING: USING THIS MAKES THE ENMAP UNUSEABLE. You should
+   * only use this method if you are closing your entire application.
+   * Note that honestly I've never had to use this, shutting down the app without a close() is fine.
+   * @return {Promise<*>} The promise of the database closing operation.
+   */
+  close() {
+    this[_readyCheck]();
+    return this.pool.close();
+  }
+
 
   /**
    * Modify the property of a value inside the enmap, if the value is an object or array.
@@ -534,31 +458,6 @@ class Enmap extends Map {
     }
   }
 
-  /* METHODS THAT GETS THINGS FROM ENMAP */
-
-  /**
-   * Retrieves a key from the enmap. If fetchAll is false, returns a promise.
-   * @param {string|number} key The key to retrieve from the enmap.
-   * @param {string} path Optional. The property to retrieve from the object or array.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
-   * @example
-   * const myKeyValue = enmap.get("myKey");
-   * console.log(myKeyValue);
-   *
-   * const someSubValue = enmap.get("anObjectKey", "someprop.someOtherSubProp");
-   * @return {*} The value for this key.
-   */
-  get(key, path = null) {
-    this[_readyCheck]();
-    this[_fetchCheck](key);
-    if (!_.isNil(path)) {
-      this[_check](key, 'Object');
-      const data = super.get(key);
-      return _.get(data, path);
-    }
-    return super.get(key);
-  }
-
   /**
    * Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
    * @param {string|number} key Required. The key of the element to get from The Enmap.
@@ -578,6 +477,15 @@ class Enmap extends Map {
    * This is a shortcut to "if enmap doesn't have key, set it, then get it" which is a very common pattern.
    * @param {string|number} key Required. The key you want to make sure exists.
    * @param {*} defaultvalue Required. The value you want to save in the database and return as default.
+   * @example
+   * // Simply ensure the data exists (for using property methods):
+   * enmap.ensure("mykey", {some: "value", here: "as an example"});
+   * enmap.has("mykey"); // always returns true
+   * enmap.get("mykey", "here") // returns "as an example";
+   *
+   * // Get the default value back in a variable:
+   * const settings = mySettings.ensure("1234567890", defaultSettings);
+   * console.log(settings) // enmap's value for "1234567890" if it exists, otherwise the defaultSettings value.
    * @return {*} The value from the database for the key, or the default value provided for a new key.
    */
   ensure(key, defaultvalue) {
@@ -629,8 +537,6 @@ class Enmap extends Map {
     if (_.isNil(path)) throw new Err(`No path provided to check for a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.has(key, path);
   }
-
-  /* METHODS THAT DELETE THINGS FROM ENMAP */
 
   /**
    * Deletes a key in the Enmap.
@@ -746,8 +652,70 @@ class Enmap extends Map {
     return this.remove(key, val, path);
   }
 
+  /**
+   * Initialize multiple Enmaps easily.
+   * @param {Array<string>} names Array of strings. Each array entry will create a separate enmap with that name.
+   * @param {Object} options Options object to pass to the provider. See provider documentation for its options.
+   * @example
+   * // Using local variables and the mongodb provider.
+   * const Enmap = require('enmap');
+   * const { settings, tags, blacklist } = Enmap.multi(['settings', 'tags', 'blacklist']);
+   *
+   * // Attaching to an existing object (for instance some API's client)
+   * const Enmap = require("enmap");
+   * Object.assign(client, Enmap.multi(["settings", "tags", "blacklist"]));
+   *
+   * @returns {Array<Map>} An array of initialized Enmaps.
+   */
+  static multi(names, options = {}) {
+    if (!names.length || names.length < 1) {
+      throw new Err('"names" argument must be an array of string names.', 'EnmapTypeError');
+    }
+
+    const returnvalue = {};
+    for (const name of names) {
+      const enmap = new Enmap(Object.assign(options, { name }));
+      returnvalue[name] = enmap;
+    }
+    return returnvalue;
+  }
+
   /* INTERNAL (Private) METHODS */
 
+  /*
+   * Internal Method. Initializes the enmap depending on given values.
+   * @param {Map} pool In order to set data to the Enmap, one must be provided.
+   * @returns {Promise} Returns the defer promise to await the ready state.
+   */
+  async [_init](pool) {
+    Object.defineProperty(this, 'db', {
+      value: await pool.acquire(),
+      writable: false,
+      enumerable: false,
+      configurable: false
+    });
+    if (this.db) {
+      Object.defineProperty(this, 'isReady', {
+        value: true,
+        writable: false,
+        enumerable: false,
+        configurable: false
+      });
+    } else {
+      throw new Err('Database Could Not Be Opened', 'EnmapDBConnectionError');
+    }
+    const table = this.db.prepare(`SELECT count(*) FROM sqlite_master WHERE type='table' AND name = '${this.name}';`).get();
+    if (!table['count(*)']) {
+      this.db.prepare(`CREATE TABLE ${this.name} (key text PRIMARY KEY, value text)`).run();
+      this.db.pragma('synchronous = 1');
+      this.db.pragma('journal_mode = wal');
+    }
+    if (this.fetchAll) {
+      await this.fetchEverything();
+    }
+    this.ready();
+    return this.defer;
+  }
 
   /*
    * INTERNAL method used by autonum().
@@ -834,6 +802,45 @@ class Enmap extends Map {
     this.name = this.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
   }
 
+  /*
+   * Internal Method. Verifies if a key needs to be fetched from the database.
+   * If persistent enmap and autoFetch is on, retrieves the key.
+   * @param {string|number} key The key to check or fetch.
+   */
+  [_fetchCheck](key) {
+    if (super.has(key)) return;
+    if (!this.persistent || !this.autoFetch) return;
+    this.fetch(key);
+  }
+
+  /*
+   * Internal Method. Parses JSON data.
+   * Reserved for future use (logical checking)
+   * @param {*} data The data to check/parse
+   * @returns {*} An object or the original data.
+   */
+  [_parseData](data) {
+    return JSON.parse(data);
+  }
+
+  /*
+   * Internal Method. Clones a value or object with the enmap's set clone level.
+   * @param {*} data The data to clone.
+   * @return {*} The cloned value.
+   */
+  [_clone](data) {
+    if (this.cloneLevel === 'none') return data;
+    if (this.cloneLevel === 'shallow') return _.clone(data);
+    if (this.cloneLevel === 'deep') return _.cloneDeep(data);
+    throw new Err('Invalid cloneLevel. What did you *do*, this shouldn\'t happen!', 'EnmapOptionsError');
+  }
+
+  /*
+   * Internal Method. Verifies that the database is ready, assuming persistence is used.
+   */
+  [_readyCheck]() {
+    if (!this.isReady) throw new Err('Database is not ready. Refer to the readme to use enmap.defer', 'EnmapReadyError');
+  }
 
   /*
   BELOW IS DISCORD.JS COLLECTION CODE
