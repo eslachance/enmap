@@ -111,15 +111,12 @@ class Enmap extends Map {
     if (!targetMap.db.pool.path.includes('enmap.sqlite')) {
       throw new Err('Target enmap is not an sqlite database. The migrate method is only to migrate from a 3.0 enmap to 4.0 sqlite enmap!');
     }
-    console.log(`${sourceMap.size} keys loaded from source enmap`);
     const insertArray = [];
     sourceMap.keyArray().forEach(key => {
       insertArray.push(targetMap.db.set(key, JSON.stringify(sourceMap.get(key))));
     });
-    Promise.all(insertArray).then(inserts => {
-      console.log(`Inserted ${inserts.length} keys in target enmap.`);
-      process.exit(0);
-    });
+    await Promise.all(insertArray);
+    return;
   }
 
   /**
