@@ -19,12 +19,12 @@
   "author": "Evelyne Lachance",
   "license": "Apache",
   "dependencies": {
-    "better-sqlite-pool": "^0.1.2",
     "lodash": "^4.17.10"
   },
+  "peerDependencies": {
+    "better-sqlite-pool": "^0.1.2",
+  },
   "devDependencies": {
-    "enmap-level": "^1.0.1",
-    "enmap-sqlite": "^2.0.3",
     "eslint": "^4.19.1",
     "eslint-config-airbnb-base": "^11.3.2",
     "eslint-config-standard": "^10.2.1",
