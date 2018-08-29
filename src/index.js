@@ -1,5 +1,3 @@
-// better-sqlite-pool is better than directly using better-sqlite3 for multi-process purposes.
-const { Pool } = require('better-sqlite-pool');
 
 // Lodash should probably be a core lib but hey, it's useful!
 const _ = require('lodash');
@@ -56,6 +54,9 @@ class Enmap extends Map {
     });
 
     if (options.name) {
+      // better-sqlite-pool is better than directly using better-sqlite3 for multi-process purposes.
+      // required only here because otherwise non-persistent database still need to install it!
+      const { Pool } = require('better-sqlite-pool');
       Object.defineProperty(this, 'persistent', {
         value: true,
         writable: false,
