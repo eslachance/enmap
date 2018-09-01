@@ -314,8 +314,8 @@ class Enmap extends Map {
   autonum() {
     this[_fetchCheck]('internal::autonum');
     const start = this.get('internal::autonum') || 0;
-    let highest = this[_getHighestAutonum](start);
-    this.set('internal::autonum', ++highest);
+    const highest = this[_getHighestAutonum](start);
+    this.set('internal::autonum', highest);
     return highest;
   }
 
