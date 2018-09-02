@@ -151,8 +151,8 @@ class Enmap extends Map {
   set(key, val, path = null) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (!key || !['String', 'Number'].includes(key.constructor.name)) {
-      throw new Error('Enmap require keys to be strings or numbers.');
+    if (_.isNil(key) || !['String', 'Number'].includes(key.constructor.name)) {
+      throw new Err('Enmap require keys to be strings or numbers.', 'EnmapKeyTypeError');
     }
     let data = super.get(key);
     const oldValue = super.has(key) ? data : null;
@@ -312,7 +312,7 @@ class Enmap extends Map {
    * @return {number} The generated key number.
    */
   autonum() {
-    this[_fetchCheck]('internal::autonum');
+    this[_fetchCheck]('internal::autonum', true);
     const start = this.get('internal::autonum') || 0;
     const highest = this[_getHighestAutonum](start);
     this.set('internal::autonum', highest);
@@ -851,7 +851,11 @@ class Enmap extends Map {
    * If persistent enmap and autoFetch is on, retrieves the key.
    * @param {string|number} key The key to check or fetch.
    */
-  [_fetchCheck](key) {
+  [_fetchCheck](key, force = false) {
+    if(force) {
+      this.fetch(key);
+      return;
+    }
     if (super.has(key)) return;
     if (!this.persistent || !this.autoFetch) return;
     this.fetch(key);
