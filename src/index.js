@@ -1,4 +1,3 @@
-
 // Lodash should probably be a core lib but hey, it's useful!
 const _ = require('lodash');
 
@@ -379,6 +378,7 @@ class Enmap extends Map {
    */
   push(key, val, path = null, allowDupes = false) {
     this[_readyCheck]();
+    this[_fetchCheck](key);
     this[_check](key, 'Array', path);
     const data = super.get(key);
     if (!_.isNil(path)) {
@@ -405,6 +405,7 @@ class Enmap extends Map {
    */
   pushIn(key, path, val, allowDupes = false) {
     this[_readyCheck]();
+    this[_fetchCheck](key);
     if (_.isNil(path)) throw new Err(`No path provided to push a value in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.push(key, val, path, allowDupes);
   }
@@ -432,6 +433,7 @@ class Enmap extends Map {
    */
   math(key, operation, operand, path = null) {
     this[_readyCheck]();
+    this[_fetchCheck](key);
     this[_check](key, 'Number', path);
     if (_.isNil(path)) {
       if (operation === 'random' || operation === 'rand') {
@@ -692,6 +694,7 @@ class Enmap extends Map {
    */
   removeFrom(key, path, val) {
     this[_readyCheck]();
+    this[_fetchCheck](key);
     if (_.isNil(path)) throw new Err(`No path provided to remove an array element in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.remove(key, val, path);
   }
@@ -852,7 +855,7 @@ class Enmap extends Map {
    * @param {string|number} key The key to check or fetch.
    */
   [_fetchCheck](key, force = false) {
-    if(force) {
+    if (force) {
       this.fetch(key);
       return;
     }
