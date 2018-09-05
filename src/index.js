@@ -185,7 +185,7 @@ class Enmap extends Map {
     this[_readyCheck]();
     this[_fetchCheck](key);
     if (!_.isNil(path)) {
-      this[_check](key, 'Object');
+      this[_check](key, ['Object', 'Array']);
       const data = super.get(key);
       return _.get(data, path);
     }
@@ -236,14 +236,14 @@ class Enmap extends Map {
    */
   static async migrate(source, target) {
     if (!source || !target) throw `Both source and target are required.`;
-    if (source.constructor.name !== 'EnmapProvider') throw new Err('Source must be a valid Enmap Provider (not an initialized enmap)');
-    if (target.constructor.name !== 'EnmapProvider') throw new Err('Target must be a valid Enmap Provider (not an initialized enmap)');
+    if (source.constructor.name !== 'EnmapProvider') throw new Err('Source must be a valid Enmap Provider (not an initialized enmap)', 'EnmapMigrationError');
+    if (target.constructor.name !== 'EnmapProvider') throw new Err('Target must be a valid Enmap Provider (not an initialized enmap)', 'EnmapMigrationError');
     const sourceMap = new Enmap({ provider: source });
     const targetMap = new Enmap({ fetchAll: false, provider: target });
     await sourceMap.defer;
     await targetMap.defer;
     if (!targetMap.db.pool.path.includes('enmap.sqlite')) {
-      throw new Err('Target enmap is not an sqlite database. The migrate method is only to migrate from a 3.0 enmap to 4.0 sqlite enmap!');
+      throw new Err('Target enmap is not an sqlite database. The migrate method is only to migrate from a 3.0 enmap to 4.0 sqlite enmap!', 'EnmapMigrationError');
     }
     const insertArray = [];
     sourceMap.keyArray().forEach(key => {
@@ -514,7 +514,7 @@ class Enmap extends Map {
   getProp(key, path) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (_.isNil(path)) throw new Err(`No path provided get a property from "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    if (_.isNil(path)) throw new Err(`No path provided to get a property from "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.get(key, path);
   }
 
@@ -522,7 +522,9 @@ class Enmap extends Map {
    * Returns the key's value, or the default given, ensuring that the data is there.
    * This is a shortcut to "if enmap doesn't have key, set it, then get it" which is a very common pattern.
    * @param {string|number} key Required. The key you want to make sure exists.
-   * @param {*} defaultvalue Required. The value you want to save in the database and return as default.
+   * @param {*} defaultValue Required. The value you want to save in the database and return as default.
+   * @param {string} path Optional. If presents, ensures both the key exists as an object, and the full path exists.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @example
    * // Simply ensure the data exists (for using property methods):
    * enmap.ensure("mykey", {some: "value", here: "as an example"});
@@ -534,13 +536,20 @@ class Enmap extends Map {
    * console.log(settings) // enmap's value for "1234567890" if it exists, otherwise the defaultSettings value.
    * @return {*} The value from the database for the key, or the default value provided for a new key.
    */
-  ensure(key, defaultvalue) {
+  ensure(key, defaultValue, path = null) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (_.isNil(defaultvalue)) throw new Err(`No default value provided on ensure method for "${key}" in "${this.name}"`, 'EnmapArgumentError');
+    if (_.isNil(defaultValue)) throw new Err(`No default value provided on ensure method for "${key}" in "${this.name}"`, 'EnmapArgumentError');
+    if (!_.isNil(path)) {
+      this[_check](key, ['Object'], path);
+      if (!super.has(key)) throw new Err(`Key "${key}" does not exist in "${this.name}" to ensure a property`, 'EnmapKeyError');
+      if (this.hasProp(key, path)) return this.getProp(key, path);
+      this.set(key, defaultValue, path);
+      return defaultValue;
+    }
     if (super.has(key)) return super.get(key);
-    this.set(key, defaultvalue);
-    return defaultvalue;
+    this.set(key, defaultValue);
+    return defaultValue;
   }
 
   /* BOOLEAN METHODS THAT CHECKS FOR THINGS IN ENMAP */
@@ -788,17 +797,18 @@ class Enmap extends Map {
    * @param {string} path Optional. The dotProp path to the property in the object enmap.
    */
   [_check](key, type, path = null) {
-    if (!this.has(key)) throw new Err(`The key "${key}" does not exist in the enmap "${this.name}"`);
+    if (!this.has(key)) throw new Err(`The key "${key}" does not exist in the enmap "${this.name}"`, 'EnmapPathError');
     if (!type) return;
     if (!_.isArray(type)) type = [type];
     if (!_.isNil(path)) {
       this[_check](key, 'Object');
       const data = super.get(key);
       if (!type.includes(_.get(data, path).constructor.name)) {
-        throw new Err(`The property "${path}" in key "${key}" is not of type "${type.join('" or "')}" in the enmap "${this.name}" (key was of type "${_.get(data, path).constructor.name}")`);
+        throw new Err(`The property "${path}" in key "${key}" is not of type "${type.join('" or "')}" in the enmap "${this.name}" 
+(key was of type "${_.get(data, path).constructor.name}")`, 'EnmapTypeError');
       }
     } else if (!type.includes(this.get(key).constructor.name)) {
-      throw new Err(`The key "${key}" is not of type "${type.join('" or "')}" in the enmap "${this.name}" (key was of type "${this.get(key).constructor.name}")`);
+      throw new Err(`The key "${key}" is not of type "${type.join('" or "')}" in the enmap "${this.name}" (key was of type "${this.get(key).constructor.name}")`, 'EnmapTypeError');
     }
   }
 
@@ -811,7 +821,7 @@ class Enmap extends Map {
   * @return {number} the result.
   */
   [_mathop](base, op, opand) {
-    if (base == undefined || op == undefined || opand == undefined) throw new Err('Math Operation requires base and operation', 'TypeError');
+    if (base == undefined || op == undefined || opand == undefined) throw new Err('Math Operation requires base and operation', 'EnmapTypeError');
     switch (op) {
     case 'add' :
     case 'addition' :
