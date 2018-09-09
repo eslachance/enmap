@@ -206,7 +206,7 @@ class Enmap extends Map {
    * @return {array<string>} Array of all indexes (keys) in the enmap, cached or not.
    */
   get indexes() {
-    const rows = this.db.prepare(`SELECT key FROM '${this.name}';`).get();
+    const rows = this.db.prepare(`SELECT key FROM '${this.name}';`).all();
     return rows.map(row => row.key);
   }
 
