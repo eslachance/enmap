@@ -164,7 +164,7 @@ class Enmap extends Map {
       this.changedCB(key, oldValue, data);
     }
     if (this.persistent) {
-      this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, JSON.stringify(data));
+      this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key.toString(), JSON.stringify(data));
     }
     return super.set(key, this[_clone](data));
   }
@@ -310,12 +310,11 @@ class Enmap extends Map {
    * enmap.set(enmap.autonum(), "This is a new value");
    * @return {number} The generated key number.
    */
-  autonum() {
+  get autonum() {
     this[_fetchCheck]('internal::autonum', true);
-    const start = this.get('internal::autonum') || 0;
-    const highest = this[_getHighestAutonum](start);
-    this.set('internal::autonum', highest);
-    return highest;
+    this.ensure('internal::autonum', 0);
+    this.inc('internal::autonum');
+    return this.get('internal::autonum');
   }
 
   /**
@@ -783,10 +782,12 @@ class Enmap extends Map {
   [_getHighestAutonum](start = 0) {
     this[_readyCheck]();
     let highest = start;
+    console.log(`Starting At: ${highest}`);
     while (this.has(highest)) {
+      console.log(`Highest Detected: ${highest}`);
       highest++;
     }
-    return highest;
+    return ++highest;
   }
 
   /*
