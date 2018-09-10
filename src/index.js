@@ -149,6 +149,7 @@ class Enmap extends Map {
    */
   set(key, val, path = null) {
     this[_readyCheck]();
+    key = key.toString();
     this[_fetchCheck](key);
     if (_.isNil(key) || !['String', 'Number'].includes(key.constructor.name)) {
       throw new Err('Enmap require keys to be strings or numbers.', 'EnmapKeyTypeError');
@@ -164,7 +165,7 @@ class Enmap extends Map {
       this.changedCB(key, oldValue, data);
     }
     if (this.persistent) {
-      this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key.toString(), JSON.stringify(data));
+      this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, JSON.stringify(data));
     }
     return super.set(key, this[_clone](data));
   }
