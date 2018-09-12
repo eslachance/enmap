@@ -149,11 +149,11 @@ class Enmap extends Map {
    */
   set(key, val, path = null) {
     this[_readyCheck]();
-    key = key.toString();
-    this[_fetchCheck](key);
     if (_.isNil(key) || !['String', 'Number'].includes(key.constructor.name)) {
       throw new Err('Enmap require keys to be strings or numbers.', 'EnmapKeyTypeError');
     }
+    key = key.toString();
+    this[_fetchCheck](key);
     let data = super.get(key);
     const oldValue = super.has(key) ? data : null;
     if (!_.isNil(path)) {
