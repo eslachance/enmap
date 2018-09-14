@@ -190,7 +190,8 @@ class Enmap extends Map {
       const data = super.get(key);
       return _.get(data, path);
     }
-    return super.get(key);
+    const data = super.get(key);
+    return this[_clone](data);
   }
 
   /**
