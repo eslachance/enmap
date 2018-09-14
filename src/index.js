@@ -107,6 +107,18 @@ class Enmap extends Map {
           writable: false,
           enumerable: false,
           configurable: false
+        },
+        pollingInterval: {
+          value: !_.isNil(options.pollingInterval) ? options.pollingInterval : 1000,
+          writeable: true,
+          enumerable: false,
+          configurable: false
+        },
+        polling: {
+          value: !_.isNil(options.polling) ? options.polling : false,
+          writeable: true,
+          enumerable: false,
+          configurable: false
         }
       });
       this[_validateName]();
@@ -166,6 +178,9 @@ class Enmap extends Map {
     }
     if (this.persistent) {
       this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, JSON.stringify(data));
+      if (this.polling) {
+        this.db.prepare(`INSERT INTO 'internal::changes::${this.name}' (type, key, value, timestamp, pid) VALUES (?, ?, ?, ?, ?);`).run('insert', key, JSON.stringify(data), Date.now(), process.pid);
+      }
     }
     return super.set(key, this[_clone](data));
   }
@@ -590,6 +605,9 @@ class Enmap extends Map {
     } else {
       super.delete(key);
       if (this.persistent) {
+        if (this.polling) {
+          this.db.prepare(`INSERT INTO 'internal::changes::${this.name}' (type, key, timestamp, pid) VALUES (?, ?, ?, ?);`).run('delete', key.toString(), Date.now(), process.pid);
+        }
         return this.db.prepare(`DELETE FROM ${this.name} WHERE key = '${key}'`).run();
       }
       if (typeof this.changedCB === 'function') {
@@ -619,6 +637,9 @@ class Enmap extends Map {
     this[_readyCheck]();
     if (this.persistent) {
       this.db.prepare(`DELETE FROM ${this.name};`).run();
+      if (this.polling) {
+        this.db.prepare(`INSERT INTO 'internal::changes::${this.name}' (type, timestamp, pid) VALUES (?, ?, ?);`).run('clear', Date.now(), process.pid);
+      }
     }
     super.clear();
   }
@@ -727,14 +748,46 @@ class Enmap extends Map {
     } else {
       throw new Err('Database Could Not Be Opened', 'EnmapDBConnectionError');
     }
-    const table = this.db.prepare(`SELECT count(*) FROM sqlite_master WHERE type='table' AND name = '${this.name}';`).get();
+    const table = this.db.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = ?;").get(this.name);
     if (!table['count(*)']) {
       this.db.prepare(`CREATE TABLE ${this.name} (key text PRIMARY KEY, value text)`).run();
       this.db.pragma('synchronous = 1');
       this.db.pragma('journal_mode = wal');
     }
+    if (this.polling) {
+      const logs = this.db.prepare(`SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'internal::changes::${this.name}';`).get();
+      if (!logs['count(*)']) {
+        this.db.prepare(`CREATE TABLE 'internal::changes::${this.name}' (type TEXT, key TEXT, value TEXT, timestamp INTEGER, pid INTEGER);`).run();
+      }
+    }
     if (this.fetchAll) {
       await this.fetchEverything();
+    }
+    if (this.polling) {
+      Object.defineProperty(this, 'lastSync', {
+        value: new Date(),
+        writable: true,
+        enumerable: false,
+        configurable: false
+      });
+      setInterval(() => {
+        const changes = this.db.prepare(`SELECT type, key, value FROM 'internal::changes::${this.name}' WHERE timestamp >= ? AND pid <> ? ORDER BY timestamp ASC;`).all(this.lastSync.getTime(), process.pid);
+        for (const row of changes) {
+          switch (row.type) {
+          case 'insert':
+            super.set(row.key, this[_parseData](row.value));
+            break;
+          case 'delete':
+            super.delete(row.key);
+            break;
+          case 'clear':
+            super.clear();
+            break;
+          }
+        }
+        this.lastSync = new Date();
+        this.db.prepare(`DELETE FROM 'internal::changes::${this.name}' WHERE ROWID IN (SELECT ROWID FROM 'internal::changes::${this.name}' ORDER BY ROWID DESC LIMIT -1 OFFSET 100);`).run();
+      }, this.pollingInterval);
     }
     this.ready();
     return this.defer;
