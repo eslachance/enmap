@@ -762,6 +762,11 @@ class Enmap extends Map {
     if (this.has('internal::autonum')) {
       this.db.prepare("INSERT OR REPLACE INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)").run(this.name, this.get('internal::autonum'));
       this.delete('internal::autonum');
+    } else {
+      const row = this.db.prepare("SELECT lastnum FROM 'internal::autonum' WHERE enmap = ?").get(this.name);
+      if (!row) {
+        this.db.prepare("INSERT INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)").run(this.name, 0);
+      }
     }
 
     if (this.polling) {
