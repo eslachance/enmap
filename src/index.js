@@ -11,7 +11,6 @@ const fs = require('fs');
 // Symbols are used to create "private" methods.
 // https://medium.com/front-end-hacking/private-methods-in-es6-and-writing-your-own-db-b2e30866521f
 const _mathop = Symbol('mathop');
-const _getHighestAutonum = Symbol('getHighestAutonum');
 const _check = Symbol('check');
 const _validateName = Symbol('validateName');
 const _fetchCheck = Symbol('fetchCheck');
@@ -294,10 +293,10 @@ class Enmap extends Map {
    * @return {number} The generated key number.
    */
   get autonum() {
-    this[_fetchCheck]('internal::autonum', true);
-    this.ensure('internal::autonum', 0);
-    this.inc('internal::autonum');
-    return this.get('internal::autonum');
+    let { lastnum } = this.db.prepare("SELECT lastnum FROM 'internal::autonum' WHERE enmap = ?").get(this.name);
+    lastnum++;
+    this.db.prepare("INSERT OR REPLACE INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)").run(this.name, lastnum);
+    return lastnum;
   }
 
   /**
@@ -754,15 +753,17 @@ class Enmap extends Map {
       this.db.pragma('synchronous = 1');
       this.db.pragma('journal_mode = wal');
     }
-    if (this.polling) {
-      const logs = this.db.prepare(`SELECT count(*) FROM sqlite_master WHERE type='table' AND name = 'internal::changes::${this.name}';`).get();
-      if (!logs['count(*)']) {
-        this.db.prepare(`CREATE TABLE 'internal::changes::${this.name}' (type TEXT, key TEXT, value TEXT, timestamp INTEGER, pid INTEGER);`).run();
-      }
-    }
+    this.db.prepare(`CREATE TABLE IF NOT EXISTS 'internal::changes::${this.name}' (type TEXT, key TEXT, value TEXT, timestamp INTEGER, pid INTEGER);`).run();
+    this.db.prepare(`CREATE TABLE IF NOT EXISTS 'internal::autonum' (enmap TEXT PRIMARY KEY, lastnum INTEGER)`).run();
     if (this.fetchAll) {
       await this.fetchEverything();
     }
+    // TEMPORARY MIGRATE CODE FOR AUTONUM
+    if (this.has('internal::autonum')) {
+      this.db.prepare("INSERT OR REPLACE INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)").run(this.name, this.get('internal::autonum'));
+      this.delete('internal::autonum');
+    }
+
     if (this.polling) {
       Object.defineProperty(this, 'lastSync', {
         value: new Date(),
@@ -771,7 +772,8 @@ class Enmap extends Map {
         configurable: false
       });
       setInterval(() => {
-        const changes = this.db.prepare(`SELECT type, key, value FROM 'internal::changes::${this.name}' WHERE timestamp >= ? AND pid <> ? ORDER BY timestamp ASC;`).all(this.lastSync.getTime(), process.pid);
+        const changes = this.db.prepare(`SELECT type, key, value FROM 'internal::changes::${this.name}' WHERE timestamp >= ? AND pid <> ? ORDER BY timestamp ASC;`)
+          .all(this.lastSync.getTime(), process.pid);
         for (const row of changes) {
           switch (row.type) {
           case 'insert':
@@ -791,24 +793,6 @@ class Enmap extends Map {
     }
     this.ready();
     return this.defer;
-  }
-
-  /*
-   * INTERNAL method used by autonum().
-   * Loops on incremental numerical values until it finds a free key
-   * of that value in the Enamp.
-   * @param {Integer} start The starting value to look for.
-   * @return {Integer} The first non-existant value found.
-   */
-  [_getHighestAutonum](start = 0) {
-    this[_readyCheck]();
-    let highest = start;
-    console.log(`Starting At: ${highest}`);
-    while (this.has(highest)) {
-      console.log(`Highest Detected: ${highest}`);
-      highest++;
-    }
-    return ++highest;
   }
 
   /*
