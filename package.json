@@ -14,7 +14,7 @@
   "bugs": {
     "url": "https://github.com/eslachance/enmap/issues"
   },
-  "homepage": "https://etiket.evie.codes/",
+  "homepage": "https://enmap.evie.codes/",
   "keywords": [
     "sqlite",
     "better-sqlite3",
