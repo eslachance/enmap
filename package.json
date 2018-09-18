@@ -1,7 +1,7 @@
 {
   "name": "enmap",
   "version": "4.2.1",
-  "description": "",
+  "description": "A simple database wrapper to make sqlite database interactions much easier for beginners, with additional array helper methods.",
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
@@ -14,9 +14,9 @@
   "bugs": {
     "url": "https://github.com/eslachance/enmap/issues"
   },
-  "homepage": "https://github.com/eslachance/enmap#readme",
-  "keywords": [],
-  "author": "Evelyne Lachance",
+  "homepage": "https://etiket.evie.codes/",
+  "keywords": ["sqlite", "better-sqlite3", "database", "caching", "storing", "db", "easy", "sql", "sqlite3", "wrapper"],
+  "author": "Evelyne Lachance <eslachance@gmail.com> (https://evie.codes/)",
   "license": "Apache-2.0",
   "dependencies": {
     "lodash": "^4.17.10"
