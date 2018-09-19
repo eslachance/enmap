@@ -139,7 +139,7 @@ class Enmap extends Map {
     
     if(iterable){
       if(options.name){
-          console.log('Iterable ignored for persistent Enmap named ' + options.name)
+          console.log('Iterable ignored for persistent Enmap ' + options.name)
       } else {
         for(const [key, value] of iterable){
           this.set(key,value)
