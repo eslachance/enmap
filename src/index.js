@@ -31,7 +31,7 @@ class Enmap extends Map {
       options = iterable || {};
       iterable = null;
     }
-    super(iterable);
+    super();
 
     let cloneLevel;
     if (options.cloneLevel) {
@@ -135,6 +135,16 @@ class Enmap extends Map {
         enumerable: false,
         configurable: false
       });
+    }
+    
+    if(iterable){
+      if(options.name){
+          console.log('Iterable ignored for persistent Enmap named ' + options.name)
+      } else {
+        for(const [key, value] of iterable){
+          this.set(key,value)
+        }
+      }
     }
   }
 
@@ -1087,7 +1097,7 @@ class Enmap extends Map {
      */
   filter(fn, thisArg) {
     if (thisArg) fn = fn.bind(thisArg);
-    const results = new Enmap();
+    const results = new this.constructor();
     for (const [key, val] of this) {
       if (fn(val, key, this)) results.set(key, val);
     }
