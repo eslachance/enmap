@@ -31,6 +31,21 @@ class Enmap extends Map {
       options = iterable || {};
       iterable = null;
     }
+    
+    if (!options.name){
+     Object.defineProperty(this, 'name', {
+        value: 'MemoryEnmap',
+        writable: false,
+        enumerable: false,
+        configurable: false
+      });
+      Object.defineProperty(this, 'isReady', {
+        value: true,
+        writable: false,
+        enumerable: false,
+        configurable: false
+      }); 
+    }
     super(iterable);
 
     let cloneLevel;
@@ -122,19 +137,6 @@ class Enmap extends Map {
       });
       this[_validateName]();
       this[_init](pool);
-    } else {
-      Object.defineProperty(this, 'name', {
-        value: 'MemoryEnmap',
-        writable: false,
-        enumerable: false,
-        configurable: false
-      });
-      Object.defineProperty(this, 'isReady', {
-        value: true,
-        writable: false,
-        enumerable: false,
-        configurable: false
-      });
     }
   }
 
@@ -1087,7 +1089,7 @@ class Enmap extends Map {
      */
   filter(fn, thisArg) {
     if (thisArg) fn = fn.bind(thisArg);
-    const results = new Enmap();
+    const results = new this.constructor();
     for (const [key, val] of this) {
       if (fn(val, key, this)) results.set(key, val);
     }
