@@ -959,9 +959,7 @@ class Enmap extends Map {
     if (arr.length === 0) return [];
     const rand = new Array(count);
     arr = arr.slice();
-    for (let i = 0; i < count; i++) {
-      rand[i] = [arr.splice(Math.floor(Math.random() * arr.length), 1)];
-    }
+    for (let i = 0; i < count; i++) rand[i] = arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
     return rand;
   }
 
@@ -979,9 +977,7 @@ class Enmap extends Map {
     if (arr.length === 0) return [];
     const rand = new Array(count);
     arr = arr.slice();
-    for (let i = 0; i < count; i++) {
-      rand[i] = [arr.splice(Math.floor(Math.random() * arr.length), 1)];
-    }
+    for (let i = 0; i < count; i++) rand[i] = arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
     return rand;
   }
 
@@ -1083,6 +1079,21 @@ class Enmap extends Map {
   }
 
   /**
+   * Removes entries that satisfy the provided filter function.
+   * @param {Function} fn Function used to test (should return a boolean)
+   * @param {Object} [thisArg] Value to use as `this` when executing function
+   * @returns {number} The number of removed entries
+   */
+  sweep(fn, thisArg) {
+    if (thisArg) fn = fn.bind(thisArg);
+    const previousSize = this.size;
+    for (const [key, val] of this) {
+      if (fn(val, key, this)) this.delete(key);
+    }
+    return previousSize - this.size;
+  }
+
+  /**
      * Identical to
      * [Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter),
      * but returns a Enmap instead of an Array.
@@ -1111,6 +1122,27 @@ class Enmap extends Map {
     const results = [];
     for (const [key, val] of this) {
       if (fn(val, key, this)) results.push(val);
+    }
+    return results;
+  }
+
+  /**
+   * Partitions the collection into two collections where the first collection
+   * contains the items that passed and the second contains the items that failed.
+   * @param {Function} fn Function used to test (should return a boolean)
+   * @param {*} [thisArg] Value to use as `this` when executing function
+   * @returns {Collection[]}
+   * @example const [big, small] = collection.partition(guild => guild.memberCount > 250);
+   */
+  partition(fn, thisArg) {
+    if (typeof thisArg !== 'undefined') fn = fn.bind(thisArg);
+    const results = [new this.contructor(), new this.constructor()];
+    for (const [key, val] of this) {
+      if (fn(val, key, this)) {
+        results[0].set(key, val);
+      } else {
+        results[1].set(key, val);
+      }
     }
     return results;
   }
