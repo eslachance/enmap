@@ -136,13 +136,13 @@ class Enmap extends Map {
         configurable: false
       });
     }
-    
-    if(iterable){
-      if(options.name){
-          console.log('Iterable ignored for persistent Enmap ' + options.name)
+
+    if (iterable) {
+      if (options.name) {
+        console.log(`Iterable ignored for persistent Enmap ${options.name}`);
       } else {
-        for(const [key, value] of iterable){
-          this.set(key,value)
+        for (const [key, value] of iterable) {
+          this.set(key, value);
         }
       }
     }
