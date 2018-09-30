@@ -168,6 +168,7 @@ class Enmap extends Map {
     let data = super.get(key);
     const oldValue = super.has(key) ? data : null;
     if (!_.isNil(path)) {
+      if (_.isNil(data)) data = {};
       _.set(data, path, val);
     } else {
       data = val;
