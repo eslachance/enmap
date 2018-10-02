@@ -136,7 +136,7 @@ declare module 'enmap' {
          * @param {string|number} key Required. The key of the element to delete from The Enmap.
          * @param {boolean} bulk Internal property used by the purge method.
          */
-        public delete(key: string | number): boolean;
+        public delete(key: string | number): Object;
 
         /**
          *
