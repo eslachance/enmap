@@ -77,6 +77,12 @@ class Enmap extends Map {
           enumerable: false,
           configurable: false
         },
+        dataDir: {
+          value: options.dataDir,
+          writable: false,
+          enumerable: false,
+          configurable: false
+        },
         fetchAll: {
           value: !_.isNil(options.fetchAll) ? options.fetchAll : true,
           writable: true,
