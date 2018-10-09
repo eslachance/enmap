@@ -41,7 +41,7 @@ The more data you have, the more complex it is, the more memory it can use. You 
 **A**: Well, myself because I do use it often. But also, I built it specifically for beginners in mind. 
 Enmap's main goal is to remain simple to use, as fast as possible, and a solid as possible.
 
-### Q: What's is used for?
+### Q: What's it used for?
 
 **A**: Enmap is useful for storing very simple key/value data for easy retrieval, and also for more complex objects with many properties. 
 Mainly, because of who I originally made this for, it's used in Discord.js Bots to save currencies, content blocks, server settings, and
