@@ -107,6 +107,7 @@ class Enmap extends Map {
     const sourceMap = new Enmap({ provider: source });
     const targetMap = new Enmap({ fetchAll: false, provider: target });
     await sourceMap.defer;
+    if (sourceMap.size === 0) throw new Err('Source enmap does not contain any data.', 'EnmapMigrationError');
     await targetMap.defer;
     if (!targetMap.db.pool.path.includes('enmap.sqlite')) {
       throw new Err('Target enmap is not an sqlite database. The migrate method is only to migrate from a 3.0 enmap to 4.0 sqlite enmap!');
@@ -116,7 +117,7 @@ class Enmap extends Map {
       insertArray.push(targetMap.db.set(key, JSON.stringify(sourceMap.get(key))));
     });
     await Promise.all(insertArray);
-    return;
+    return `Migrated a total of ${sourceMap.size} rows to sqlite. You're all set!`;
   }
 
   /**
