@@ -31,7 +31,7 @@ class Enmap extends Map {
       options = iterable || {};
       iterable = null;
     }
-    super(iterable);
+    super();
 
     let cloneLevel;
     if (options.cloneLevel) {
@@ -142,6 +142,16 @@ class Enmap extends Map {
         configurable: false
       });
     }
+
+    if (iterable) {
+      if (options.name) {
+        console.log(`Iterable ignored for persistent Enmap ${options.name}`);
+      } else {
+        for (const [key, value] of iterable) {
+          this.set(key, value);
+        }
+      }
+    }
   }
 
   /**
@@ -172,7 +182,7 @@ class Enmap extends Map {
     key = key.toString();
     this[_fetchCheck](key);
     let data = super.get(key);
-    const oldValue = super.has(key) ? data : null;
+    const oldValue = super.has(key) ? this[_clone](data) : null;
     if (!_.isNil(path)) {
       if (_.isNil(data)) data = {};
       _.set(data, path, val);
@@ -1110,7 +1120,7 @@ class Enmap extends Map {
      */
   filter(fn, thisArg) {
     if (thisArg) fn = fn.bind(thisArg);
-    const results = new Enmap();
+    const results = new this.constructor();
     for (const [key, val] of this) {
       if (fn(val, key, this)) results.set(key, val);
     }
@@ -1143,7 +1153,7 @@ class Enmap extends Map {
    */
   partition(fn, thisArg) {
     if (typeof thisArg !== 'undefined') fn = fn.bind(thisArg);
-    const results = [new this.contructor(), new this.constructor()];
+    const results = [new this.constructor(), new this.constructor()];
     for (const [key, val] of this) {
       if (fn(val, key, this)) {
         results[0].set(key, val);
