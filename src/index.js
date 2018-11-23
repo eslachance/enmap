@@ -26,9 +26,30 @@ const _init = Symbol('init');
  */
 class Enmap extends Map {
 
+  /**
+   * Initializes a new Enmap, with options.
+   * @param {iterable|string} iterable If iterable data, only valid in non-persistent enmaps.
+   * If this parameter is a string, it is assumed to be the enmap's name, which is a shorthand for adding a name in the options
+   * and making the enmap persistent.
+   * @param {Object} options Additional options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details.
+   * @example
+   * const Enmap = require("enmap");
+   * // Non-persistent enmap:
+   * const inMemory = new Enmap();
+   *
+   * // Named, Persistent enmap with string option
+   * const myEnmap = new Enmap("testing");
+   *
+   * // Named, Persistent enmap with a few options:
+   * const myEnmap = new Enmap({name: "testing", fetchAll: false, autoFetch: true});
+   */
   constructor(iterable, options = {}) {
+    if (typeof iterable === 'string') {
+      options.name = iterable;
+      iterable = null;
+    }
     if (!iterable || typeof iterable[Symbol.iterator] !== 'function') {
-      options = iterable || {};
+      options = iterable || options;
       iterable = null;
     }
     super();
