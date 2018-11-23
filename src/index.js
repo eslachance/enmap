@@ -299,8 +299,8 @@ class Enmap extends Map {
 
   /**
    * Force fetch one or more key values from the enmap. If the database has changed, that new value is used.
-   * @param {string|number} keyOrKeys A single key or array of keys to force fetch from the enmap database.
-   * @return {Enmap} The Enmap, including the new fetched value(s).
+   * @param {string|number|Array<string|number>} keyOrKeys A single key or array of keys to force fetch from the enmap database.
+   * @return {Enmap|*} The Enmap, including the new fetched values, or the value in case the function argument is a single key.
    */
   fetch(keyOrKeys) {
     this[_readyCheck]();
@@ -320,7 +320,7 @@ class Enmap extends Map {
 
   /**
    * Removes a key or keys from the cache - useful when disabling autoFetch.
-   * @param {*} keyOrArrayOfKeys A single key or array of keys to remove from the cache.
+   * @param {string|number|Array<string|number>} keyOrArrayOfKeys A single key or array of keys to remove from the cache.
    * @returns {Enmap} The enmap minus the evicted keys.
    */
   evict(keyOrArrayOfKeys) {
@@ -338,7 +338,7 @@ class Enmap extends Map {
    * guarantee it's sequential (if a value is deleted, another can take its place).
    * Useful for logging, but not much else.
    * @example
-   * enmap.set(enmap.autonum(), "This is a new value");
+   * enmap.set(enmap.autonum, "This is a new value");
    * @return {number} The generated key number.
    */
   get autonum() {
@@ -378,7 +378,7 @@ class Enmap extends Map {
    * This is a shortcut to loading the key, changing the value, and setting it back.
    * @param {string|number} key Required. The key of the element to add to The Enmap or array.
    * This value MUST be a string or number.
-   * @param {*} path Required. The property to modify inside the value object or array.
+   * @param {string} path Required. The property to modify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @param {*} val Required. The value to apply to the specified property.
    * @returns {Enmap} The enmap.
@@ -427,7 +427,7 @@ class Enmap extends Map {
    * Push to an array element inside an Object or Array element in Enmap.
    * @param {string|number} key Required. The key of the element.
    * This value MUST be a string or number.
-   * @param {*} path Required. The name of the array property to push to.
+   * @param {string} path Required. The name of the array property to push to.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @param {*} val Required. The value push to the array property.
    * @param {boolean} allowDupes Allow duplicate values in the array (default: false).
@@ -459,7 +459,7 @@ class Enmap extends Map {
    * points.math("number", "modulo", 3); // 2
    * points.math("numberInObject", "+", 10, "sub.anInt");
    *
-   * @return {Map} The EnMap.
+   * @returns {Enmap} The enmap.
    */
   math(key, operation, operand, path = null) {
     this[_readyCheck]();
@@ -491,7 +491,7 @@ class Enmap extends Map {
    *
    * points.inc("number"); // 43
    * points.inc("numberInObject", "sub.anInt"); // {sub: { anInt: 6 }}
-   * @return {Map} The EnMap.
+   * @returns {Enmap} The enmap.
    */
   inc(key, path = null) {
     this[_readyCheck]();
@@ -518,7 +518,7 @@ class Enmap extends Map {
    *
    * points.dec("number"); // 41
    * points.dec("numberInObject", "sub.anInt"); // {sub: { anInt: 4 }}
-   * @return {Map} The EnMap.
+   * @returns {Enmap} The enmap.
    */
   dec(key, path = null) {
     this[_readyCheck]();
@@ -537,7 +537,7 @@ class Enmap extends Map {
   /**
    * Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
    * @param {string|number} key Required. The key of the element to get from The Enmap.
-   * @param {*} path Required. The property to retrieve from the object or array.
+   * @param {string} path Required. The property to retrieve from the object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @return {*} The value of the property obtained.
    */
@@ -656,7 +656,8 @@ class Enmap extends Map {
         if (this.polling) {
           this.db.prepare(`INSERT INTO 'internal::changes::${this.name}' (type, key, timestamp, pid) VALUES (?, ?, ?, ?);`).run('delete', key.toString(), Date.now(), process.pid);
         }
-        return this.db.prepare(`DELETE FROM ${this.name} WHERE key = '${key}'`).run();
+        this.db.prepare(`DELETE FROM ${this.name} WHERE key = '${key}'`).run();
+        return this;
       }
       if (typeof this.changedCB === 'function') {
         this.changedCB(key, oldValue, null);
@@ -668,7 +669,7 @@ class Enmap extends Map {
   /**
    * Delete a property from an object or array value in Enmap.
    * @param {string|number} key Required. The key of the element to delete the property from in Enmap.
-   * @param {*} path Required. The name of the property to remove from the object.
+   * @param {string} path Required. The name of the property to remove from the object.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    */
   deleteProp(key, path) {
@@ -728,7 +729,7 @@ class Enmap extends Map {
    * @param {string} path Optional. The name of the array property to remove from.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3".
    * If not presents, removes directly from the value.
-   * @return {Map} The EnMap.
+   * @returns {Enmap} The enmap.
    */
   remove(key, val, path = null) {
     this[_readyCheck]();
@@ -757,10 +758,10 @@ class Enmap extends Map {
    * Confusing? Sure is.
    * @param {string|number} key Required. The key of the element.
    * This value MUST be a string or number.
-   * @param {*} path Required. The name of the array property to remove from.
+   * @param {string} path Required. The name of the array property to remove from.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @param {*} val Required. The value to remove from the array property.
-   * @return {Map} The EnMap.
+   * @returns {Enmap} The enmap.
    */
   removeFrom(key, path, val) {
     this[_readyCheck]();
@@ -1014,7 +1015,7 @@ class Enmap extends Map {
    * The array will only be reconstructed if an item is added to or removed from the Enmap,
    * or if you change the length of the array itself. If you don't want this caching behaviour,
    * use `Array.from(enmap.keys())` instead.
-   * @returns {Array}
+   * @returns {Array<string | number>}
    */
   keyArray() {
     return Array.from(this.keys());
@@ -1112,7 +1113,7 @@ class Enmap extends Map {
    * [Array.findIndex()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex).
    * @param {string|Function} propOrFn The property to test against, or the function to test with
    * @param {*} [value] The expected value - only applicable and required if using a property for the first argument
-   * @returns {*}
+   * @returns {string|number}
    * @example
    * enmap.findKey('username', 'Bob');
    * @example
