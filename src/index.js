@@ -1114,18 +1114,18 @@ class Enmap extends Map {
   }
 
   /**
-     * Searches for the existence of a single item where its specified property's value is identical to the given value
-     * (`item[prop] === value`).
-     * <warn>Do not use this to check for an item by its ID. Instead, use `enmap.has(id)`. See
-     * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/has) for details.</warn>
-     * @param {string} prop The property to test against
-     * @param {*} value The expected value
-     * @returns {boolean}
-     * @example
-     * if (enmap.exists('username', 'Bob')) {
-     *  console.log('user here!');
-     * }
-     */
+   * Searches for the existence of a single item where its specified property's value is identical to the given value
+   * (`item[prop] === value`).
+   * <warn>Do not use this to check for an item by its ID. Instead, use `enmap.has(id)`. See
+   * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/has) for details.</warn>
+   * @param {string} prop The property to test against
+   * @param {*} value The expected value
+   * @returns {boolean}
+   * @example
+   * if (enmap.exists('username', 'Bob')) {
+   *  console.log('user here!');
+   * }
+   */
   exists(prop, value) {
     return Boolean(this.find(prop, value));
   }
@@ -1146,13 +1146,13 @@ class Enmap extends Map {
   }
 
   /**
-     * Identical to
-     * [Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter),
-     * but returns a Enmap instead of an Array.
-     * @param {Function} fn Function used to test (should return a boolean)
-     * @param {Object} [thisArg] Value to use as `this` when executing function
-     * @returns {Enmap}
-     */
+   * Identical to
+   * [Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter),
+   * but returns a Enmap instead of an Array.
+   * @param {Function} fn Function used to test (should return a boolean)
+   * @param {Object} [thisArg] Value to use as `this` when executing function
+   * @returns {Enmap}
+   */
   filter(fn, thisArg) {
     if (thisArg) fn = fn.bind(thisArg);
     const results = new this.constructor();
@@ -1163,12 +1163,12 @@ class Enmap extends Map {
   }
 
   /**
-     * Identical to
-     * [Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter).
-     * @param {Function} fn Function used to test (should return a boolean)
-     * @param {Object} [thisArg] Value to use as `this` when executing function
-     * @returns {Array}
-     */
+   * Identical to
+   * [Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter).
+   * @param {Function} fn Function used to test (should return a boolean)
+   * @param {Object} [thisArg] Value to use as `this` when executing function
+   * @returns {Array}
+   */
   filterArray(fn, thisArg) {
     if (thisArg) fn = fn.bind(thisArg);
     const results = [];
@@ -1200,12 +1200,12 @@ class Enmap extends Map {
   }
 
   /**
-     * Identical to
-     * [Array.map()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map).
-     * @param {Function} fn Function that produces an element of the new array, taking three arguments
-     * @param {*} [thisArg] Value to use as `this` when executing function
-     * @returns {Array}
-     */
+   * Identical to
+   * [Array.map()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map).
+   * @param {Function} fn Function that produces an element of the new array, taking three arguments
+   * @param {*} [thisArg] Value to use as `this` when executing function
+   * @returns {Array}
+   */
   map(fn, thisArg) {
     if (thisArg) fn = fn.bind(thisArg);
     const arr = new Array(this.size);
@@ -1215,12 +1215,12 @@ class Enmap extends Map {
   }
 
   /**
-     * Identical to
-     * [Array.some()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/some).
-     * @param {Function} fn Function used to test (should return a boolean)
-     * @param {Object} [thisArg] Value to use as `this` when executing function
-     * @returns {boolean}
-     */
+   * Identical to
+   * [Array.some()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/some).
+   * @param {Function} fn Function used to test (should return a boolean)
+   * @param {Object} [thisArg] Value to use as `this` when executing function
+   * @returns {boolean}
+   */
   some(fn, thisArg) {
     if (thisArg) fn = fn.bind(thisArg);
     for (const [key, val] of this) {
@@ -1230,12 +1230,12 @@ class Enmap extends Map {
   }
 
   /**
-     * Identical to
-     * [Array.every()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every).
-     * @param {Function} fn Function used to test (should return a boolean)
-     * @param {Object} [thisArg] Value to use as `this` when executing function
-     * @returns {boolean}
-     */
+   * Identical to
+   * [Array.every()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every).
+   * @param {Function} fn Function used to test (should return a boolean)
+   * @param {Object} [thisArg] Value to use as `this` when executing function
+   * @returns {boolean}
+   */
   every(fn, thisArg) {
     if (thisArg) fn = fn.bind(thisArg);
     for (const [key, val] of this) {
@@ -1245,13 +1245,13 @@ class Enmap extends Map {
   }
 
   /**
-     * Identical to
-     * [Array.reduce()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce).
-     * @param {Function} fn Function used to reduce, taking four arguments; `accumulator`, `currentValue`, `currentKey`,
-     * and `enmap`
-     * @param {*} [initialValue] Starting value for the accumulator
-     * @returns {*}
-     */
+   * Identical to
+   * [Array.reduce()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce).
+   * @param {Function} fn Function used to reduce, taking four arguments; `accumulator`, `currentValue`, `currentKey`,
+   * and `enmap`
+   * @param {*} [initialValue] Starting value for the accumulator
+   * @returns {*}
+   */
   reduce(fn, initialValue) {
     let accumulator;
     if (typeof initialValue !== 'undefined') {
@@ -1272,20 +1272,20 @@ class Enmap extends Map {
   }
 
   /**
-     * Creates an identical shallow copy of this Enmap.
-     * @returns {Enmap}
-     * @example const newColl = someColl.clone();
-     */
+   * Creates an identical shallow copy of this Enmap.
+   * @returns {Enmap}
+   * @example const newColl = someColl.clone();
+   */
   clone() {
     return new this.constructor(this);
   }
 
   /**
-     * Combines this Enmap with others into a new Enmap. None of the source Enmaps are modified.
-     * @param {...Enmap} enmaps Enmaps to merge
-     * @returns {Enmap}
-     * @example const newColl = someColl.concat(someOtherColl, anotherColl, ohBoyAColl);
-     */
+   * Combines this Enmap with others into a new Enmap. None of the source Enmaps are modified.
+   * @param {...Enmap} enmaps Enmaps to merge
+   * @returns {Enmap}
+   * @example const newColl = someColl.concat(someOtherColl, anotherColl, ohBoyAColl);
+   */
   concat(...enmaps) {
     const newColl = this.clone();
     for (const coll of enmaps) {
@@ -1295,12 +1295,12 @@ class Enmap extends Map {
   }
 
   /**
-     * Checks if this Enmap shares identical key-value pairings with another.
-     * This is different to checking for equality using equal-signs, because
-     * the Enmaps may be different objects, but contain the same data.
-     * @param {Enmap} enmap Enmap to compare with
-     * @returns {boolean} Whether the Enmaps have identical contents
-     */
+   * Checks if this Enmap shares identical key-value pairings with another.
+   * This is different to checking for equality using equal-signs, because
+   * the Enmaps may be different objects, but contain the same data.
+   * @param {Enmap} enmap Enmap to compare with
+   * @returns {boolean} Whether the Enmaps have identical contents
+   */
   equals(enmap) {
     if (!enmap) return false;
     if (this === enmap) return true;
