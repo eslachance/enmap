@@ -62,11 +62,22 @@ class Enmap extends Map {
         configurable: false
       });
 
+      // Initialize this property, to prepare for a possible destroy() call.
+      // This is completely ignored in all situations except destroying the enmap.
+      Object.defineProperty(this, 'isDestroyed', {
+        value: false,
+        writable: true,
+        enumerable: false,
+        configurable: false
+      });
+
+      // Define the data directory where the enmap is stored.
       if (!options.dataDir) {
         if (!fs.existsSync('./data')) {
           fs.mkdirSync('./data');
         }
       }
+
       const dataDir = resolve(process.cwd(), options.dataDir || 'data');
       const pool = new Pool(`${dataDir}${sep}enmap.sqlite`);
 
@@ -663,6 +674,31 @@ class Enmap extends Map {
   clear() { return this.deleteAll(); }
 
   /**
+   * Completely destroys the entire enmap. This deletes the database tables entirely.
+   * It will not affect other enmap data in the same database, however.
+   * THIS ACTION WILL DESTROY YOUR DATA AND CANNOT BE UNDONE.
+   * @returns {null}
+   */
+  destroy() {
+    this.deleteAll();
+
+    this.isDestroyed = true;
+
+    const transaction = this.db.transaction((run) => {
+      for (const stmt of run) {
+        this.db.prepare(stmt).run();
+      }
+    });
+
+    transaction([
+      `DROP TABLE IF EXISTS ${this.name};`,
+      `DROP TABLE IF EXISTS 'internal::changes::${this.name}';`,
+      `DELETE FROM 'internal::autonum' WHERE enmap = '${this.name}';`
+    ]);
+    return null;
+  }
+
+  /**
    * Remove a value in an Array or Object element in Enmap. Note that this only works for
    * values, not keys. Complex values such as objects and arrays will not be removed this way.
    * @param {string|number} key Required. The key of the element to remove from in Enmap.
@@ -929,6 +965,7 @@ class Enmap extends Map {
    */
   [_readyCheck]() {
     if (!this.isReady) throw new Err('Database is not ready. Refer to the readme to use enmap.defer', 'EnmapReadyError');
+    if (this.isDestroyed) throw new Err('This enmap has been destroyed and can no longer be used without being re-initialized.', 'EnmapDestroyedError');
   }
 
   /*
@@ -952,22 +989,22 @@ class Enmap extends Map {
   }
 
   /**
-     * Creates an ordered array of the keys of this Enmap
-     * The array will only be reconstructed if an item is added to or removed from the Enmap,
-     * or if you change the length of the array itself. If you don't want this caching behaviour,
-     * use `Array.from(enmap.keys())` instead.
-     * @returns {Array}
-     */
+   * Creates an ordered array of the keys of this Enmap
+   * The array will only be reconstructed if an item is added to or removed from the Enmap,
+   * or if you change the length of the array itself. If you don't want this caching behaviour,
+   * use `Array.from(enmap.keys())` instead.
+   * @returns {Array}
+   */
   keyArray() {
     return Array.from(this.keys());
   }
 
   /**
-     * Obtains random value(s) from this Enmap. This relies on {@link Enmap#array}.
-     * @param {number} [count] Number of values to obtain randomly
-     * @returns {*|Array<*>} The single value if `count` is undefined,
-     * or an array of values of `count` length
-     */
+   * Obtains random value(s) from this Enmap. This relies on {@link Enmap#array}.
+   * @param {number} [count] Number of values to obtain randomly
+   * @returns {*|Array<*>} The single value if `count` is undefined,
+   * or an array of values of `count` length
+   */
   random(count) {
     let arr = this.array();
     if (count === undefined) return arr[Math.floor(Math.random() * arr.length)];
@@ -981,11 +1018,11 @@ class Enmap extends Map {
   }
 
   /**
-     * Obtains random key(s) from this Enmap. This relies on {@link Enmap#keyArray}
-     * @param {number} [count] Number of keys to obtain randomly
-     * @returns {*|Array<*>} The single key if `count` is undefined,
-     * or an array of keys of `count` length
-     */
+   * Obtains random key(s) from this Enmap. This relies on {@link Enmap#keyArray}
+   * @param {number} [count] Number of keys to obtain randomly
+   * @returns {*|Array<*>} The single key if `count` is undefined,
+   * or an array of keys of `count` length
+   */
   randomKey(count) {
     let arr = this.keyArray();
     if (count === undefined) return arr[Math.floor(Math.random() * arr.length)];
@@ -999,14 +1036,14 @@ class Enmap extends Map {
   }
 
   /**
-     * Searches for all items where their specified property's value is identical to the given value
-     * (`item[prop] === value`).
-     * @param {string} prop The property to test against
-     * @param {*} value The expected value
-     * @returns {Array}
-     * @example
-     * enmap.findAll('username', 'Bob');
-     */
+   * Searches for all items where their specified property's value is identical to the given value
+   * (`item[prop] === value`).
+   * @param {string} prop The property to test against
+   * @param {*} value The expected value
+   * @returns {Array}
+   * @example
+   * enmap.findAll('username', 'Bob');
+   */
   findAll(prop, value) {
     if (typeof prop !== 'string') throw new TypeError('Key must be a string.');
     if (typeof value === 'undefined') throw new Error('Value must be specified.');
@@ -1018,20 +1055,20 @@ class Enmap extends Map {
   }
 
   /**
-     * Searches for a single item where its specified property's value is identical to the given value
-     * (`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is identical to
-     * [Array.find()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find).
-     * <warn>All Enmap used in Discord.js are mapped using their `id` property, and if you want to find by id you
-     * should use the `get` method. See
-     * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/get) for details.</warn>
-     * @param {string|Function} propOrFn The property to test against, or the function to test with
-     * @param {*} [value] The expected value - only applicable and required if using a property for the first argument
-     * @returns {*}
-     * @example
-     * enmap.find('username', 'Bob');
-     * @example
-     * enmap.find(val => val.username === 'Bob');
-     */
+   * Searches for a single item where its specified property's value is identical to the given value
+   * (`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is identical to
+   * [Array.find()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find).
+   * <warn>All Enmap used in Discord.js are mapped using their `id` property, and if you want to find by id you
+   * should use the `get` method. See
+   * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/get) for details.</warn>
+   * @param {string|Function} propOrFn The property to test against, or the function to test with
+   * @param {*} [value] The expected value - only applicable and required if using a property for the first argument
+   * @returns {*}
+   * @example
+   * enmap.find('username', 'Bob');
+   * @example
+   * enmap.find(val => val.username === 'Bob');
+   */
   find(propOrFn, value) {
     if (typeof propOrFn === 'string') {
       if (typeof value === 'undefined') throw new Error('Value must be specified.');
@@ -1048,20 +1085,18 @@ class Enmap extends Map {
     throw new Error('First argument must be a property string or a function.');
   }
 
-  /* eslint-disable max-len */
   /**
-     * Searches for the key of a single item where its specified property's value is identical to the given value
-     * (`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is identical to
-     * [Array.findIndex()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex).
-     * @param {string|Function} propOrFn The property to test against, or the function to test with
-     * @param {*} [value] The expected value - only applicable and required if using a property for the first argument
-     * @returns {*}
-     * @example
-     * enmap.findKey('username', 'Bob');
-     * @example
-     * enmap.findKey(val => val.username === 'Bob');
-     */
-  /* eslint-enable max-len */
+   * Searches for the key of a single item where its specified property's value is identical to the given value
+   * (`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is identical to
+   * [Array.findIndex()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex).
+   * @param {string|Function} propOrFn The property to test against, or the function to test with
+   * @param {*} [value] The expected value - only applicable and required if using a property for the first argument
+   * @returns {*}
+   * @example
+   * enmap.findKey('username', 'Bob');
+   * @example
+   * enmap.findKey(val => val.username === 'Bob');
+   */
   findKey(propOrFn, value) {
     if (typeof propOrFn === 'string') {
       if (typeof value === 'undefined') throw new Error('Value must be specified.');
