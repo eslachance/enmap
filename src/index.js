@@ -133,6 +133,12 @@ class Enmap extends Map {
           enumerable: false,
           configurable: false
         },
+        ensureProps: {
+          value: !_.isNil(options.ensureProps) ? options.ensureProps : false,
+          writable: true,
+          enumerable: false,
+          configurable: false
+        },
         defer: {
           value: new Promise((res) =>
             Object.defineProperty(this, 'ready', {
@@ -576,6 +582,12 @@ class Enmap extends Map {
       if (this.hasProp(key, path)) return this.getProp(key, path);
       this.set(key, defaultValue, path);
       return defaultValue;
+    }
+    if (this.ensureProps && _.isObject(super.get(key))) {
+      if (!_.isObject(defaultValue)) throw new Err(`Default value for "${key}" in enmap "${this.name}" must be an object when merging with an object value.`, 'EnmapArgumentError');
+      const merged = Object.assign(super.get(key), defaultValue);
+      super.set(merged);
+      return merged;
     }
     if (super.has(key)) return super.get(key);
     this.set(key, defaultValue);
