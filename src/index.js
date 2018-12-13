@@ -783,6 +783,25 @@ class Enmap extends Map {
   }
 
   /**
+   * Creates an Iterator that iteratats over all entries, including non-cached entries.
+   * Similar to [Map.entries()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/entries)
+   * @example
+   * for(const [key, value] of enmap.iterate()) {
+   *  console.log(`${key} => ${value}`)
+   * }
+   * @returns {Iterator<entry>} Iterator of [key, value] pairs.
+   */
+  iterate() {
+    const { indexes } = this;
+    const that = this;
+    return (function*() { // eslint-disable-line func-names
+      for (const index of indexes) {
+        yield [index, that.get(index)];
+      }
+    }());
+  }
+
+  /**
    * Initialize multiple Enmaps easily.
    * @param {Array<string>} names Array of strings. Each array entry will create a separate enmap with that name.
    * @param {Object} options Options object to pass to the provider. See provider documentation for its options.
