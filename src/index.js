@@ -18,6 +18,7 @@ const _parseData = Symbol('parseData');
 const _readyCheck = Symbol('readyCheck');
 const _clone = Symbol('clone');
 const _init = Symbol('init');
+const _defineSetting = Symbol('_defineSetting');
 
 /**
  * A enhanced Map structure with additional utility methods.
@@ -65,32 +66,17 @@ class Enmap extends Map {
 
     // Object.defineProperty ensures that the property is "hidden" when outputting
     // the enmap in console. Only actual map entries are shown using this method.
-    Object.defineProperty(this, 'cloneLevel', {
-      value: cloneLevel,
-      writable: true,
-      enumerable: false,
-      configurable: false
-    });
+    this[_defineSetting]('cloneLevel', 'String', true, cloneLevel);
 
     if (options.name) {
       // better-sqlite-pool is better than directly using better-sqlite3 for multi-process purposes.
       // required only here because otherwise non-persistent database still need to install it!
       const { Pool } = require('better-sqlite-pool');
-      Object.defineProperty(this, 'persistent', {
-        value: true,
-        writable: false,
-        enumerable: false,
-        configurable: false
-      });
+      this[_defineSetting]('persistent', 'Boolean', false, true);
 
       // Initialize this property, to prepare for a possible destroy() call.
       // This is completely ignored in all situations except destroying the enmap.
-      Object.defineProperty(this, 'isDestroyed', {
-        value: false,
-        writable: true,
-        enumerable: false,
-        configurable: false
-      });
+      this[_defineSetting]('isDestroyed', 'Boolean', false, false);
 
       // Define the data directory where the enmap is stored.
       if (!options.dataDir) {
@@ -102,83 +88,26 @@ class Enmap extends Map {
       const dataDir = resolve(process.cwd(), options.dataDir || 'data');
       const pool = new Pool(`${dataDir}${sep}enmap.sqlite`);
 
-      Object.defineProperties(this, {
-        name: {
-          value: options.name,
-          writable: true,
-          enumerable: false,
-          configurable: false
-        },
-        dataDir: {
-          value: options.dataDir,
-          writable: false,
-          enumerable: false,
-          configurable: false
-        },
-        fetchAll: {
-          value: !_.isNil(options.fetchAll) ? options.fetchAll : true,
-          writable: true,
-          enumerable: false,
-          configurable: false
-        },
-        pool: {
-          value: pool,
-          writable: false,
-          enumerable: false,
-          configurable: false
-        },
-        autoFetch: {
-          value: !_.isNil(options.autoFetch) ? options.autoFetch : true,
-          writable: true,
-          enumerable: false,
-          configurable: false
-        },
-        ensureProps: {
-          value: !_.isNil(options.ensureProps) ? options.ensureProps : false,
-          writable: true,
-          enumerable: false,
-          configurable: false
-        },
-        defer: {
-          value: new Promise((res) =>
-            Object.defineProperty(this, 'ready', {
-              value: res,
-              writable: false,
-              enumerable: false,
-              configurable: false
-            })),
-          writable: false,
-          enumerable: false,
-          configurable: false
-        },
-        pollingInterval: {
-          value: !_.isNil(options.pollingInterval) ? options.pollingInterval : 1000,
-          writeable: true,
-          enumerable: false,
-          configurable: false
-        },
-        polling: {
-          value: !_.isNil(options.polling) ? options.polling : false,
-          writeable: true,
-          enumerable: false,
-          configurable: false
-        }
-      });
+      // [_defineSetting](name, type, writable, defaultValue [, value]) {
+
+      this[_defineSetting]('name', 'String', true, options.name);
+      this[_defineSetting]('dataDir', 'String', false, dataDir);
+      this[_defineSetting]('fetchAll', 'Boolean', true, true, options.fetchAll);
+      this[_defineSetting]('pool', 'Pool', true, pool);
+      this[_defineSetting]('autoFetch', 'Boolean', true, true, options.autoFetch);
+      this[_defineSetting]('ensureProps', 'Boolean', true, false, options.ensureProps);
+      this[_defineSetting]('strictType', 'Boolean', true, false, options.strictType);
+      this[_defineSetting]('polling', 'Boolean', true, false, options.polling);
+      this[_defineSetting]('pollingInterval', 'Number', true, 1000, options.pollingInterval);
+      this[_defineSetting]('defer', 'Promise', true, new Promise((res) =>
+        this[_defineSetting]('ready', 'Function', false, res))
+      );
+
       this[_validateName]();
       this[_init](pool);
     } else {
-      Object.defineProperty(this, 'name', {
-        value: 'MemoryEnmap',
-        writable: false,
-        enumerable: false,
-        configurable: false
-      });
-      Object.defineProperty(this, 'isReady', {
-        value: true,
-        writable: false,
-        enumerable: false,
-        configurable: false
-      });
+      this[_defineSetting]('name', 'String', true, 'MemoryEnmap');
+      this[_defineSetting]('isReady', 'Boolean', true, true);
     }
 
     if (iterable) {
@@ -842,6 +771,7 @@ class Enmap extends Map {
     }
     this.db.prepare(`CREATE TABLE IF NOT EXISTS 'internal::changes::${this.name}' (type TEXT, key TEXT, value TEXT, timestamp INTEGER, pid INTEGER);`).run();
     this.db.prepare(`CREATE TABLE IF NOT EXISTS 'internal::autonum' (enmap TEXT PRIMARY KEY, lastnum INTEGER)`).run();
+    this.db.prepare(`CREATE TABLE IF NOT EXISTS 'internal::type' (enmap TEXT PRIMARY KEY, type TEXT)`).run();
     if (this.fetchAll) {
       await this.fetchEverything();
     }
@@ -1000,6 +930,27 @@ class Enmap extends Map {
   [_readyCheck]() {
     if (!this.isReady) throw new Err('Database is not ready. Refer to the readme to use enmap.defer', 'EnmapReadyError');
     if (this.isDestroyed) throw new Err('This enmap has been destroyed and can no longer be used without being re-initialized.', 'EnmapDestroyedError');
+  }
+
+  /*
+   * Internal Method. Defines a property with either user-provided value, or the default value.
+   */
+  [_defineSetting](name, type, writable, defaultValue, value) {
+    if (_.isNil(value)) value = defaultValue;
+    /* Not implemented due to error:
+    Provided "Number", expecting "Number"
+    WTF, node?
+
+    if (value.constructor.name != type) {
+      throw new Err(`Wrong value type provided for options.${name}:  Provided "${defaultValue.constructor.name}", expecting "${type}", in enmap "${this.name}".`);
+    }
+    */
+    Object.defineProperty(this, name, {
+      value: !_.isNil(value) ? value : defaultValue,
+      writable,
+      enumerable: false,
+      configurable: false
+    });
   }
 
   /*

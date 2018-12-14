@@ -1,131 +1,124 @@
-/* global describe, it, before */
-const assert = require('assert');
+/* global describe, test, beforeEach, afterEach, expect */
 const Enmap = require('../');
-const Provider = require('enmap-level');
-const persistent = new Enmap({ provider: new Provider({ name: 'testing' }) });
 
 describe('Standard Enmaps', () => {
   let enmap;
 
-  before(() => {
+  beforeEach(() => {
+    // Unused. Kept here for reference.
+  });
+
+  describe('Basic Enmap', () => {
     enmap = new Enmap();
-  });
-
-  describe('Inserting data', () => {
-    it('inserts string values', () => {
-      enmap.set('simplevalue', 'this is a string');
+    test('inserts primitive values', () => {
+      expect(enmap.set('simplevalue', 'this is a string')).not.toBe(null);
+      expect(enmap.set('boolean', true)).not.toBe(null);
+      expect(enmap.set('integer', 42)).not.toBe(null);
+      expect(enmap.set('null', null)).not.toBe(null);
     });
-    it('inserts other primitives', () => {
-      enmap.set('boolean', true);
-      enmap.set('integer', 42);
-      enmap.set('null', null);
+    test('remembers primivitve values', () => {
+      expect(enmap.get('simplevalue')).toBe('this is a string');
+      expect(enmap.get('boolean')).toBe(true);
+      expect(enmap.get('integer')).toBe(42);
+      expect(enmap.get('null')).toBe(null);
     });
-    it('remembers values', () => {
-      assert.equal(enmap.get('simplevalue'), 'this is a string');
-      assert.equal(enmap.get('integer'), 42);
+    test('can do math', () => {
+      enmap.inc('integer');
+      expect(enmap.get('integer')).toBe(43);
+      enmap.math('integer', '+', 5);
+      expect(enmap.get('integer')).toBe(48);
+      enmap.dec('integer');
+      expect(enmap.get('integer')).toBe(47);
     });
-    it('supports arrays', () => {
-      enmap.set('array', [1, 2, 3]);
-      assert.equal(enmap.get('array')[2], 3);
-    });
-    it('also supports objects', () => {
-      enmap.set('object', { color: 'black', action: 'paint', desire: true });
-      assert.equal(enmap.get('object').color, 'black');
-    });
-    it('can be cleared', () => {
+    test('can be cleared', () => {
       enmap.clear();
-      assert.equal(enmap.size, 0);
+      expect(enmap.size).toBe(0);
     });
   });
-  describe('Performance Tests', () => {
-    it('can insert 10,000 records', () => {
-      for (let i = 0; i < 10000; i++) {
-        enmap.set(`value${i}`, 'simple string');
-      }
+  describe('Advanced Data Types', () => {
+    enmap = new Enmap();
+
+    test('supports arrays', () => {
+      expect(enmap.set('array', [1, 2, 3])).not.toBe(null);
+      expect(enmap.get('array').length).toBe(3);
     });
-    it('can delete them too', () => {
-      enmap.forEach(item => {
-        enmap.delete(item);
-      });
+
+    test('also supports objects', () => {
+      expect(enmap.set('object', { color: 'black', action: 'paint', desire: true })).not.toBe(null);
+      expect(enmap.get('object')).toEqual({ color: 'black', action: 'paint', desire: true });
     });
-    it('can insert 100,000 records', () => {
-      for (let i = 0; i < 100000; i++) {
-        enmap.set(`value${i}`, 'simple string');
-      }
+
+    test('can get an object by property name', () => {
+      expect(enmap.get('object', 'color')).toBe('black');
+      expect(enmap.get('object', 'desire')).toBe(true);
+      expect(enmap.getProp('object', 'action')).toBe('paint');
     });
-    it('can delete them too', () => {
-      enmap.forEach(item => {
-        enmap.delete(item);
-      });
+
+    test('can set subproperties of objects', () => {
+      expect(enmap.set('object', { sub1: 'a', sub2: [] }, 'sub')).not.toBe(null);
+      expect(enmap.get('object', 'sub.sub1')).toBe('a');
+      expect(enmap.get('object', 'sub.sub2').length).toBe(0);
+    });
+
+    test('can handle arrays in and out of objects', () => {
+      expect(enmap.push('array', 4)).not.toBe(null);
+      expect(enmap.get('array').length).toBe(4);
+      expect(enmap.remove('array', 1)).not.toBe(null);
+      expect(enmap.get('array').length).toBe(3);
+      enmap.clear();
+      enmap = null;
     });
   });
 });
 
-describe('Persistent Enmap', () => {
-  before(async () => {
-    await persistent.defer;
+describe('Basic Enmap Options', () => {
+  let enmap;
+  let baseObj;
+  beforeEach(() => {
+    baseObj = {
+      prop1: false,
+      prop2: 'thing',
+      prop3: [1, 2, 3],
+      obj: { thing: 'amajig' }
+    };
   });
 
-  describe('Loading Persistent Data', () => {
-    it('can load existing data', () => {
-      assert.ok(persistent.size);
-    });
+  afterEach(() => {
+    enmap.clear();
+    enmap = null;
   });
 
-  describe('Inserting Data', () => {
-    it('inserts string values', () => {
-      persistent.set('simplevalue', 'this is a string');
-    });
-    it('inserts other primitives', () => {
-      persistent.set('boolean', true);
-      persistent.set('integer', 42);
-      persistent.set('null', null);
-    });
-    it('remembers values', () => {
-      assert.equal(persistent.get('simplevalue'), 'this is a string');
-      assert.equal(persistent.get('integer'), 42);
-    });
-    it('supports arrays', () => {
-      persistent.set('array', [1, 2, 3]);
-      assert.equal(persistent.get('array')[2], 3);
-    });
-    it('also supports objects', () => {
-      persistent.set('object', { color: 'black', action: 'paint', desire: true });
-      assert.equal(persistent.get('object').color, 'black');
-    });
-    it('can get a specific object or array property', () => {
-      assert.equal(persistent.getProp('object', 'action'), 'paint');
-      assert.equal(persistent.getProp('array', 0), 1);
-    });
+  test('supports direct passing by reference (cloneLevel none)', () => {
+    enmap = new Enmap({ cloneLevel: 'none' });
+    enmap.set('foo', baseObj);
+    enmap.set('foo', 'other', 'prop2');
+    enmap.push('foo', 4, 'prop3');
+    // by reference modifies object properties at any level.
+    expect(baseObj.prop2).toBe('other');
+    expect(baseObj.prop3.length).toBe(4);
   });
-  describe('Performance Tests', () => {
-    it('can insert 10,000 records', async () => {
-      const promises = [];
-      for (let i = 0; i < 10000; i++) {
-        promises.push(persistent.setAsync(`test${i}`, 'simple string'));
-      }
-      await Promise.all(promises);
-    });
-    it('can delete them too', async () => {
-      const promises = [];
-      for (let i = 0; i < 10000; i++) {
-        promises.push(persistent.deleteAsync(`test${i}`));
-      }
-      await Promise.all(promises);
-    });
-    it('can insert 100,000 records', async () => {
-      const promises = [];
-      for (let i = 0; i < 100000; i++) {
-        promises.push(persistent.setAsync(`test${i}`, 'simple string'));
-      }
-      await Promise.all(promises);
-    }).timeout(45000);
-    it('can delete them too', async () => {
-      const promises = [];
-      for (let i = 0; i < 100000; i++) {
-        promises.push(persistent.deleteAsync(`test${i}`));
-      }
-      await Promise.all(promises);
-    }).timeout(45000);
+
+  test('supports shallow clones', () => {
+    enmap = new Enmap({ cloneLevel: 'shallow' });
+    enmap.set('foo', baseObj);
+    enmap.set('foo', 'other', 'prop2');
+    enmap.push('foo', 4, 'prop3');
+    // shallow clones do not allow base props to change in referenced object
+    expect(baseObj.prop2).toBe('thing');
+    // shallow clones still allow subprops to be modified, though.
+    expect(baseObj.prop3.length).toBe(4);
+  });
+
+  test('supports deep clones', () => {
+    enmap = new Enmap({ cloneLevel: 'deep' });
+    enmap.set('foo', baseObj);
+    enmap.set('foo', 'other', 'prop2');
+    enmap.push('foo', 4, 'prop3');
+    // deep clones do not allow base props to change in referenced object
+    expect(baseObj.prop2).toBe('thing');
+    // deep clones do not allow sub props to be changed, either.
+    expect(baseObj.prop3.length).toBe(3);
   });
 });
+// @TODO Options testing
+// @TODO performance testing
