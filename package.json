@@ -2,10 +2,10 @@
   "name": "enmap",
   "version": "4.5.0",
   "description": "A simple database wrapper to make sqlite database interactions much easier for beginners, with additional array helper methods.",
-  "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "docs": "node ./docs/build.js"
   },
   "repository": {
     "type": "git",
@@ -43,6 +43,7 @@
     "eslint-plugin-node": "^5.2.1",
     "eslint-plugin-promise": "^3.8.0",
     "eslint-plugin-standard": "^3.1.0",
-    "jest": "^23.6.0"
+    "jest": "^23.6.0",
+    "jsdoc-to-markdown": "^4.0.1"
   }
 }

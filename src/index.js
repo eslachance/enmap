@@ -33,6 +33,26 @@ class Enmap extends Map {
    * If this parameter is a string, it is assumed to be the enmap's name, which is a shorthand for adding a name in the options
    * and making the enmap persistent.
    * @param {Object} options Additional options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details.
+   * @param {string} options.name The name of the enmap. Represents its table name in sqlite. If present, the enmap is persistent.
+   * If no name is given, the enmap is memory-only and is not saved in the database. As a shorthand, you may use a string for the name
+   * instead of the options (see example).
+   * @param {boolean} options.fetchAll Defaults to `true`. When enabled, will automatically fetch any key that's requested using get,
+   * getProp, etc. This is a "syncroneous" operation, which means it doesn't need any of this promise or callback use.
+   * @param {string} options.dataDir Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative
+   * (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes!
+   * @param {string} options.cloneLevel Defaults to deep. Determines how objects and arrays are treated when inserting and retrieving from the database.
+   * See https://enmap.evie.codes/usage#enmap-options for more details on this option.
+   * @param {boolean} options.polling defaults to `false`. Determines whether Enmap will attempt to retrieve changes from the database on a regular interval.
+   * This means that if another Enmap in another process modifies a value, this change will be reflected in ALL enmaps using the polling feature.
+   * @param {string} options.pollingInterval defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database.
+   * The shorter the interval, the more CPU is used, so it's best not to lower this. Polling takes about 350-500ms if no data is found, and time will
+   * grow with more changes fetched. In my tests, 15 rows took a little more than 1 second, every second.
+   * @param {boolean} options.ensureProps defaults to `false`. If enabled and the value in the enmap is an object, using ensure() will also ensure that
+   * every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information.
+   * @param {boolean} options.strictType defaults to `false`. If enabled, locks the enmap to the type of the first value written to it (such as Number or String or Object).
+   * Do not enable this option if your enmap contains different types of value or the enmap will fail to load.
+   * @param {string} options.typeLock Only used if strictType is enabled. Defines an initial type for every value entered in the enmap. If no value is
+   * provided, the first value written to enmap will determine its typeLock. Must be a valid JS Primitive name, such as String, Number, Object, Array.
    * @example
    * const Enmap = require("enmap");
    * // Non-persistent enmap:
@@ -97,6 +117,12 @@ class Enmap extends Map {
       this[_defineSetting]('autoFetch', 'Boolean', true, true, options.autoFetch);
       this[_defineSetting]('ensureProps', 'Boolean', true, false, options.ensureProps);
       this[_defineSetting]('strictType', 'Boolean', true, false, options.strictType);
+      Object.defineProperty(this, 'typeLock', {
+        value: options.typeLock || null,
+        writable: true,
+        enumerable: false,
+        configurable: false
+      });
       this[_defineSetting]('polling', 'Boolean', true, false, options.polling);
       this[_defineSetting]('pollingInterval', 'Number', true, 1000, options.pollingInterval);
       this[_defineSetting]('defer', 'Promise', true, new Promise((res) =>
@@ -154,6 +180,17 @@ class Enmap extends Map {
       if (_.isNil(data)) data = {};
       _.set(data, path, val);
     } else {
+      // New 4.6.0: typecheck
+      if (this.strictType) {
+        if (!this.typeLock) {
+          this[_defineSetting]('typeLock', 'String', true, val.constructor.name);
+        } else if (data && data.constructor.name !== val.constructor.name) {
+          throw new Err(`Enmap "${this.name}" requires data to be of type "${data.constructor.name}" (got: "${val.constructor.name}" instead)`, 'EnmapStrictDataError');
+        } else if (!data && this.typeLock !== val.constructor.name) {
+          throw new Err(`Enmap "${this.name}" requires data to be of type "${this.typeLock}" (got: "${val.constructor.name}" instead)`, 'EnmapStrictDataError');
+        }
+      }
+      // end new
       data = val;
     }
     if (_.isFunction(this.changedCB)) {
@@ -227,7 +264,13 @@ class Enmap extends Map {
     this[_readyCheck]();
     const rows = this.db.prepare(`SELECT * FROM ${this.name};`).all();
     for (const row of rows) {
-      super.set(row.key, this[_parseData](row.value));
+      const val = this[_parseData](row.value);
+      if (this.strictType && !this.typeLock) {
+        this[_defineSetting]('typeLock', 'String', true, val.constructor.name);
+      } else if (this.strictType && this.typeLock && val.constructor.name !== this.typeLock) {
+        throw new Err(`Enmap "${this.name}" requires data to be of type "${this.typeLock}" (found: "${val.constructor.name}" in database instead)`, 'EnmapStrictDataError');
+      }
+      super.set(row.key, val);
     }
     return this;
   }
@@ -771,7 +814,6 @@ class Enmap extends Map {
     }
     this.db.prepare(`CREATE TABLE IF NOT EXISTS 'internal::changes::${this.name}' (type TEXT, key TEXT, value TEXT, timestamp INTEGER, pid INTEGER);`).run();
     this.db.prepare(`CREATE TABLE IF NOT EXISTS 'internal::autonum' (enmap TEXT PRIMARY KEY, lastnum INTEGER)`).run();
-    this.db.prepare(`CREATE TABLE IF NOT EXISTS 'internal::type' (enmap TEXT PRIMARY KEY, type TEXT)`).run();
     if (this.fetchAll) {
       await this.fetchEverything();
     }
@@ -937,14 +979,9 @@ class Enmap extends Map {
    */
   [_defineSetting](name, type, writable, defaultValue, value) {
     if (_.isNil(value)) value = defaultValue;
-    /* Not implemented due to error:
-    Provided "Number", expecting "Number"
-    WTF, node?
-
-    if (value.constructor.name != type) {
+    if (value.constructor.name !== type) {
       throw new Err(`Wrong value type provided for options.${name}:  Provided "${defaultValue.constructor.name}", expecting "${type}", in enmap "${this.name}".`);
     }
-    */
     Object.defineProperty(this, name, {
       value: !_.isNil(value) ? value : defaultValue,
       writable,
