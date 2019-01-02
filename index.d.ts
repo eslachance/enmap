@@ -1,10 +1,4 @@
 declare module "enmap" {
-    /**
-     * A enhanced Map structure with additional utility methods.
-     * Can be made persistent
-     */
-    export = Enmap;
-
     type EnmapOptions = {
         name?: string;
         fetchAll?: boolean;
@@ -13,6 +7,7 @@ declare module "enmap" {
         cloneLevel?: "none" | "shallow" | "deep";
         polling?: boolean;
         pollingInterval?: number;
+        ensureProps?: boolean;
     };
 
     type MathOps =
@@ -49,7 +44,11 @@ declare module "enmap" {
         [Symbol.iterator](): IterableIterator<[K, V]>;
     }
 
-    class Enmap<K extends string | number = string | number, V = any> extends AlmostMap<K, V> {
+    /**
+     * A enhanced Map structure with additional utility methods.
+     * Can be made persistent
+     */
+    export default class Enmap<K extends string | number = string | number, V = any> extends AlmostMap<K, V> {
         public readonly cloneLevel: "none" | "shallow" | "deep";
         public readonly name: string;
         public readonly dataDir: string;
@@ -61,6 +60,7 @@ declare module "enmap" {
         public readonly polling: boolean;
         public readonly isReady: boolean;
         public readonly lastSync: Date;
+        public readonly ensureProps: boolean;
         public readonly changedCB: (key: K, oldValue: V | undefined, newValue: V | undefined) => void;
 
         private db: any;
