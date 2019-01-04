@@ -48,7 +48,8 @@ declare module "enmap" {
      * A enhanced Map structure with additional utility methods.
      * Can be made persistent
      */
-    export default class Enmap<K extends string | number = string | number, V = any> extends AlmostMap<K, V> {
+    export = Enmap;
+    class Enmap<K extends string | number = string | number, V = any> extends AlmostMap<K, V> {
         public readonly cloneLevel: "none" | "shallow" | "deep";
         public readonly name: string;
         public readonly dataDir: string;
