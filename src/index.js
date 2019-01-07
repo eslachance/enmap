@@ -872,10 +872,10 @@ class Enmap extends Map {
     if (!_.isArray(type)) type = [type];
     if (!_.isNil(path)) {
       this[_check](key, 'Object');
+      const data = super.get(key);
       if (_.isNil(_.get(data, path))) {
         throw new Err(`The property "${path}" in key "${key}" does not exist. Please set() it or ensure() it."`, 'EnmapPathError');
       }
-      const data = super.get(key);
       if (!type.includes(_.get(data, path).constructor.name)) {
         throw new Err(`The property "${path}" in key "${key}" is not of type "${type.join('" or "')}" in the enmap "${this.name}" 
 (key was of type "${_.get(data, path).constructor.name}")`, 'EnmapTypeError');
