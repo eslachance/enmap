@@ -557,8 +557,8 @@ class Enmap extends Map {
     }
     if (this.ensureProps && _.isObject(super.get(key))) {
       if (!_.isObject(defaultValue)) throw new Err(`Default value for "${key}" in enmap "${this.name}" must be an object when merging with an object value.`, 'EnmapArgumentError');
-      const merged = Object.assign(super.get(key), defaultValue);
-      super.set(merged);
+      const merged = Object.assign(defaultValue, super.get(key));
+      super.set(key, merged);
       return merged;
     }
     if (super.has(key)) return super.get(key);
@@ -759,7 +759,7 @@ class Enmap extends Map {
    * @param {Array<string>} names Array of strings. Each array entry will create a separate enmap with that name.
    * @param {Object} options Options object to pass to the provider. See provider documentation for its options.
    * @example
-   * // Using local variables and the mongodb provider.
+   * // Using local variables.
    * const Enmap = require('enmap');
    * const { settings, tags, blacklist } = Enmap.multi(['settings', 'tags', 'blacklist']);
    *
