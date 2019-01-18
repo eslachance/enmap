@@ -548,6 +548,7 @@ class Enmap extends Map {
     this[_readyCheck]();
     this[_fetchCheck](key);
     if (_.isNil(defaultValue)) throw new Err(`No default value provided on ensure method for "${key}" in "${this.name}"`, 'EnmapArgumentError');
+    const clonedValue = this[_clone](defaultValue);
     if (!_.isNil(path)) {
       this[_check](key, ['Object'], path);
       if (!super.has(key)) throw new Err(`Key "${key}" does not exist in "${this.name}" to ensure a property`, 'EnmapKeyError');
@@ -556,14 +557,14 @@ class Enmap extends Map {
       return defaultValue;
     }
     if (this.ensureProps && _.isObject(super.get(key))) {
-      if (!_.isObject(defaultValue)) throw new Err(`Default value for "${key}" in enmap "${this.name}" must be an object when merging with an object value.`, 'EnmapArgumentError');
-      const merged = Object.assign(defaultValue, super.get(key));
+      if (!_.isObject(clonedValue)) throw new Err(`Default value for "${key}" in enmap "${this.name}" must be an object when merging with an object value.`, 'EnmapArgumentError');
+      const merged = Object.assign(clonedValue, super.get(key));
       super.set(key, merged);
       return merged;
     }
     if (super.has(key)) return super.get(key);
-    this.set(key, defaultValue);
-    return defaultValue;
+    this.set(key, clonedValue);
+    return clonedValue;
   }
 
   /* BOOLEAN METHODS THAT CHECKS FOR THINGS IN ENMAP */
