@@ -608,6 +608,32 @@ class Enmap extends Map {
   }
 
   /**
+   * Performs Array.includes() on a certain enmap value. Works similar to
+   * [Array.includes()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes).
+   * @param {string|number} key Required. The key of the array to check the value of.
+   * @param {string|number} val Required. The value to check whether it's in the array.
+   * @param {*} path Required. The property to access the array inside the value object or array.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @return {boolean} Whether the array contains the value.
+   */
+  includes(key, val, path = null) {
+    this[_readyCheck]();
+    this[_fetchCheck](key);
+    this[_check](key, ['Array', 'Object']);
+    const data = super.get(key);
+    if (!_.isNil(path)) {
+      const propValue = _.get(data, path);
+      if (_.isArray(propValue)) {
+        return propValue.includes(val);
+      }
+      throw new Err(`The property "${path}" in key "${key}" is not an Array in the enmap "${this.name}" (property was of type "${propValue && propValue.constructor.name}")`, 'EnmapTypeError');
+    } else if (_.isArray(data)) {
+      return data.includes(val);
+    }
+    throw new Err(`The value of key "${key}" is not an Array in the enmap "${this.name}" (value was of type "${data && data.constructor.name}")`, 'EnmapTypeError');
+  }
+
+  /**
    * Deletes a key in the Enmap.
    * @param {string|number} key Required. The key of the element to delete from The Enmap.
    * @param {string} path Optional. The name of the property to remove from the object.
@@ -677,6 +703,10 @@ class Enmap extends Map {
     super.clear();
   }
 
+  /**
+   * Deletes everything from the enmap. If persistent, clears the database of all its data for this table.
+   * @returns {null}
+   */
   clear() { return this.deleteAll(); }
 
   /**
