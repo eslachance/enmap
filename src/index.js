@@ -96,7 +96,7 @@ class Enmap extends Map {
 
       // Initialize this property, to prepare for a possible destroy() call.
       // This is completely ignored in all situations except destroying the enmap.
-      this[_defineSetting]('isDestroyed', 'Boolean', true, false); // Make it writable for enmap.destroy();
+      this[_defineSetting]('isDestroyed', 'Boolean', true, false);
 
       // Define the data directory where the enmap is stored.
       if (!options.dataDir) {
