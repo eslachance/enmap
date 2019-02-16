@@ -8,6 +8,9 @@ const Err = require('./error.js');
 const { resolve, sep } = require('path');
 const fs = require('fs');
 
+// Package.json
+const package = require('../package.json');
+
 // Symbols are used to create "private" methods.
 // https://medium.com/front-end-hacking/private-methods-in-es6-and-writing-your-own-db-b2e30866521f
 const _mathop = Symbol('mathop');
@@ -783,6 +786,48 @@ class Enmap extends Map {
     this[_fetchCheck](key);
     if (_.isNil(path)) throw new Err(`No path provided to remove an array element in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.remove(key, val, path);
+  }
+
+  /**
+   * Exports the enmap data to a JSON file.
+   * **__WARNING__**: Does not work on memory enmaps containing complex data!
+   * @returns {String} The enmap data in a stringified JSON format.
+   */
+  export() {
+    this[_readyCheck]();
+    if (this.persistent) this.fetchEverything();
+    return JSON.stringify({
+      name: this.name,
+      version: package.version,
+      exportDate: Date.now(),
+      keys: this.map((value, key) => ({ key, value }));
+    }, null, 2);
+  }
+
+  /**
+   * 
+   * @param {String} data 
+   * @param {Boolean} overwrite Defaults to `true`. Whether to overwrite existing key/value data with incoming imported data
+   * @param {Boolean} clear Defaults to `false`. Whether to clear the enmap of all data before importing
+   * (**__WARNING__**: Any exiting data will be lost! This cannot be undone.)
+   * @returns {Enmap} The enmap with the new data.
+   */
+  import(data, overwrite = true, clear = false) {
+    this[_readyCheck]();
+    if(clear) this.deleteAll();
+    if(_.isNil(data)) 
+      throw new Err(`No data provided for import() in "${this.name}"`, 'EnmapImportError');
+    try {
+      const parsed = JSON.parse(data);
+      for(const thisEntry of parsed) {
+        const {key, value} = thisEntry;
+        if(!overwrite && this.has(key)) continue;
+        this.set(key, value);
+      }
+    } catch (err) {
+      throw new Err(`Data provided for import() in "${this.name}" is invalid JSON. Stacktrace:\n${err}`, 'EnmapImportError');
+    }
+    return this;
   }
 
   /**
