@@ -800,28 +800,27 @@ class Enmap extends Map {
       name: this.name,
       version: pkgdata.version,
       exportDate: Date.now(),
-      keys: this.map((value, key) => ({ key, value }));
+      keys: this.map((value, key) => ({ key, value }))
     }, null, 2);
   }
 
   /**
-   * 
-   * @param {String} data 
-   * @param {Boolean} overwrite Defaults to `true`. Whether to overwrite existing key/value data with incoming imported data
-   * @param {Boolean} clear Defaults to `false`. Whether to clear the enmap of all data before importing
+   *
+   * @param {string} data The data to import to Enmap. Must contain all the required fields provided by export()
+   * @param {boolean} overwrite Defaults to `true`. Whether to overwrite existing key/value data with incoming imported data
+   * @param {boolean} clear Defaults to `false`. Whether to clear the enmap of all data before importing
    * (**__WARNING__**: Any exiting data will be lost! This cannot be undone.)
    * @returns {Enmap} The enmap with the new data.
    */
   import(data, overwrite = true, clear = false) {
     this[_readyCheck]();
-    if(clear) this.deleteAll();
-    if(_.isNil(data)) 
-      throw new Err(`No data provided for import() in "${this.name}"`, 'EnmapImportError');
+    if (clear) this.deleteAll();
+    if (_.isNil(data)) throw new Err(`No data provided for import() in "${this.name}"`, 'EnmapImportError');
     try {
       const parsed = JSON.parse(data);
-      for(const thisEntry of parsed) {
-        const {key, value} = thisEntry;
-        if(!overwrite && this.has(key)) continue;
+      for (const thisEntry of parsed) {
+        const { key, value } = thisEntry;
+        if (!overwrite && this.has(key)) continue;
         this.set(key, value);
       }
     } catch (err) {
