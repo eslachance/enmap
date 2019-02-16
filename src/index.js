@@ -9,7 +9,7 @@ const { resolve, sep } = require('path');
 const fs = require('fs');
 
 // Package.json
-const package = require('../package.json');
+const pkgdata = require('../package.json');
 
 // Symbols are used to create "private" methods.
 // https://medium.com/front-end-hacking/private-methods-in-es6-and-writing-your-own-db-b2e30866521f
@@ -798,7 +798,7 @@ class Enmap extends Map {
     if (this.persistent) this.fetchEverything();
     return JSON.stringify({
       name: this.name,
-      version: package.version,
+      version: pkgdata.version,
       exportDate: Date.now(),
       keys: this.map((value, key) => ({ key, value }));
     }, null, 2);
