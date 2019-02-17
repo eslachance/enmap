@@ -851,7 +851,7 @@ class Enmap extends Map {
 
     const returnvalue = {};
     for (const name of names) {
-      const enmap = new Enmap(Object.assign(options, { name }));
+      const enmap = new Enmap({ name, ...options });
       returnvalue[name] = enmap;
     }
     return returnvalue;
