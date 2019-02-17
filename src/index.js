@@ -553,7 +553,7 @@ class Enmap extends Map {
     if (_.isNil(defaultValue)) throw new Err(`No default value provided on ensure method for "${key}" in "${this.name}"`, 'EnmapArgumentError');
     const clonedValue = this[_clone](defaultValue);
     if (!_.isNil(path)) {
-      this[_check](key, ['Object'], path);
+      if (this.ensureProps) this.ensure(key, {});
       if (!super.has(key)) throw new Err(`Key "${key}" does not exist in "${this.name}" to ensure a property`, 'EnmapKeyError');
       if (this.hasProp(key, path)) return this.getProp(key, path);
       this.set(key, defaultValue, path);
@@ -791,7 +791,7 @@ class Enmap extends Map {
   /**
    * Exports the enmap data to a JSON file.
    * **__WARNING__**: Does not work on memory enmaps containing complex data!
-   * @returns {String} The enmap data in a stringified JSON format.
+   * @returns {string} The enmap data in a stringified JSON format.
    */
   export() {
     this[_readyCheck]();
