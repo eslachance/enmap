@@ -1013,6 +1013,7 @@ class Enmap extends Map {
    * @param {string|number} key The key to check or fetch.
    */
   [_fetchCheck](key, force = false) {
+    if (_.isNil(key)) return;
     if (force) {
       this.fetch(key);
       return;
