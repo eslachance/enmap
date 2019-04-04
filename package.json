@@ -33,7 +33,7 @@
     "lodash": "^4.17.11"
   },
   "peerDependencies": {
-    "better-sqlite-pool": "github:eslachance/better-sqlite-pool"
+    "better-sqlite-pool": "^0.2.2"
   },
   "devDependencies": {
     "eslint": "^4.19.1",
