@@ -222,6 +222,7 @@ class Enmap extends Map {
    */
   get(key, path = null) {
     this[_readyCheck]();
+    if(_.isNil(key)) return null;
     this[_fetchCheck](key);
     if (!_.isNil(path)) {
       this[_check](key, ['Object', 'Array']);
