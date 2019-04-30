@@ -222,6 +222,7 @@ class Enmap extends Map {
    */
   get(key, path = null) {
     this[_readyCheck]();
+    if (_.isNil(key)) return null;
     this[_fetchCheck](key);
     key = key.toString();
     if (!_.isNil(path)) {
@@ -1014,7 +1015,7 @@ class Enmap extends Map {
    * @param {string|number} key The key to check or fetch.
    */
   [_fetchCheck](key, force = false) {
-    if (_.isNil(key) || !['String', 'Number'].includes(key.constructor.name)) return;
+    if (!['String', 'Number'].includes(key.constructor.name)) return;
     if (force) {
       this.fetch(key);
       return;
