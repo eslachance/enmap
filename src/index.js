@@ -224,6 +224,7 @@ class Enmap extends Map {
     this[_readyCheck]();
     if(_.isNil(key)) return null;
     this[_fetchCheck](key);
+    key = key.toString();
     if (!_.isNil(path)) {
       this[_check](key, ['Object', 'Array']);
       const data = super.get(key);
