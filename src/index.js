@@ -820,7 +820,7 @@ class Enmap extends Map {
     if (_.isNil(data)) throw new Err(`No data provided for import() in "${this.name}"`, 'EnmapImportError');
     try {
       const parsed = JSON.parse(data);
-      for (const thisEntry of parsed) {
+      for (const thisEntry of parsed.keys) {
         const { key, value } = thisEntry;
         if (!overwrite && this.has(key)) continue;
         this.set(key, value);
