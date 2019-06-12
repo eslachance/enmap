@@ -33,7 +33,7 @@
     "lodash": "^4.17.11"
   },
   "peerDependencies": {
-    "better-sqlite-pool": "github:eslachance/better-sqlite-pool"
+    "better-sqlite3": "^5.4.0"
   },
   "devDependencies": {
     "eslint": "^4.19.1",
@@ -43,7 +43,7 @@
     "eslint-plugin-node": "^5.2.1",
     "eslint-plugin-promise": "^3.8.0",
     "eslint-plugin-standard": "^3.1.0",
-    "jest": "^23.6.0",
-    "jsdoc-to-markdown": "^4.0.1"
+    "jest": "^24.8.0",
+    "jsdoc-to-markdown": "^5.0.0"
   }
 }

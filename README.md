@@ -39,7 +39,7 @@ but since its creation has grown far beyond those methods alone.
 
 ### Q: What is "Persistent"?
 
-**A**: With the use of the optional providers modules, any data added to the Enmap
+**A**: By using a database layer with `better-sqlite3`, any data added to the Enmap
 is stored not only in temporary memory but also backed up in a local database. This means that
 when you restart your project, your data is not lost and is loaded on startup.
 
@@ -51,7 +51,7 @@ The more data you have, the more complex it is, the more memory it can use. You 
 
 ### Q: Who did you make this for?
 
-**A**: Well, myself because I do use it often. But also, I built it specifically for beginners in mind. 
+**A**: Myself because I do use it often. But also, I built it specifically for beginners in mind. 
 Enmap's main goal is to remain simple to use, as fast as possible, and a solid as possible.
 
 ### Q: What's is used for?
@@ -59,3 +59,8 @@ Enmap's main goal is to remain simple to use, as fast as possible, and a solid a
 **A**: Enmap is useful for storing very simple key/value data for easy retrieval, and also for more complex objects with many properties. 
 Mainly, because of who I originally made this for, it's used in Discord.js Bots to save currencies, content blocks, server settings, and
 user information for bans, blacklists, timers, warning systems, etc.
+
+## Testimonials
+
+```I have legit tried several databases, from popular complicated ones to pretty basic ones. The only database I had absolutely no issue with was and still is enmap.```
+- [LostSorrow#1237 on Discord](https://discordapp.com/channels/298508738623438848/481857430427533312/586619143361396740)

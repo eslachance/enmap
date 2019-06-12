@@ -92,9 +92,7 @@ class Enmap extends Map {
     this[_defineSetting]('cloneLevel', 'String', true, cloneLevel);
 
     if (options.name) {
-      // better-sqlite-pool is better than directly using better-sqlite3 for multi-process purposes.
-      // required only here because otherwise non-persistent database still need to install it!
-      const { Pool } = require('better-sqlite-pool');
+      const Database = require('better-sqlite3');
       this[_defineSetting]('persistent', 'Boolean', false, true);
 
       // Initialize this property, to prepare for a possible destroy() call.
@@ -109,14 +107,14 @@ class Enmap extends Map {
       }
 
       const dataDir = resolve(process.cwd(), options.dataDir || 'data');
-      const pool = new Pool(`${dataDir}${sep}enmap.sqlite`);
+      const database = new Database(`${dataDir}${sep}enmap.sqlite`);
 
       // [_defineSetting](name, type, writable, defaultValue [, value]) {
 
       this[_defineSetting]('name', 'String', true, options.name);
       this[_defineSetting]('dataDir', 'String', false, dataDir);
       this[_defineSetting]('fetchAll', 'Boolean', true, true, options.fetchAll);
-      this[_defineSetting]('pool', 'Pool', true, pool);
+      this[_defineSetting]('database', 'Database', true, database);
       this[_defineSetting]('autoFetch', 'Boolean', true, true, options.autoFetch);
       this[_defineSetting]('ensureProps', 'Boolean', true, false, options.ensureProps);
       this[_defineSetting]('strictType', 'Boolean', true, false, options.strictType);
@@ -133,7 +131,7 @@ class Enmap extends Map {
       );
 
       this[_validateName]();
-      this[_init](pool);
+      this[_init](database);
     } else {
       this[_defineSetting]('name', 'String', true, 'MemoryEnmap');
       this[_defineSetting]('isReady', 'Boolean', true, true);
@@ -352,7 +350,7 @@ class Enmap extends Map {
    */
   close() {
     this[_readyCheck]();
-    return this.pool.close();
+    return this.database.close();
   }
 
 
@@ -863,12 +861,12 @@ class Enmap extends Map {
 
   /*
    * Internal Method. Initializes the enmap depending on given values.
-   * @param {Map} pool In order to set data to the Enmap, one must be provided.
+   * @param {Map} database In order to set data to the Enmap, one must be provided.
    * @returns {Promise} Returns the defer promise to await the ready state.
    */
-  async [_init](pool) {
+  async [_init](database) {
     Object.defineProperty(this, 'db', {
-      value: await pool.acquire(),
+      value: database,
       writable: false,
       enumerable: false,
       configurable: false
