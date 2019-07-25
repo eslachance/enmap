@@ -8,6 +8,7 @@ declare module "enmap" {
         polling?: boolean;
         pollingInterval?: number;
         ensureProps?: boolean;
+        wal?: boolean;
     };
 
     type MathOps =
@@ -62,6 +63,7 @@ declare module "enmap" {
         public readonly isReady: boolean;
         public readonly lastSync: Date;
         public readonly ensureProps: boolean;
+        public readonly wal: boolean;
         public readonly changedCB: (key: K, oldValue: V | undefined, newValue: V | undefined) => void;
 
         private db: any;
