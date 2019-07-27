@@ -21,7 +21,7 @@ const _parseData = Symbol('parseData');
 const _readyCheck = Symbol('readyCheck');
 const _clone = Symbol('clone');
 const _init = Symbol('init');
-const _defineSetting = Symbol('_defineSetting');
+const _defineSetting = Symbol('defineSetting');
 
 /**
  * A enhanced Map structure with additional utility methods.
