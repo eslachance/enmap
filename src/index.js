@@ -90,6 +90,7 @@ class Enmap extends Map {
     // Object.defineProperty ensures that the property is "hidden" when outputting
     // the enmap in console. Only actual map entries are shown using this method.
     this[_defineSetting]('cloneLevel', 'String', true, cloneLevel);
+    this[_defineSetting]('ensureProps', 'Boolean', true, false, options.ensureProps);
 
     if (options.name) {
       const Database = require('better-sqlite3');
@@ -116,7 +117,6 @@ class Enmap extends Map {
       this[_defineSetting]('fetchAll', 'Boolean', true, true, options.fetchAll);
       this[_defineSetting]('database', 'Database', true, database);
       this[_defineSetting]('autoFetch', 'Boolean', true, true, options.autoFetch);
-      this[_defineSetting]('ensureProps', 'Boolean', true, false, options.ensureProps);
       this[_defineSetting]('strictType', 'Boolean', true, false, options.strictType);
       Object.defineProperty(this, 'typeLock', {
         value: options.typeLock || null,
@@ -561,7 +561,8 @@ class Enmap extends Map {
     }
     if (this.ensureProps && _.isObject(super.get(key))) {
       if (!_.isObject(clonedValue)) throw new Err(`Default value for "${key}" in enmap "${this.name}" must be an object when merging with an object value.`, 'EnmapArgumentError');
-      const merged = Object.assign(clonedValue, super.get(key));
+      // const merged = Object.assign(clonedValue, super.get(key));
+      const merged = _.merge(clonedValue, super.get(key));
       super.set(key, merged);
       return merged;
     }
@@ -1114,7 +1115,9 @@ class Enmap extends Map {
     if (arr.length === 0) return [];
     const rand = new Array(count);
     arr = arr.slice();
+    // eslint-disable-next-line
     for (let i = 0; i < count; i++) rand[i] = arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
+    // because, eslint, destructuring a for loop won't fricken happen, okay mate?
     return rand;
   }
 
@@ -1132,6 +1135,7 @@ class Enmap extends Map {
     if (arr.length === 0) return [];
     const rand = new Array(count);
     arr = arr.slice();
+    // eslint-disable-next-line
     for (let i = 0; i < count; i++) rand[i] = arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
     return rand;
   }

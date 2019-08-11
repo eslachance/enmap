@@ -119,6 +119,17 @@ describe('Basic Enmap Options', () => {
     // deep clones do not allow sub props to be changed, either.
     expect(baseObj.prop3.length).toBe(3);
   });
+
+  test('supports deep ensure() merge', () => {
+    enmap = new Enmap({ ensureProps: true });
+    const defaultValue = {
+      foo: 'bar',
+      bar: { foo: 1 }
+    };
+    enmap.set('obj', {});
+    enmap.ensure('obj', defaultValue);
+    expect(enmap.get('obj', 'bar.foo')).toBe(1);
+  });
 });
 // @TODO Options testing
 // @TODO performance testing
