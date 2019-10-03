@@ -1,5 +1,18 @@
 // Lodash should probably be a core lib but hey, it's useful!
-const _ = require('lodash');
+const {
+  get: _get,
+  set: _set,
+  has: _has,
+  delete: _delete,
+  isNil,
+  isFunction,
+  isArray,
+  isObject,
+  toPath,
+  merge,
+  clone,
+  cloneDeep,
+} = require('lodash');
 
 // Custom error codes with stack support.
 const Err = require('./error.js');
@@ -172,16 +185,16 @@ class Enmap extends Map {
    */
   set(key, val, path = null) {
     this[_readyCheck]();
-    if (_.isNil(key) || !['String', 'Number'].includes(key.constructor.name)) {
+    if (isNil(key) || !['String', 'Number'].includes(key.constructor.name)) {
       throw new Err('Enmap require keys to be strings or numbers.', 'EnmapKeyTypeError');
     }
     key = key.toString();
     this[_fetchCheck](key);
     let data = super.get(key);
     const oldValue = super.has(key) ? this[_clone](data) : null;
-    if (!_.isNil(path)) {
-      if (_.isNil(data)) data = {};
-      _.set(data, path, val);
+    if (!isNil(path)) {
+      if (isNil(data)) data = {};
+      _set(data, path, val);
     } else {
       // New 4.6.0: typecheck
       if (this.strictType) {
@@ -196,7 +209,7 @@ class Enmap extends Map {
       // end new
       data = val;
     }
-    if (_.isFunction(this.changedCB)) {
+    if (isFunction(this.changedCB)) {
       this.changedCB(key, oldValue, data);
     }
     if (this.persistent) {
@@ -222,13 +235,13 @@ class Enmap extends Map {
    */
   get(key, path = null) {
     this[_readyCheck]();
-    if (_.isNil(key)) return null;
+    if (isNil(key)) return null;
     this[_fetchCheck](key);
     key = key.toString();
-    if (!_.isNil(path)) {
+    if (!isNil(path)) {
       this[_check](key, ['Object', 'Array']);
       const data = super.get(key);
-      return _.get(data, path);
+      return _get(data, path);
     }
     const data = super.get(key);
     return this[_clone](data);
@@ -287,7 +300,7 @@ class Enmap extends Map {
    */
   fetch(keyOrKeys) {
     this[_readyCheck]();
-    if (_.isArray(keyOrKeys)) {
+    if (isArray(keyOrKeys)) {
       const data = this.db.prepare(`SELECT * FROM ${this.name} WHERE key IN (${'?, '.repeat(keyOrKeys.length).slice(0, -2)})`).all(keyOrKeys);
       for (const row of data) {
         super.set(row.key, this[_parseData](row.value));
@@ -307,7 +320,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap minus the evicted keys.
    */
   evict(keyOrArrayOfKeys) {
-    if (_.isArray(keyOrArrayOfKeys)) {
+    if (isArray(keyOrArrayOfKeys)) {
       keyOrArrayOfKeys.forEach(key => super.delete(key));
     } else {
       super.delete(keyOrArrayOfKeys);
@@ -368,7 +381,7 @@ class Enmap extends Map {
    */
   setProp(key, path, val) {
     this[_readyCheck]();
-    if (_.isNil(path)) throw new Err(`No path provided to set a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    if (isNil(path)) throw new Err(`No path provided to set a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.set(key, val, path);
   }
 
@@ -394,11 +407,11 @@ class Enmap extends Map {
     this[_fetchCheck](key);
     this[_check](key, 'Array', path);
     const data = super.get(key);
-    if (!_.isNil(path)) {
-      const propValue = _.get(data, path);
+    if (!isNil(path)) {
+      const propValue = _get(data, path);
       if (!allowDupes && propValue.indexOf(val) > -1) return this;
       propValue.push(val);
-      _.set(data, path, propValue);
+      _set(data, path, propValue);
     } else {
       if (!allowDupes && data.indexOf(val) > -1) return this;
       data.push(val);
@@ -419,7 +432,7 @@ class Enmap extends Map {
   pushIn(key, path, val, allowDupes = false) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (_.isNil(path)) throw new Err(`No path provided to push a value in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    if (isNil(path)) throw new Err(`No path provided to push a value in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.push(key, val, path, allowDupes);
   }
 
@@ -448,14 +461,14 @@ class Enmap extends Map {
     this[_readyCheck]();
     this[_fetchCheck](key);
     this[_check](key, 'Number', path);
-    if (_.isNil(path)) {
+    if (isNil(path)) {
       if (operation === 'random' || operation === 'rand') {
         return this.set(key, Math.round(Math.random() * operand));
       }
       return this.set(key, this[_mathop](this.get(key), operation, operand));
     } else {
       const data = this.get(key);
-      const propValue = _.get(data, path);
+      const propValue = _get(data, path);
       if (operation === 'random' || operation === 'rand') {
         return this.set(key, Math.round(Math.random() * propValue), path);
       }
@@ -479,13 +492,13 @@ class Enmap extends Map {
   inc(key, path = null) {
     this[_readyCheck]();
     this[_check](key, 'Number', path);
-    if (_.isNil(path)) {
+    if (isNil(path)) {
       let val = this.get(key);
       return this.set(key, ++val);
     } else {
       const data = this.get(key);
-      let propValue = _.get(data, path);
-      _.set(data, path, ++propValue);
+      let propValue = _get(data, path);
+      _set(data, path, ++propValue);
       return this.set(key, data);
     }
   }
@@ -506,13 +519,13 @@ class Enmap extends Map {
   dec(key, path = null) {
     this[_readyCheck]();
     this[_check](key, 'Number', path);
-    if (_.isNil(path)) {
+    if (isNil(path)) {
       let val = this.get(key);
       return this.set(key, --val);
     } else {
       const data = this.get(key);
-      let propValue = _.get(data, path);
-      _.set(data, path, --propValue);
+      let propValue = _get(data, path);
+      _set(data, path, --propValue);
       return this.set(key, data);
     }
   }
@@ -527,7 +540,7 @@ class Enmap extends Map {
   getProp(key, path) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (_.isNil(path)) throw new Err(`No path provided to get a property from "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    if (isNil(path)) throw new Err(`No path provided to get a property from "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.get(key, path);
   }
 
@@ -552,19 +565,19 @@ class Enmap extends Map {
   ensure(key, defaultValue, path = null) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (_.isNil(defaultValue)) throw new Err(`No default value provided on ensure method for "${key}" in "${this.name}"`, 'EnmapArgumentError');
+    if (isNil(defaultValue)) throw new Err(`No default value provided on ensure method for "${key}" in "${this.name}"`, 'EnmapArgumentError');
     const clonedValue = this[_clone](defaultValue);
-    if (!_.isNil(path)) {
+    if (!isNil(path)) {
       if (this.ensureProps) this.ensure(key, {});
       if (!super.has(key)) throw new Err(`Key "${key}" does not exist in "${this.name}" to ensure a property`, 'EnmapKeyError');
       if (this.hasProp(key, path)) return this.getProp(key, path);
       this.set(key, defaultValue, path);
       return defaultValue;
     }
-    if (this.ensureProps && _.isObject(super.get(key))) {
-      if (!_.isObject(clonedValue)) throw new Err(`Default value for "${key}" in enmap "${this.name}" must be an object when merging with an object value.`, 'EnmapArgumentError');
+    if (this.ensureProps && isObject(super.get(key))) {
+      if (!isObject(clonedValue)) throw new Err(`Default value for "${key}" in enmap "${this.name}" must be an object when merging with an object value.`, 'EnmapArgumentError');
       // const merged = Object.assign(clonedValue, super.get(key));
-      const merged = _.merge(clonedValue, super.get(key));
+      const merged = merge(clonedValue, super.get(key));
       super.set(key, merged);
       return merged;
     }
@@ -592,10 +605,10 @@ class Enmap extends Map {
   has(key, path = null) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (!_.isNil(path)) {
+    if (!isNil(path)) {
       this[_check](key, 'Object');
       const data = super.get(key);
-      return _.has(data, path);
+      return _has(data, path);
     }
     return super.has(key);
   }
@@ -610,7 +623,7 @@ class Enmap extends Map {
   hasProp(key, path) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (_.isNil(path)) throw new Err(`No path provided to check for a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    if (isNil(path)) throw new Err(`No path provided to check for a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.has(key, path);
   }
 
@@ -628,13 +641,13 @@ class Enmap extends Map {
     this[_fetchCheck](key);
     this[_check](key, ['Array', 'Object']);
     const data = super.get(key);
-    if (!_.isNil(path)) {
-      const propValue = _.get(data, path);
-      if (_.isArray(propValue)) {
+    if (!isNil(path)) {
+      const propValue = _get(data, path);
+      if (isArray(propValue)) {
         return propValue.includes(val);
       }
       throw new Err(`The property "${path}" in key "${key}" is not an Array in the enmap "${this.name}" (property was of type "${propValue && propValue.constructor.name}")`, 'EnmapTypeError');
-    } else if (_.isArray(data)) {
+    } else if (isArray(data)) {
       return data.includes(val);
     }
     throw new Err(`The value of key "${key}" is not an Array in the enmap "${this.name}" (value was of type "${data && data.constructor.name}")`, 'EnmapTypeError');
@@ -651,18 +664,18 @@ class Enmap extends Map {
     this[_readyCheck]();
     this[_fetchCheck](key);
     const oldValue = this.get(key);
-    if (!_.isNil(path)) {
+    if (!isNil(path)) {
       let data = this.get(key);
-      path = _.toPath(path);
+      path = toPath(path);
       const last = path.pop();
-      const propValue = path.length ? _.get(data, path) : data;
-      if (_.isArray(propValue)) {
+      const propValue = path.length ? _get(data, path) : data;
+      if (isArray(propValue)) {
         propValue.splice(last, 1);
       } else {
         delete propValue[last];
       }
       if (path.length) {
-        _.set(data, path, propValue);
+        _set(data, path, propValue);
       } else {
         data = propValue;
       }
@@ -692,7 +705,7 @@ class Enmap extends Map {
   deleteProp(key, path) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (_.isNil(path)) throw new Err(`No path provided to delete a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    if (isNil(path)) throw new Err(`No path provided to delete a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     this.delete(key, path);
   }
 
@@ -757,18 +770,18 @@ class Enmap extends Map {
     this[_fetchCheck](key);
     this[_check](key, ['Array', 'Object']);
     const data = super.get(key);
-    if (!_.isNil(path)) {
-      const propValue = _.get(data, path);
-      if (_.isArray(propValue)) {
+    if (!isNil(path)) {
+      const propValue = _get(data, path);
+      if (isArray(propValue)) {
         propValue.splice(propValue.indexOf(val), 1);
-        _.set(data, path, propValue);
-      } else if (_.isObject(propValue)) {
-        _.delete(data, `${path}.${val}`);
+        _set(data, path, propValue);
+      } else if (isObject(propValue)) {
+        _delete(data, `${path}.${val}`);
       }
-    } else if (_.isArray(data)) {
+    } else if (isArray(data)) {
       const index = data.indexOf(val);
       data.splice(index, 1);
-    } else if (_.isObject(data)) {
+    } else if (isObject(data)) {
       delete data[val];
     }
     return this.set(key, data);
@@ -787,7 +800,7 @@ class Enmap extends Map {
   removeFrom(key, path, val) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (_.isNil(path)) throw new Err(`No path provided to remove an array element in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    if (isNil(path)) throw new Err(`No path provided to remove an array element in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.remove(key, val, path);
   }
 
@@ -818,7 +831,7 @@ class Enmap extends Map {
   import(data, overwrite = true, clear = false) {
     this[_readyCheck]();
     if (clear) this.deleteAll();
-    if (_.isNil(data)) throw new Err(`No data provided for import() in "${this.name}"`, 'EnmapImportError');
+    if (isNil(data)) throw new Err(`No data provided for import() in "${this.name}"`, 'EnmapImportError');
     try {
       const parsed = JSON.parse(data);
       for (const thisEntry of parsed.keys) {
@@ -947,16 +960,16 @@ class Enmap extends Map {
   [_check](key, type, path = null) {
     if (!this.has(key)) throw new Err(`The key "${key}" does not exist in the enmap "${this.name}"`, 'EnmapPathError');
     if (!type) return;
-    if (!_.isArray(type)) type = [type];
-    if (!_.isNil(path)) {
+    if (!isArray(type)) type = [type];
+    if (!isNil(path)) {
       this[_check](key, 'Object');
       const data = super.get(key);
-      if (_.isNil(_.get(data, path))) {
+      if (isNil(_get(data, path))) {
         throw new Err(`The property "${path}" in key "${key}" does not exist. Please set() it or ensure() it."`, 'EnmapPathError');
       }
-      if (!type.includes(_.get(data, path).constructor.name)) {
+      if (!type.includes(_get(data, path).constructor.name)) {
         throw new Err(`The property "${path}" in key "${key}" is not of type "${type.join('" or "')}" in the enmap "${this.name}" 
-(key was of type "${_.get(data, path).constructor.name}")`, 'EnmapTypeError');
+(key was of type "${_get(data, path).constructor.name}")`, 'EnmapTypeError');
       }
     } else if (!type.includes(this.get(key).constructor.name)) {
       throw new Err(`The key "${key}" is not of type "${type.join('" or "')}" in the enmap "${this.name}" (key was of type "${this.get(key).constructor.name}")`, 'EnmapTypeError');
@@ -1043,8 +1056,8 @@ class Enmap extends Map {
    */
   [_clone](data) {
     if (this.cloneLevel === 'none') return data;
-    if (this.cloneLevel === 'shallow') return _.clone(data);
-    if (this.cloneLevel === 'deep') return _.cloneDeep(data);
+    if (this.cloneLevel === 'shallow') return clone(data);
+    if (this.cloneLevel === 'deep') return cloneDeep(data);
     throw new Err('Invalid cloneLevel. What did you *do*, this shouldn\'t happen!', 'EnmapOptionsError');
   }
 
@@ -1060,12 +1073,12 @@ class Enmap extends Map {
    * Internal Method. Defines a property with either user-provided value, or the default value.
    */
   [_defineSetting](name, type, writable, defaultValue, value) {
-    if (_.isNil(value)) value = defaultValue;
+    if (isNil(value)) value = defaultValue;
     if (value.constructor.name !== type) {
       throw new Err(`Wrong value type provided for options.${name}:  Provided "${defaultValue.constructor.name}", expecting "${type}", in enmap "${this.name}".`);
     }
     Object.defineProperty(this, name, {
-      value: !_.isNil(value) ? value : defaultValue,
+      value: !isNil(value) ? value : defaultValue,
       writable,
       enumerable: false,
       configurable: false
@@ -1153,10 +1166,10 @@ class Enmap extends Map {
    */
   findAll(prop, value) {
     if (typeof prop !== 'string') throw new TypeError('Key must be a string.');
-    if (typeof value === 'undefined') throw new Error('Value must be specified.');
+    if (isNil(value)) throw new Error('Value must be specified.');
     const results = [];
     for (const item of this.values()) {
-      if (item[prop] === value) results.push(item);
+      if (item[prop] === value || (isObject(item) && _get(item, prop) === value)) results.push(item);
     }
     return results;
   }
@@ -1178,9 +1191,9 @@ class Enmap extends Map {
    */
   find(propOrFn, value) {
     if (typeof propOrFn === 'string') {
-      if (typeof value === 'undefined') throw new Error('Value must be specified.');
+      if (isNil(value)) throw new Error('Value must be specified.');
       for (const item of this.values()) {
-        if (item[propOrFn] === value) return item;
+        if (item[propOrFn] === value || (isObject(item) && _get(item, propOrFn) === value)) return item;
       }
       return null;
     } else if (typeof propOrFn === 'function') {
@@ -1206,9 +1219,9 @@ class Enmap extends Map {
    */
   findKey(propOrFn, value) {
     if (typeof propOrFn === 'string') {
-      if (typeof value === 'undefined') throw new Error('Value must be specified.');
+      if (isNil(value)) throw new Error('Value must be specified.');
       for (const [key, val] of this) {
-        if (val[propOrFn] === value) return key;
+        if (val[propOrFn] === value || (isObject(val) && _get(val, propOrFn) === value)) return key;
       }
       return null;
     } else if (typeof propOrFn === 'function') {

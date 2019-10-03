@@ -35,6 +35,7 @@ describe('Standard Enmaps', () => {
       expect(enmap.size).toBe(0);
     });
   });
+  
   describe('Advanced Data Types', () => {
     enmap = new Enmap();
 
@@ -67,6 +68,50 @@ describe('Standard Enmaps', () => {
       expect(enmap.get('array').length).toBe(3);
       enmap.clear();
       enmap = null;
+    });
+  });
+});
+
+describe('Advanced Data Type Methods', () => {
+  let enmap;
+  beforeEach(() => {
+    enmap = new Enmap();
+    enmap.set('obj1', {
+      prop: "prop",
+      foo: "bar",
+      sub: {
+        value: "subvalue"
+      }
+    });
+    enmap.set('obj2', {
+      prop: "prop",
+      foo: "phar",
+      sub: {
+        value: "subvalue"
+      }
+    });
+    enmap.set('arr1', ['one', 'two', 3, 4]);
+  });
+  
+  test('can findAll using both properties and path', () => {
+    expect(enmap.findAll('prop', 'prop').length).toBe(2);
+    expect(enmap.findAll('sub.value', 'subvalue').length).toBe(2);
+  });
+  
+  test('can find using both properties and path', () => {
+    expect(enmap.find('prop', 'prop')).toEqual({
+      prop: "prop",
+      foo: "bar",
+      sub: {
+        value: "subvalue"
+      }
+    });
+    expect(enmap.find('sub.value', 'subvalue')).toEqual({
+      prop: "prop",
+      foo: "bar",
+      sub: {
+        value: "subvalue"
+      }
     });
   });
 });
