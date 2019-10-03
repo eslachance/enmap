@@ -20,7 +20,7 @@ performant, can be easily backed up, and supports multiple simultaneous connecti
 
 > ***__UPDATE 5.0__*** : Please take note that from Enmap 5.0 I am reverting my emphasis on the idea that enmap is scalable. It's not, and I can't make it better. I will be 
 > slowly reverting some of the features that I attempted to add to enmap to make it support multiple connections, such as polling. Enmap 5.0 starts this process by removing 
-> the dependency on better-sqlite-pool. So, if you're using enmap in a sharded/multithreaded/multiprocess setup, don't update, and hold off on (JOSH)[https://www.npmjs.com/package/josh].
+> the dependency on better-sqlite-pool. So, if you're using enmap in a sharded/multithreaded/multiprocess setup, don't update, and hold off on [JOSH](https://www.npmjs.com/package/josh).
 > When JOSH is released, it'll be able to scale up with your application.
 
 ## Documentation
