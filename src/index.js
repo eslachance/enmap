@@ -780,7 +780,9 @@ class Enmap extends Map {
       }
     } else if (isArray(data)) {
       const index = data.indexOf(val);
-      data.splice(index, 1);
+      if (index > -1) {
+        data.splice(index, 1);
+      }
     } else if (isObject(data)) {
       delete data[val];
     }
