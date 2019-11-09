@@ -405,8 +405,8 @@ class Enmap extends Map {
   push(key, val, path = null, allowDupes = false) {
     this[_readyCheck]();
     this[_fetchCheck](key);
+    const data = this.get(key);
     this[_check](key, 'Array', path);
-    const data = super.get(key);
     if (!isNil(path)) {
       const propValue = _get(data, path);
       if (!allowDupes && propValue.indexOf(val) > -1) return this;
@@ -569,19 +569,19 @@ class Enmap extends Map {
     const clonedValue = this[_clone](defaultValue);
     if (!isNil(path)) {
       if (this.ensureProps) this.ensure(key, {});
-      if (!super.has(key)) throw new Err(`Key "${key}" does not exist in "${this.name}" to ensure a property`, 'EnmapKeyError');
+      if (!this.has(key)) throw new Err(`Key "${key}" does not exist in "${this.name}" to ensure a property`, 'EnmapKeyError');
       if (this.hasProp(key, path)) return this.getProp(key, path);
       this.set(key, defaultValue, path);
       return defaultValue;
     }
-    if (this.ensureProps && isObject(super.get(key))) {
+    if (this.ensureProps && isObject(this.get(key))) {
       if (!isObject(clonedValue)) throw new Err(`Default value for "${key}" in enmap "${this.name}" must be an object when merging with an object value.`, 'EnmapArgumentError');
       // const merged = Object.assign(clonedValue, super.get(key));
-      const merged = merge(clonedValue, super.get(key));
+      const merged = merge(clonedValue, this.get(key));
       super.set(key, merged);
       return merged;
     }
-    if (super.has(key)) return super.get(key);
+    if (this.has(key)) return this.get(key);
     this.set(key, clonedValue);
     return clonedValue;
   }
@@ -607,7 +607,7 @@ class Enmap extends Map {
     this[_fetchCheck](key);
     if (!isNil(path)) {
       this[_check](key, 'Object');
-      const data = super.get(key);
+      const data = this.get(key);
       return _has(data, path);
     }
     return super.has(key);
@@ -640,7 +640,7 @@ class Enmap extends Map {
     this[_readyCheck]();
     this[_fetchCheck](key);
     this[_check](key, ['Array', 'Object']);
-    const data = super.get(key);
+    const data = this.get(key);
     if (!isNil(path)) {
       const propValue = _get(data, path);
       if (isArray(propValue)) {
