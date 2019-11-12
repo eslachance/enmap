@@ -960,6 +960,7 @@ class Enmap extends Map {
    * @param {string} path Optional. The dotProp path to the property in the object enmap.
    */
   [_check](key, type, path = null) {
+    key = key.toString();
     if (!this.has(key)) throw new Err(`The key "${key}" does not exist in the enmap "${this.name}"`, 'EnmapPathError');
     if (!type) return;
     if (!isArray(type)) type = [type];
