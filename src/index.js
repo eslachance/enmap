@@ -576,7 +576,6 @@ class Enmap extends Map {
     }
     if (this.ensureProps && isObject(this.get(key))) {
       if (!isObject(clonedValue)) throw new Err(`Default value for "${key}" in enmap "${this.name}" must be an object when merging with an object value.`, 'EnmapArgumentError');
-      // const merged = Object.assign(clonedValue, super.get(key));
       const merged = merge(clonedValue, this.get(key));
       super.set(key, merged);
       return merged;
@@ -769,7 +768,7 @@ class Enmap extends Map {
     this[_readyCheck]();
     this[_fetchCheck](key);
     this[_check](key, ['Array', 'Object']);
-    const data = super.get(key);
+    const data = this.get(key);
     if (!isNil(path)) {
       const propValue = _get(data, path);
       if (isArray(propValue)) {
@@ -966,7 +965,7 @@ class Enmap extends Map {
     if (!isArray(type)) type = [type];
     if (!isNil(path)) {
       this[_check](key, 'Object');
-      const data = super.get(key);
+      const data = this.get(key);
       if (isNil(_get(data, path))) {
         throw new Err(`The property "${path}" in key "${key}" does not exist. Please set() it or ensure() it."`, 'EnmapPathError');
       }
