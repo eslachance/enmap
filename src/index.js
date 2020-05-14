@@ -11,7 +11,7 @@ const {
   toPath,
   merge,
   clone,
-  cloneDeep,
+  cloneDeep
 } = require('lodash');
 
 // Custom error codes with stack support.
@@ -179,8 +179,8 @@ class Enmap extends Map {
    * enmap.set('ArraysToo', [1, "two", "tree", "foor"])
    *
    * // Settings Properties
-   * enmap.set('IhazObjects', 'color', 'blue'); //modified previous object
-   * enmap.set('ArraysToo', 2, 'three'); // changes "tree" to "three" in array.
+   * enmap.set('IhazObjects', 'blue', 'color'); //modified previous object
+   * enmap.set('ArraysToo', 'three', 2); // changes "tree" to "three" in array.
    * @returns {Enmap} The enmap.
    */
   set(key, val, path = null) {
@@ -975,7 +975,7 @@ class Enmap extends Map {
 (key was of type "${_get(data, path).constructor.name}")`, 'EnmapTypeError');
       }
     } else if (!type.includes(this.get(key).constructor.name)) {
-      throw new Err(`The key "${key}" is not of type "${type.join('" or "')}" in the enmap "${this.name}" (key was of type "${this.get(key).constructor.name}")`, 'EnmapTypeError');
+      throw new Err(`The value for key "${key}" is not of type "${type.join('" or "')}" in the enmap "${this.name}" (value was of type "${this.get(key).constructor.name}")`, 'EnmapTypeError');
     }
   }
 
