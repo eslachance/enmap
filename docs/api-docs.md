@@ -131,7 +131,7 @@ enmap.set('IhazObjects', { color: 'black', action: 'paint', desire: true });
 enmap.set('ArraysToo', [1, "two", "tree", "foor"])
 
 // Settings Properties
-enmap.set('IhazObjects', 'color', 'blue'); //modified previous object
+enmap.set('IhazObjects', 'blue', 'color'); //modified previous object
 enmap.set('ArraysToo', 2, 'three'); // changes "tree" to "three" in array.
 ```
 <a name="Enmap+get"></a>
