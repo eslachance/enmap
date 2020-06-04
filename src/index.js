@@ -380,6 +380,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   setProp(key, path, val) {
+    console.warn('ENMAP DEPRECATION WARNING: setProp() will be deprecated in the next enmap version! Please use set(key, value, path) instead.');
     this[_readyCheck]();
     if (isNil(path)) throw new Err(`No path provided to set a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.set(key, val, path);
@@ -430,6 +431,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   pushIn(key, path, val, allowDupes = false) {
+    console.warn('ENMAP DEPRECATION WARNING: pushIn() will be deprecated in the next enmap version! Please use push(key, value, path) instead.');
     this[_readyCheck]();
     this[_fetchCheck](key);
     if (isNil(path)) throw new Err(`No path provided to push a value in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
@@ -538,6 +540,7 @@ class Enmap extends Map {
    * @return {*} The value of the property obtained.
    */
   getProp(key, path) {
+    console.warn('ENMAP DEPRECATION WARNING: getProp() will be deprecated in the next enmap version! Please use get(key, path) instead.');
     this[_readyCheck]();
     this[_fetchCheck](key);
     if (isNil(path)) throw new Err(`No path provided to get a property from "${key}" of enmap "${this.name}"`, 'EnmapPathError');
@@ -621,6 +624,7 @@ class Enmap extends Map {
    * @return {boolean} Whether the property exists.
    */
   hasProp(key, path) {
+    console.warn('ENMAP DEPRECATION WARNING: hasProp() will be deprecated in the next enmap version! Please use has(key, value) instead.');
     this[_readyCheck]();
     this[_fetchCheck](key);
     if (isNil(path)) throw new Err(`No path provided to check for a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
@@ -773,7 +777,10 @@ class Enmap extends Map {
     if (!isNil(path)) {
       const propValue = _get(data, path);
       if (isArray(propValue)) {
-        propValue.splice(propValue.indexOf(val), 1);
+        const index = propValue.indexOf(val);
+        if (index > -1) {
+          propValue.splice(index.indexOf(val), 1);
+        }
         _set(data, path, propValue);
       } else if (isObject(propValue)) {
         _delete(data, `${path}.${val}`);
@@ -800,6 +807,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   removeFrom(key, path, val) {
+    console.warn('ENMAP DEPRECATION WARNING: removeFrom() will be deprecated in the next enmap version! Please use remove(key, value, path) instead.');
     this[_readyCheck]();
     this[_fetchCheck](key);
     if (isNil(path)) throw new Err(`No path provided to remove an array element in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
@@ -1193,19 +1201,15 @@ class Enmap extends Map {
    * enmap.find(val => val.username === 'Bob');
    */
   find(propOrFn, value) {
-    if (typeof propOrFn === 'string') {
-      if (isNil(value)) throw new Error('Value must be specified.');
-      for (const item of this.values()) {
-        if (item[propOrFn] === value || (isObject(item) && _get(item, propOrFn) === value)) return item;
-      }
-      return null;
-    } else if (typeof propOrFn === 'function') {
-      for (const [key, val] of this) {
-        if (propOrFn(val, key, this)) return val;
-      }
-      return null;
+    this[_readyCheck]();
+    if (isNil(propOrFn) || (!isFunction(propOrFn) && isNil(value))) {
+      throw new Err('find requires either a prop and value, or a function. One of the provided arguments was null or undefined', 'EnmapArgumentError');
     }
-    throw new Error('First argument must be a property string or a function.');
+    const func = isFunction(propOrFn) ? propOrFn : (_, key) => value === key[propOrFn];
+    for (const [key, val] of this) {
+      if (func(val, key, this)) return val;
+    }
+    return null;
   }
 
   /**
@@ -1221,6 +1225,7 @@ class Enmap extends Map {
    * enmap.findKey(val => val.username === 'Bob');
    */
   findKey(propOrFn, value) {
+    this[_readyCheck]();
     if (typeof propOrFn === 'string') {
       if (isNil(value)) throw new Error('Value must be specified.');
       for (const [key, val] of this) {
@@ -1250,6 +1255,7 @@ class Enmap extends Map {
    * }
    */
   exists(prop, value) {
+    this[_readyCheck]();
     return Boolean(this.find(prop, value));
   }
 
@@ -1260,6 +1266,7 @@ class Enmap extends Map {
    * @returns {number} The number of removed entries
    */
   sweep(fn, thisArg) {
+    this[_readyCheck]();
     if (thisArg) fn = fn.bind(thisArg);
     const previousSize = this.size;
     for (const [key, val] of this) {
@@ -1277,6 +1284,7 @@ class Enmap extends Map {
    * @returns {Enmap}
    */
   filter(fn, thisArg) {
+    this[_readyCheck]();
     if (thisArg) fn = fn.bind(thisArg);
     const results = new this.constructor();
     for (const [key, val] of this) {
@@ -1293,6 +1301,7 @@ class Enmap extends Map {
    * @returns {Array}
    */
   filterArray(fn, thisArg) {
+    this[_readyCheck]();
     if (thisArg) fn = fn.bind(thisArg);
     const results = [];
     for (const [key, val] of this) {
@@ -1310,6 +1319,7 @@ class Enmap extends Map {
    * @example const [big, small] = collection.partition(guild => guild.memberCount > 250);
    */
   partition(fn, thisArg) {
+    this[_readyCheck]();
     if (typeof thisArg !== 'undefined') fn = fn.bind(thisArg);
     const results = [new this.constructor(), new this.constructor()];
     for (const [key, val] of this) {
@@ -1330,6 +1340,7 @@ class Enmap extends Map {
    * @returns {Array}
    */
   map(fn, thisArg) {
+    this[_readyCheck]();
     if (thisArg) fn = fn.bind(thisArg);
     const arr = new Array(this.size);
     let i = 0;
@@ -1345,6 +1356,7 @@ class Enmap extends Map {
    * @returns {boolean}
    */
   some(fn, thisArg) {
+    this[_readyCheck]();
     if (thisArg) fn = fn.bind(thisArg);
     for (const [key, val] of this) {
       if (fn(val, key, this)) return true;
@@ -1360,6 +1372,7 @@ class Enmap extends Map {
    * @returns {boolean}
    */
   every(fn, thisArg) {
+    this[_readyCheck]();
     if (thisArg) fn = fn.bind(thisArg);
     for (const [key, val] of this) {
       if (!fn(val, key, this)) return false;
@@ -1376,6 +1389,7 @@ class Enmap extends Map {
    * @returns {*}
    */
   reduce(fn, initialValue) {
+    this[_readyCheck]();
     let accumulator;
     if (typeof initialValue !== 'undefined') {
       accumulator = initialValue;
@@ -1400,6 +1414,7 @@ class Enmap extends Map {
    * @example const newColl = someColl.clone();
    */
   clone() {
+    this[_readyCheck]();
     return new this.constructor(this);
   }
 
@@ -1410,6 +1425,7 @@ class Enmap extends Map {
    * @example const newColl = someColl.concat(someOtherColl, anotherColl, ohBoyAColl);
    */
   concat(...enmaps) {
+    this[_readyCheck]();
     const newColl = this.clone();
     for (const coll of enmaps) {
       for (const [key, val] of coll) newColl.set(key, val);
@@ -1425,6 +1441,7 @@ class Enmap extends Map {
    * @returns {boolean} Whether the Enmaps have identical contents
    */
   equals(enmap) {
+    this[_readyCheck]();
     if (!enmap) return false;
     if (this === enmap) return true;
     if (this.size !== enmap.size) return false;
