@@ -8,7 +8,7 @@ Can be made persistent
 **Extends**: <code>Map</code>  
 
 * [Enmap](#Enmap) ⇐ <code>Map</code>
-    * [new Enmap(iterable, options)](#new_Enmap_new)
+    * [new Enmap(iterable, [options])](#new_Enmap_new)
     * _instance_
         * [.count](#Enmap+count) ⇒ <code>integer</code>
         * [.indexes](#Enmap+indexes) ⇒ <code>array.&lt;string&gt;</code>
@@ -30,12 +30,16 @@ Can be made persistent
         * [.ensure(key, defaultValue, path)](#Enmap+ensure) ⇒ <code>\*</code>
         * [.has(key, path)](#Enmap+has) ⇒ <code>boolean</code>
         * [.hasProp(key, path)](#Enmap+hasProp) ⇒ <code>boolean</code>
+        * [.includes(key, val, path)](#Enmap+includes) ⇒ <code>boolean</code>
         * [.delete(key, path)](#Enmap+delete) ⇒ [<code>Enmap</code>](#Enmap)
         * [.deleteProp(key, path)](#Enmap+deleteProp)
         * [.deleteAll()](#Enmap+deleteAll)
+        * [.clear()](#Enmap+clear) ⇒ <code>null</code>
         * [.destroy()](#Enmap+destroy) ⇒ <code>null</code>
         * [.remove(key, val, path)](#Enmap+remove) ⇒ [<code>Enmap</code>](#Enmap)
         * [.removeFrom(key, path, val)](#Enmap+removeFrom) ⇒ [<code>Enmap</code>](#Enmap)
+        * [.export()](#Enmap+export) ⇒ <code>string</code>
+        * [.import(data, overwrite, clear)](#Enmap+import) ⇒ [<code>Enmap</code>](#Enmap)
         * [.array()](#Enmap+array) ⇒ <code>Array</code>
         * [.keyArray()](#Enmap+keyArray) ⇒ <code>Array.&lt;(string\|number)&gt;</code>
         * [.random([count])](#Enmap+random) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
@@ -61,24 +65,37 @@ Can be made persistent
 
 <a name="new_Enmap_new"></a>
 
-### new Enmap(iterable, options)
+### new Enmap(iterable, [options])
 Initializes a new Enmap, with options.
 
 
-| Param | Type | Description |
-| --- | --- | --- |
-| iterable | <code>iterable</code> \| <code>string</code> | If iterable data, only valid in non-persistent enmaps. If this parameter is a string, it is assumed to be the enmap's name, which is a shorthand for adding a name in the options and making the enmap persistent. |
-| options | <code>Object</code> | Additional options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details. |
-| options.name | <code>string</code> | The name of the enmap. Represents its table name in sqlite. If present, the enmap is persistent. If no name is given, the enmap is memory-only and is not saved in the database. As a shorthand, you may use a string for the name instead of the options (see example). |
-| options.fetchAll | <code>boolean</code> | Defaults to `true`. When enabled, will automatically fetch any key that's requested using get, getProp, etc. This is a "syncroneous" operation, which means it doesn't need any of this promise or callback use. |
-| options.dataDir | <code>string</code> | Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes! |
-| options.cloneLevel | <code>string</code> | Defaults to deep. Determines how objects and arrays are treated when inserting and retrieving from the database. See https://enmap.evie.codes/usage#enmap-options for more details on this option. |
-| options.polling | <code>boolean</code> | defaults to `false`. Determines whether Enmap will attempt to retrieve changes from the database on a regular interval. This means that if another Enmap in another process modifies a value, this change will be reflected in ALL enmaps using the polling feature. |
-| options.pollingInterval | <code>string</code> | defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database. The shorter the interval, the more CPU is used, so it's best not to lower this. Polling takes about 350-500ms if no data is found, and time will grow with more changes fetched. In my tests, 15 rows took a little more than 1 second, every second. |
-| options.ensureProps | <code>boolean</code> | defaults to `false`. If enabled and the value in the enmap is an object, using ensure() will also ensure that every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information. |
-| options.strictType | <code>boolean</code> | defaults to `false`. If enabled, locks the enmap to the type of the first value written to it (such as Number or String or Object). Do not enable this option if your enmap contains different types of value or the enmap will fail to load. |
-| options.typeLock | <code>string</code> | Only used if strictType is enabled. Defines an initial type for every value entered in the enmap. If no value is provided, the first value written to enmap will determine its typeLock. Must be a valid JS Primitive name, such as String, Number, Object, Array. |
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| iterable | <code>iterable</code> \| <code>string</code> |  | If iterable data, only valid in non-persistent enmaps. If this parameter is a string, it is assumed to be the enmap's name, which is a shorthand for adding a name in the options and making the enmap persistent. |
+| [options] | <code>Object</code> |  | Additional options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details. |
+| [options.name] | <code>string</code> |  | The name of the enmap. Represents its table name in sqlite. If present, the enmap is persistent. If no name is given, the enmap is memory-only and is not saved in the database. As a shorthand, you may use a string for the name instead of the options (see example). |
+| [options.fetchAll] | <code>boolean</code> |  | Defaults to `true`. When enabled, will automatically fetch any key that's requested using get, getProp, etc. This is a "syncroneous" operation, which means it doesn't need any of this promise or callback use. |
+| [options.dataDir] | <code>string</code> |  | Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes! |
+| [options.cloneLevel] | <code>string</code> |  | Defaults to deep. Determines how objects and arrays are treated when inserting and retrieving from the database. See https://enmap.evie.codes/usage#enmap-options for more details on this option. |
+| [options.polling] | <code>boolean</code> |  | defaults to `false`. Determines whether Enmap will attempt to retrieve changes from the database on a regular interval. This means that if another Enmap in another process modifies a value, this change will be reflected in ALL enmaps using the polling feature. |
+| [options.pollingInterval] | <code>string</code> |  | defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database. The shorter the interval, the more CPU is used, so it's best not to lower this. Polling takes about 350-500ms if no data is found, and time will grow with more changes fetched. In my tests, 15 rows took a little more than 1 second, every second. |
+| [options.ensureProps] | <code>boolean</code> |  | defaults to `false`. If enabled and the value in the enmap is an object, using ensure() will also ensure that every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information. |
+| [options.strictType] | <code>boolean</code> |  | defaults to `false`. If enabled, locks the enmap to the type of the first value written to it (such as Number or String or Object). Do not enable this option if your enmap contains different types of value or the enmap will fail to load. |
+| [options.typeLock] | <code>string</code> |  | Only used if strictType is enabled. Defines an initial type for every value entered in the enmap. If no value is provided, the first value written to enmap will determine its typeLock. Must be a valid JS Primitive name, such as String, Number, Object, Array. |
+| [options.wal] | <code>boolean</code> | <code>false</code> | Check out Write-Ahead Logging: https://www.sqlite.org/wal.html |
 
+**Example**  
+```js
+const Enmap = require("enmap");
+// Non-persistent enmap:
+const inMemory = new Enmap();
+
+// Named, Persistent enmap with string option
+const myEnmap = new Enmap("testing");
+
+// Named, Persistent enmap with a few options:
+const myEnmap = new Enmap({name: "testing", fetchAll: false, autoFetch: true});
+```
 <a name="Enmap+count"></a>
 
 ### enmap.count ⇒ <code>integer</code>
@@ -131,8 +148,8 @@ enmap.set('IhazObjects', { color: 'black', action: 'paint', desire: true });
 enmap.set('ArraysToo', [1, "two", "tree", "foor"])
 
 // Settings Properties
-enmap.set('IhazObjects', 'color', 'blue'); //modified previous object
-enmap.set('ArraysToo', 2, 'three'); // changes "tree" to "three" in array.
+enmap.set('IhazObjects', 'blue', 'color'); //modified previous object
+enmap.set('ArraysToo', 'three', 2); // changes "tree" to "three" in array.
 ```
 <a name="Enmap+get"></a>
 
@@ -408,6 +425,21 @@ Returns whether or not the property exists within an object or array value in en
 | key | <code>string</code> \| <code>number</code> | Required. The key of the element to check in the Enmap or array. |
 | path | <code>\*</code> | Required. The property to verify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
+<a name="Enmap+includes"></a>
+
+### enmap.includes(key, val, path) ⇒ <code>boolean</code>
+Performs Array.includes() on a certain enmap value. Works similar to
+[Array.includes()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes).
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>boolean</code> - Whether the array contains the value.  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> |  | Required. The key of the array to check the value of. |
+| val | <code>string</code> \| <code>number</code> |  | Required. The value to check whether it's in the array. |
+| path | <code>\*</code> | <code></code> | Required. The property to access the array inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+
 <a name="Enmap+delete"></a>
 
 ### enmap.delete(key, path) ⇒ [<code>Enmap</code>](#Enmap)
@@ -436,6 +468,12 @@ Delete a property from an object or array value in Enmap.
 <a name="Enmap+deleteAll"></a>
 
 ### enmap.deleteAll()
+Deletes everything from the enmap. If persistent, clears the database of all its data for this table.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+<a name="Enmap+clear"></a>
+
+### enmap.clear() ⇒ <code>null</code>
 Deletes everything from the enmap. If persistent, clears the database of all its data for this table.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
@@ -476,6 +514,26 @@ Confusing? Sure is.
 | key | <code>string</code> \| <code>number</code> | Required. The key of the element. This value MUST be a string or number. |
 | path | <code>string</code> | Required. The name of the array property to remove from. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | val | <code>\*</code> | Required. The value to remove from the array property. |
+
+<a name="Enmap+export"></a>
+
+### enmap.export() ⇒ <code>string</code>
+Exports the enmap data to a JSON file.
+**__WARNING__**: Does not work on memory enmaps containing complex data!
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>string</code> - The enmap data in a stringified JSON format.  
+<a name="Enmap+import"></a>
+
+### enmap.import(data, overwrite, clear) ⇒ [<code>Enmap</code>](#Enmap)
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: [<code>Enmap</code>](#Enmap) - The enmap with the new data.  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| data | <code>string</code> |  | The data to import to Enmap. Must contain all the required fields provided by export() |
+| overwrite | <code>boolean</code> | <code>true</code> | Defaults to `true`. Whether to overwrite existing key/value data with incoming imported data |
+| clear | <code>boolean</code> | <code>false</code> | Defaults to `false`. Whether to clear the enmap of all data before importing (**__WARNING__**: Any exiting data will be lost! This cannot be undone.) |
 
 <a name="Enmap+array"></a>
 
@@ -777,7 +835,7 @@ Initialize multiple Enmaps easily.
 
 **Example**  
 ```js
-// Using local variables and the mongodb provider.
+// Using local variables.
 const Enmap = require('enmap');
 const { settings, tags, blacklist } = Enmap.multi(['settings', 'tags', 'blacklist']);
 
