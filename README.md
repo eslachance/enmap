@@ -67,8 +67,17 @@ user information for bans, blacklists, timers, warning systems, etc.
 
 ## Testimonials
 
+Some user comments!
+
 > I have legit tried several databases, from popular complicated ones to pretty basic ones. The only database I had absolutely no issue with was and still is enmap.
-- [LostSorrow#1237 on Discord](https://discordapp.com/channels/298508738623438848/481857430427533312/586619143361396740)
 
 > I know how to use a real db, but enmap is so sweet and easy to use
-- [CHY4E#0505 on Discord](https://discordapp.com/channels/260202843686830080/267727088465739778/588901731979624448)
+
+> Thanks to Enmap, I am able to do tons of things that I never thought I would accomplish.
+From custom settings to even just saving the little things, it is amazing to use.
+
+> Enmap helped me, and it stills helps me, because it is very simple and useful. Thank you for creating Enmap.
+
+> Without your tutorials I didn't have an internship and some work.. :))
+
+> Enmap was introduced to me fairly early, and has been essential to the growth and development of my bot. Without it, I'd have to use and learn complicated and unsafe systems. Enmap has helped me do exactly what I want with my bot. Thank you.
