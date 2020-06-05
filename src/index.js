@@ -1277,8 +1277,6 @@ class Enmap extends Map {
     }
     return null;
   }
-  }
-
   /**
    * Searches for the key of a single item where its specified property's value is identical to the given value
    * (`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is identical to
