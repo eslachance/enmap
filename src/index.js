@@ -63,7 +63,7 @@ class Enmap extends Map {
    * @param {string} [options.pollingInterval] defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database.
    * The shorter the interval, the more CPU is used, so it's best not to lower this. Polling takes about 350-500ms if no data is found, and time will
    * grow with more changes fetched. In my tests, 15 rows took a little more than 1 second, every second.
-   * @param {boolean} [options.ensureProps] defaults to `false`. If enabled and the value in the enmap is an object, using ensure() will also ensure that
+   * @param {boolean} [options.ensurePath] defaults to `false`. If enabled and the value in the enmap is an object, using ensure() will also ensure that
    * every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information.
    * @param {boolean} [options.strictType] defaults to `false`. If enabled, locks the enmap to the type of the first value written to it (such as Number or String or Object).
    * Do not enable this option if your enmap contains different types of value or the enmap will fail to load.
@@ -700,6 +700,72 @@ class Enmap extends Map {
   }
 
   /**
+   * @param {string|number} val Required. The value to check whether it's in the array.
+   * @param {*} path Required. The property to access the array inside the value object or array.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @return {boolean} Whether the array contains the value.
+   */
+  includes(key, val, path = null) {
+    this[_readyCheck]();
+    this[_fetchCheck](key);
+    this[_check](key, ['Array', 'Object']);
+    const data = this.get(key);
+    if (!isNil(path)) {
+      const propValue = _get(data, path);
+      if (isArray(propValue)) {
+        return propValue.includes(val);
+      }
+      throw new Err(`The property "${path}" in key "${key}" is not an Array in the enmap "${this.name}" (property was of type "${propValue && propValue.constructor.name}")`, 'EnmapTypeError');
+    } else if (isArray(data)) {
+      return data.includes(val);
+    }
+    throw new Err(`The value of key "${key}" is not an Array in the enmap "${this.name}" (value was of type "${data && data.constructor.name}")`, 'EnmapTypeError');
+  }
+
+  /**
+   * Deletes a key in the Enmap.
+   * @param {string|number} key Required. The key of the element to delete from The Enmap.
+   * @param {string} path Optional. The name of the property to remove from the object.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @returns {Enmap} The enmap.
+   */
+  delete(key, path = null) {
+    this[_readyCheck]();
+    this[_fetchCheck](key);
+    const oldValue = this.get(key);
+    if (!isNil(path)) {
+      let data = this.get(key);
+      path = toPath(path);
+      const last = path.pop();
+      const propValue = path.length ? _get(data, path) : data;
+      if (isArray(propValue)) {
+        propValue.splice(last, 1);
+      } else {
+        delete propValue[last];
+      }
+      if (path.length) {
+        _set(data, path, propValue);
+      } else {
+        data = propValue;
+      }
+      this.set(key, data);
+    } else {
+      super.delete(key);
+      if (this.persistent) {
+        if (this.polling) {
+          this.db.prepare(`INSERT INTO 'internal::changes::${this.name}' (type, key, timestamp, pid) VALUES (?, ?, ?, ?);`).run('delete', key.toString(), Date.now(), process.pid);
+        }
+        this.db.prepare(`DELETE FROM ${this.name} WHERE key = '${key}'`).run();
+        return this;
+      }
+      if (typeof this.changedCB === 'function') {
+        this.changedCB(key, oldValue, null);
+      }
+    }
+    return this;
+  }
+
+  /**
    * Delete a property from an object or array value in Enmap.
    * @param {string|number} key Required. The key of the element to delete the property from in Enmap.
    * @param {string} path Required. The name of the property to remove from the object.
@@ -1205,11 +1271,12 @@ class Enmap extends Map {
     if (isNil(propOrFn) || (!isFunction(propOrFn) && isNil(value))) {
       throw new Err('find requires either a prop and value, or a function. One of the provided arguments was null or undefined', 'EnmapArgumentError');
     }
-    const func = isFunction(propOrFn) ? propOrFn : (_, key) => value === key[propOrFn];
+    const func = isFunction(propOrFn) ? propOrFn : (v) => value === v[propOrFn];
     for (const [key, val] of this) {
       if (func(val, key, this)) return val;
     }
     return null;
+  }
   }
 
   /**
