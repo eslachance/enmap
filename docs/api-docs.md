@@ -32,6 +32,8 @@ Can be made persistent
         * [.hasProp(key, path)](#Enmap+hasProp) ⇒ <code>boolean</code>
         * [.includes(key, val, path)](#Enmap+includes) ⇒ <code>boolean</code>
         * [.delete(key, path)](#Enmap+delete) ⇒ [<code>Enmap</code>](#Enmap)
+        * [.includes(val, path)](#Enmap+includes) ⇒ <code>boolean</code>
+        * [.delete(key, path)](#Enmap+delete) ⇒ [<code>Enmap</code>](#Enmap)
         * [.deleteProp(key, path)](#Enmap+deleteProp)
         * [.deleteAll()](#Enmap+deleteAll)
         * [.clear()](#Enmap+clear) ⇒ <code>null</code>
@@ -74,7 +76,7 @@ Initializes a new Enmap, with options.
 | iterable | <code>iterable</code> \| <code>string</code> |  | If iterable data, only valid in non-persistent enmaps. If this parameter is a string, it is assumed to be the enmap's name, which is a shorthand for adding a name in the options and making the enmap persistent. |
 | [options] | <code>Object</code> |  | Additional options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details. |
 | [options.name] | <code>string</code> |  | The name of the enmap. Represents its table name in sqlite. If present, the enmap is persistent. If no name is given, the enmap is memory-only and is not saved in the database. As a shorthand, you may use a string for the name instead of the options (see example). |
-| [options.fetchAll] | <code>boolean</code> |  | Defaults to `true`. When enabled, will automatically fetch any key that's requested using get, getProp, etc. This is a "syncroneous" operation, which means it doesn't need any of this promise or callback use. |
+| [options.fetchAll] | <code>boolean</code> |  | Defaults to `true`. When enabled, will automatically fetch any key that's requested using get, or other retrieval methods. This is a "syncroneous" operation, which means it doesn't need any of this promise or callback use. |
 | [options.dataDir] | <code>string</code> |  | Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes! |
 | [options.cloneLevel] | <code>string</code> |  | Defaults to deep. Determines how objects and arrays are treated when inserting and retrieving from the database. See https://enmap.evie.codes/usage#enmap-options for more details on this option. |
 | [options.polling] | <code>boolean</code> |  | defaults to `false`. Determines whether Enmap will attempt to retrieve changes from the database on a regular interval. This means that if another Enmap in another process modifies a value, this change will be reflected in ALL enmaps using the polling feature. |
@@ -234,6 +236,7 @@ Note that honestly I've never had to use this, shutting down the app without a c
 ### enmap.setProp(key, path, val) ⇒ [<code>Enmap</code>](#Enmap)
 Modify the property of a value inside the enmap, if the value is an object or array.
 This is a shortcut to loading the key, changing the value, and setting it back.
+DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use set() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: [<code>Enmap</code>](#Enmap) - The enmap.  
@@ -272,6 +275,7 @@ enmap.push("arrayInObject", "five", "sub"); adds "five" at the end of the sub ar
 
 ### enmap.pushIn(key, path, val, allowDupes) ⇒ [<code>Enmap</code>](#Enmap)
 Push to an array element inside an Object or Array element in Enmap.
+DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use push() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: [<code>Enmap</code>](#Enmap) - The enmap.  
@@ -357,6 +361,7 @@ points.dec("numberInObject", "sub.anInt"); // {sub: { anInt: 4 }}
 
 ### enmap.getProp(key, path) ⇒ <code>\*</code>
 Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
+DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use get() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: <code>\*</code> - The value of the property obtained.  
@@ -416,6 +421,7 @@ if(!enmap.has("myOtherKey", "oneProp.otherProp.SubProp")) return false;
 
 ### enmap.hasProp(key, path) ⇒ <code>boolean</code>
 Returns whether or not the property exists within an object or array value in enmap.
+DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use has() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: <code>boolean</code> - Whether the property exists.  
@@ -453,10 +459,35 @@ Deletes a key in the Enmap.
 | key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to delete from The Enmap. |
 | path | <code>string</code> | <code>null</code> | Optional. The name of the property to remove from the object. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
+<a name="Enmap+includes"></a>
+
+### enmap.includes(val, path) ⇒ <code>boolean</code>
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: <code>boolean</code> - Whether the array contains the value.  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| val | <code>string</code> \| <code>number</code> |  | Required. The value to check whether it's in the array. |
+| path | <code>\*</code> | <code></code> | Required. The property to access the array inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+
+<a name="Enmap+delete"></a>
+
+### enmap.delete(key, path) ⇒ [<code>Enmap</code>](#Enmap)
+Deletes a key in the Enmap.
+
+**Kind**: instance method of [<code>Enmap</code>](#Enmap)  
+**Returns**: [<code>Enmap</code>](#Enmap) - The enmap.  
+
+| Param | Type | Default | Description |
+| --- | --- | --- | --- |
+| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to delete from The Enmap. |
+| path | <code>string</code> | <code>null</code> | Optional. The name of the property to remove from the object. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+
 <a name="Enmap+deleteProp"></a>
 
 ### enmap.deleteProp(key, path)
 Delete a property from an object or array value in Enmap.
+DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use delete() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 
@@ -505,6 +536,7 @@ values, not keys. Complex values such as objects and arrays will not be removed 
 ### enmap.removeFrom(key, path, val) ⇒ [<code>Enmap</code>](#Enmap)
 Remove a value from an Array or Object property inside an Array or Object element in Enmap.
 Confusing? Sure is.
+DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use remove() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: [<code>Enmap</code>](#Enmap) - The enmap.  

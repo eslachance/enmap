@@ -25,10 +25,10 @@ performant, can be easily backed up, and supports multiple simultaneous connecti
 
 ## Documentation
 
- * [Installation](https://evie.gitbook.io/enmap/install)
- * [Basic Setup](https://evie.gitbook.io/enmap/usage)
- * [API Reference](https://evie.gitbook.io/enmap/api)
- * [Examples](https://evie.gitbook.io/enmap/examples)
+ * [Installation](https://enmap.evie.dev/install)
+ * [Basic Setup](https://enmap.evie.dev/usage)
+ * [API Reference](https://enmap.evie.dev/api)
+ * [Examples](https://enmap.evie.dev/complete-examples)
 
 ## Support
 
@@ -52,7 +52,7 @@ when you restart your project, your data is not lost and is loaded on startup.
 
 **A**: The size of the memory used is directly proportional to the size of all the keys loaded in memory.
 The more data you have, the more complex it is, the more memory it can use. You can use the
-[fetchAll](https://evie.gitbook.io/enmap/usage/fetchall) options to reduce memory usage.
+[fetchAll](https://enmap.evie.dev/usage/fetchall) options to reduce memory usage.
 
 ### Q: Who did you make this for?
 

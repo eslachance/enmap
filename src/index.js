@@ -53,7 +53,7 @@ class Enmap extends Map {
    * If no name is given, the enmap is memory-only and is not saved in the database. As a shorthand, you may use a string for the name
    * instead of the options (see example).
    * @param {boolean} [options.fetchAll] Defaults to `true`. When enabled, will automatically fetch any key that's requested using get,
-   * getProp, etc. This is a "syncroneous" operation, which means it doesn't need any of this promise or callback use.
+   * or other retrieval methods. This is a "syncroneous" operation, which means it doesn't need any of this promise or callback use.
    * @param {string} [options.dataDir] Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative
    * (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes!
    * @param {string} [options.cloneLevel] Defaults to deep. Determines how objects and arrays are treated when inserting and retrieving from the database.
@@ -63,7 +63,7 @@ class Enmap extends Map {
    * @param {string} [options.pollingInterval] defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database.
    * The shorter the interval, the more CPU is used, so it's best not to lower this. Polling takes about 350-500ms if no data is found, and time will
    * grow with more changes fetched. In my tests, 15 rows took a little more than 1 second, every second.
-   * @param {boolean} [options.ensurePath] defaults to `false`. If enabled and the value in the enmap is an object, using ensure() will also ensure that
+   * @param {boolean} [options.ensureProps] defaults to `false`. If enabled and the value in the enmap is an object, using ensure() will also ensure that
    * every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information.
    * @param {boolean} [options.strictType] defaults to `false`. If enabled, locks the enmap to the type of the first value written to it (such as Number or String or Object).
    * Do not enable this option if your enmap contains different types of value or the enmap will fail to load.
@@ -372,6 +372,7 @@ class Enmap extends Map {
   /**
    * Modify the property of a value inside the enmap, if the value is an object or array.
    * This is a shortcut to loading the key, changing the value, and setting it back.
+   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use set() instead!
    * @param {string|number} key Required. The key of the element to add to The Enmap or array.
    * This value MUST be a string or number.
    * @param {string} path Required. The property to modify inside the value object or array.
@@ -422,6 +423,7 @@ class Enmap extends Map {
 
   /**
    * Push to an array element inside an Object or Array element in Enmap.
+   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use push() instead!
    * @param {string|number} key Required. The key of the element.
    * This value MUST be a string or number.
    * @param {string} path Required. The name of the array property to push to.
@@ -534,6 +536,7 @@ class Enmap extends Map {
 
   /**
    * Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
+   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use get() instead!
    * @param {string|number} key Required. The key of the element to get from The Enmap.
    * @param {string} path Required. The property to retrieve from the object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -573,7 +576,7 @@ class Enmap extends Map {
     if (!isNil(path)) {
       if (this.ensureProps) this.ensure(key, {});
       if (!this.has(key)) throw new Err(`Key "${key}" does not exist in "${this.name}" to ensure a property`, 'EnmapKeyError');
-      if (this.hasProp(key, path)) return this.getProp(key, path);
+      if (this.has(key, path)) return this.get(key, path);
       this.set(key, defaultValue, path);
       return defaultValue;
     }
@@ -617,6 +620,7 @@ class Enmap extends Map {
 
   /**
    * Returns whether or not the property exists within an object or array value in enmap.
+   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use has() instead!
    * @param {string|number} key Required. The key of the element to check in the Enmap or array.
    * @param {*} path Required. The property to verify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -767,11 +771,13 @@ class Enmap extends Map {
 
   /**
    * Delete a property from an object or array value in Enmap.
+   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use delete() instead!
    * @param {string|number} key Required. The key of the element to delete the property from in Enmap.
    * @param {string} path Required. The name of the property to remove from the object.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    */
   deleteProp(key, path) {
+    console.warn('ENMAP DEPRECATION WARNING: deleteProp() will be deprecated in the next enmap version! Please use delete(key, path) instead.');
     this[_readyCheck]();
     this[_fetchCheck](key);
     if (isNil(path)) throw new Err(`No path provided to delete a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
@@ -864,6 +870,7 @@ class Enmap extends Map {
   /**
    * Remove a value from an Array or Object property inside an Array or Object element in Enmap.
    * Confusing? Sure is.
+   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use remove() instead!
    * @param {string|number} key Required. The key of the element.
    * This value MUST be a string or number.
    * @param {string} path Required. The name of the array property to remove from.
