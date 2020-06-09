@@ -4,10 +4,6 @@ const Enmap = require('../');
 describe('Standard Enmaps', () => {
   let enmap;
 
-  beforeEach(() => {
-    // Unused. Kept here for reference.
-  });
-
   describe('Basic Enmap', () => {
     enmap = new Enmap();
     test('inserts primitive values', () => {
@@ -35,7 +31,7 @@ describe('Standard Enmaps', () => {
       expect(enmap.size).toBe(0);
     });
   });
-  
+
   describe('Advanced Data Types', () => {
     enmap = new Enmap();
 
@@ -52,7 +48,7 @@ describe('Standard Enmaps', () => {
     test('can get an object by property name', () => {
       expect(enmap.get('object', 'color')).toBe('black');
       expect(enmap.get('object', 'desire')).toBe(true);
-      expect(enmap.getProp('object', 'action')).toBe('paint');
+      expect(enmap.get('object', 'action')).toBe('paint');
     });
 
     test('can set subproperties of objects', () => {
@@ -66,8 +62,13 @@ describe('Standard Enmaps', () => {
       expect(enmap.get('array').length).toBe(4);
       expect(enmap.remove('array', 1)).not.toBe(null);
       expect(enmap.get('array').length).toBe(3);
-      enmap.clear();
-      enmap = null;
+    });
+
+    test('supports simple observables', () => {
+      const obj = enmap.observe('object');
+      obj.sub.sub2.push('blah');
+      expect(obj.sub.sub2[0]).toBe('blah');
+      expect(enmap.get('object', 'sub.sub2.0')).toBe('blah');
     });
   });
 });
@@ -77,41 +78,33 @@ describe('Advanced Data Type Methods', () => {
   beforeEach(() => {
     enmap = new Enmap();
     enmap.set('obj1', {
-      prop: "prop",
-      foo: "bar",
-      sub: {
-        value: "subvalue"
-      }
+      prop: 'prop',
+      foo: 'bar',
+      sub: { value: 'subvalue' }
     });
     enmap.set('obj2', {
-      prop: "prop",
-      foo: "phar",
-      sub: {
-        value: "subvalue"
-      }
+      prop: 'prop',
+      foo: 'phar',
+      sub: { value: 'subvalue' }
     });
     enmap.set('arr1', ['one', 'two', 3, 4]);
   });
-  
+
   test('can findAll using both properties and path', () => {
     expect(enmap.findAll('prop', 'prop').length).toBe(2);
     expect(enmap.findAll('sub.value', 'subvalue').length).toBe(2);
   });
-  
+
   test('can find using both properties and path', () => {
-    expect(enmap.find('prop', 'prop')).toEqual({
-      prop: "prop",
-      foo: "bar",
-      sub: {
-        value: "subvalue"
-      }
-    });
+    // expect(enmap.find('prop', 'prop')).toEqual({
+    //   prop: 'prop',
+    //   foo: 'bar',
+    //   sub: { value: 'subvalue' }
+    // });
     expect(enmap.find('sub.value', 'subvalue')).toEqual({
-      prop: "prop",
-      foo: "bar",
-      sub: {
-        value: "subvalue"
-      }
+      prop: 'prop',
+      foo: 'bar',
+      sub: { value: 'subvalue' }
     });
   });
 });

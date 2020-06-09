@@ -17,6 +17,8 @@ const {
 // Custom error codes with stack support.
 const Err = require('./error.js');
 
+const onChange = require('on-change');
+
 // Native imports
 const { resolve, sep } = require('path');
 const fs = require('fs');
@@ -248,6 +250,23 @@ class Enmap extends Map {
   }
 
   /**
+   * Returns an observable object. Modifying this object or any of its properties/indexes/children
+   * will automatically save those changes into enmap. This only works on
+   * objects and arrays, not "basic" values like strings or integers.
+   * @param {*} key The key to retrieve from the enmap.
+   * @param {string} path Optional. The property to retrieve from the object or array.
+   * @return {*} The value for this key.
+   */
+  observe(key, path = null) {
+    this[_check](key, ['Object', 'Array'], path);
+    const data = this.get(key, path);
+    const proxy = onChange(data, () => {
+      this.set(key, proxy, path);
+    });
+    return proxy;
+  }
+
+  /**
    * Retrieves the number of rows in the database for this enmap, even if they aren't fetched.
    * @return {integer} The number of rows in the database.
    */
@@ -368,25 +387,6 @@ class Enmap extends Map {
     return this.database.close();
   }
 
-
-  /**
-   * Modify the property of a value inside the enmap, if the value is an object or array.
-   * This is a shortcut to loading the key, changing the value, and setting it back.
-   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use set() instead!
-   * @param {string|number} key Required. The key of the element to add to The Enmap or array.
-   * This value MUST be a string or number.
-   * @param {string} path Required. The property to modify inside the value object or array.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
-   * @param {*} val Required. The value to apply to the specified property.
-   * @returns {Enmap} The enmap.
-   */
-  setProp(key, path, val) {
-    console.warn('ENMAP DEPRECATION WARNING: setProp() will be deprecated in the next enmap version! Please use set(key, value, path) instead.');
-    this[_readyCheck]();
-    if (isNil(path)) throw new Err(`No path provided to set a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
-    return this.set(key, val, path);
-  }
-
   /**
    * Push to an array value in Enmap.
    * @param {string|number} key Required. The key of the array element to push to in Enmap.
@@ -419,25 +419,6 @@ class Enmap extends Map {
       data.push(val);
     }
     return this.set(key, data);
-  }
-
-  /**
-   * Push to an array element inside an Object or Array element in Enmap.
-   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use push() instead!
-   * @param {string|number} key Required. The key of the element.
-   * This value MUST be a string or number.
-   * @param {string} path Required. The name of the array property to push to.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
-   * @param {*} val Required. The value push to the array property.
-   * @param {boolean} allowDupes Allow duplicate values in the array (default: false).
-   * @returns {Enmap} The enmap.
-   */
-  pushIn(key, path, val, allowDupes = false) {
-    console.warn('ENMAP DEPRECATION WARNING: pushIn() will be deprecated in the next enmap version! Please use push(key, value, path) instead.');
-    this[_readyCheck]();
-    this[_fetchCheck](key);
-    if (isNil(path)) throw new Err(`No path provided to push a value in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
-    return this.push(key, val, path, allowDupes);
   }
 
   // AWESOME MATHEMATICAL METHODS
@@ -535,22 +516,6 @@ class Enmap extends Map {
   }
 
   /**
-   * Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
-   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use get() instead!
-   * @param {string|number} key Required. The key of the element to get from The Enmap.
-   * @param {string} path Required. The property to retrieve from the object or array.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
-   * @return {*} The value of the property obtained.
-   */
-  getProp(key, path) {
-    console.warn('ENMAP DEPRECATION WARNING: getProp() will be deprecated in the next enmap version! Please use get(key, path) instead.');
-    this[_readyCheck]();
-    this[_fetchCheck](key);
-    if (isNil(path)) throw new Err(`No path provided to get a property from "${key}" of enmap "${this.name}"`, 'EnmapPathError');
-    return this.get(key, path);
-  }
-
-  /**
    * Returns the key's value, or the default given, ensuring that the data is there.
    * This is a shortcut to "if enmap doesn't have key, set it, then get it" which is a very common pattern.
    * @param {string|number} key Required. The key you want to make sure exists.
@@ -616,22 +581,6 @@ class Enmap extends Map {
       return _has(data, path);
     }
     return super.has(key);
-  }
-
-  /**
-   * Returns whether or not the property exists within an object or array value in enmap.
-   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use has() instead!
-   * @param {string|number} key Required. The key of the element to check in the Enmap or array.
-   * @param {*} path Required. The property to verify inside the value object or array.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
-   * @return {boolean} Whether the property exists.
-   */
-  hasProp(key, path) {
-    console.warn('ENMAP DEPRECATION WARNING: hasProp() will be deprecated in the next enmap version! Please use has(key, value) instead.');
-    this[_readyCheck]();
-    this[_fetchCheck](key);
-    if (isNil(path)) throw new Err(`No path provided to check for a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
-    return this.has(key, path);
   }
 
   /**
@@ -701,87 +650,6 @@ class Enmap extends Map {
       }
     }
     return this;
-  }
-
-  /**
-   * @param {string|number} val Required. The value to check whether it's in the array.
-   * @param {*} path Required. The property to access the array inside the value object or array.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
-   * @return {boolean} Whether the array contains the value.
-   */
-  includes(key, val, path = null) {
-    this[_readyCheck]();
-    this[_fetchCheck](key);
-    this[_check](key, ['Array', 'Object']);
-    const data = this.get(key);
-    if (!isNil(path)) {
-      const propValue = _get(data, path);
-      if (isArray(propValue)) {
-        return propValue.includes(val);
-      }
-      throw new Err(`The property "${path}" in key "${key}" is not an Array in the enmap "${this.name}" (property was of type "${propValue && propValue.constructor.name}")`, 'EnmapTypeError');
-    } else if (isArray(data)) {
-      return data.includes(val);
-    }
-    throw new Err(`The value of key "${key}" is not an Array in the enmap "${this.name}" (value was of type "${data && data.constructor.name}")`, 'EnmapTypeError');
-  }
-
-  /**
-   * Deletes a key in the Enmap.
-   * @param {string|number} key Required. The key of the element to delete from The Enmap.
-   * @param {string} path Optional. The name of the property to remove from the object.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
-   * @returns {Enmap} The enmap.
-   */
-  delete(key, path = null) {
-    this[_readyCheck]();
-    this[_fetchCheck](key);
-    const oldValue = this.get(key);
-    if (!isNil(path)) {
-      let data = this.get(key);
-      path = toPath(path);
-      const last = path.pop();
-      const propValue = path.length ? _get(data, path) : data;
-      if (isArray(propValue)) {
-        propValue.splice(last, 1);
-      } else {
-        delete propValue[last];
-      }
-      if (path.length) {
-        _set(data, path, propValue);
-      } else {
-        data = propValue;
-      }
-      this.set(key, data);
-    } else {
-      super.delete(key);
-      if (this.persistent) {
-        if (this.polling) {
-          this.db.prepare(`INSERT INTO 'internal::changes::${this.name}' (type, key, timestamp, pid) VALUES (?, ?, ?, ?);`).run('delete', key.toString(), Date.now(), process.pid);
-        }
-        this.db.prepare(`DELETE FROM ${this.name} WHERE key = '${key}'`).run();
-        return this;
-      }
-      if (typeof this.changedCB === 'function') {
-        this.changedCB(key, oldValue, null);
-      }
-    }
-    return this;
-  }
-
-  /**
-   * Delete a property from an object or array value in Enmap.
-   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use delete() instead!
-   * @param {string|number} key Required. The key of the element to delete the property from in Enmap.
-   * @param {string} path Required. The name of the property to remove from the object.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
-   */
-  deleteProp(key, path) {
-    console.warn('ENMAP DEPRECATION WARNING: deleteProp() will be deprecated in the next enmap version! Please use delete(key, path) instead.');
-    this[_readyCheck]();
-    this[_fetchCheck](key);
-    if (isNil(path)) throw new Err(`No path provided to delete a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
-    this.delete(key, path);
   }
 
   /**
@@ -865,25 +733,6 @@ class Enmap extends Map {
       delete data[val];
     }
     return this.set(key, data);
-  }
-
-  /**
-   * Remove a value from an Array or Object property inside an Array or Object element in Enmap.
-   * Confusing? Sure is.
-   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use remove() instead!
-   * @param {string|number} key Required. The key of the element.
-   * This value MUST be a string or number.
-   * @param {string} path Required. The name of the array property to remove from.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
-   * @param {*} val Required. The value to remove from the array property.
-   * @returns {Enmap} The enmap.
-   */
-  removeFrom(key, path, val) {
-    console.warn('ENMAP DEPRECATION WARNING: removeFrom() will be deprecated in the next enmap version! Please use remove(key, value, path) instead.');
-    this[_readyCheck]();
-    this[_fetchCheck](key);
-    if (isNil(path)) throw new Err(`No path provided to remove an array element in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
-    return this.remove(key, val, path);
   }
 
   /**
@@ -1278,12 +1127,13 @@ class Enmap extends Map {
     if (isNil(propOrFn) || (!isFunction(propOrFn) && isNil(value))) {
       throw new Err('find requires either a prop and value, or a function. One of the provided arguments was null or undefined', 'EnmapArgumentError');
     }
-    const func = isFunction(propOrFn) ? propOrFn : (v) => value === v[propOrFn];
+    const func = isFunction(propOrFn) ? propOrFn : v => value === _get(v, propOrFn);
     for (const [key, val] of this) {
       if (func(val, key, this)) return val;
     }
     return null;
   }
+
   /**
    * Searches for the key of a single item where its specified property's value is identical to the given value
    * (`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is identical to
@@ -1522,6 +1372,114 @@ class Enmap extends Map {
       return testVal !== value || (testVal === undefined && !enmap.has(key));
     });
   }
+
+  /* DEPRECATED METHODS */
+  /* TO BE REMOVED IN VERSION 6 */
+
+  /**
+   * Modify the property of a value inside the enmap, if the value is an object or array.
+   * This is a shortcut to loading the key, changing the value, and setting it back.
+   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use set() instead!
+   * @param {string|number} key Required. The key of the element to add to The Enmap or array.
+   * This value MUST be a string or number.
+   * @param {string} path Required. The property to modify inside the value object or array.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @param {*} val Required. The value to apply to the specified property.
+   * @returns {Enmap} The enmap.
+   */
+  setProp(key, path, val) {
+    console.warn('ENMAP DEPRECATION WARNING: setProp() will be deprecated in the next enmap version! Please use set(key, value, path) instead.');
+    this[_readyCheck]();
+    if (isNil(path)) throw new Err(`No path provided to set a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    return this.set(key, val, path);
+  }
+
+  /**
+   * Push to an array element inside an Object or Array element in Enmap.
+   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use push() instead!
+   * @param {string|number} key Required. The key of the element.
+   * This value MUST be a string or number.
+   * @param {string} path Required. The name of the array property to push to.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @param {*} val Required. The value push to the array property.
+   * @param {boolean} allowDupes Allow duplicate values in the array (default: false).
+   * @returns {Enmap} The enmap.
+   */
+  pushIn(key, path, val, allowDupes = false) {
+    console.warn('ENMAP DEPRECATION WARNING: pushIn() will be deprecated in the next enmap version! Please use push(key, value, path) instead.');
+    this[_readyCheck]();
+    this[_fetchCheck](key);
+    if (isNil(path)) throw new Err(`No path provided to push a value in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    return this.push(key, val, path, allowDupes);
+  }
+
+  /**
+   * Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
+   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use get() instead!
+   * @param {string|number} key Required. The key of the element to get from The Enmap.
+   * @param {string} path Required. The property to retrieve from the object or array.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @return {*} The value of the property obtained.
+   */
+  getProp(key, path) {
+    console.warn('ENMAP DEPRECATION WARNING: getProp() will be deprecated in the next enmap version! Please use get(key, path) instead.');
+    this[_readyCheck]();
+    this[_fetchCheck](key);
+    if (isNil(path)) throw new Err(`No path provided to get a property from "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    return this.get(key, path);
+  }
+
+  /**
+   * Delete a property from an object or array value in Enmap.
+   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use delete() instead!
+   * @param {string|number} key Required. The key of the element to delete the property from in Enmap.
+   * @param {string} path Required. The name of the property to remove from the object.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   */
+  deleteProp(key, path) {
+    console.warn('ENMAP DEPRECATION WARNING: deleteProp() will be deprecated in the next enmap version! Please use delete(key, path) instead.');
+    this[_readyCheck]();
+    this[_fetchCheck](key);
+    if (isNil(path)) throw new Err(`No path provided to delete a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    this.delete(key, path);
+  }
+
+  /**
+   * Remove a value from an Array or Object property inside an Array or Object element in Enmap.
+   * Confusing? Sure is.
+   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use remove() instead!
+   * @param {string|number} key Required. The key of the element.
+   * This value MUST be a string or number.
+   * @param {string} path Required. The name of the array property to remove from.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @param {*} val Required. The value to remove from the array property.
+   * @returns {Enmap} The enmap.
+   */
+  removeFrom(key, path, val) {
+    console.warn('ENMAP DEPRECATION WARNING: removeFrom() will be deprecated in the next enmap version! Please use remove(key, value, path) instead.');
+    this[_readyCheck]();
+    this[_fetchCheck](key);
+    if (isNil(path)) throw new Err(`No path provided to remove an array element in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    return this.remove(key, val, path);
+  }
+
+  /**
+   * Returns whether or not the property exists within an object or array value in enmap.
+   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use has() instead!
+   * @param {string|number} key Required. The key of the element to check in the Enmap or array.
+   * @param {*} path Required. The property to verify inside the value object or array.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @return {boolean} Whether the property exists.
+   */
+  hasProp(key, path) {
+    console.warn('ENMAP DEPRECATION WARNING: hasProp() will be deprecated in the next enmap version! Please use has(key, value) instead.');
+    this[_readyCheck]();
+    this[_fetchCheck](key);
+    if (isNil(path)) throw new Err(`No path provided to check for a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    return this.has(key, path);
+  }
+
+/* END DEPRECATED METHODS */
 
 }
 

@@ -30,10 +30,11 @@
   "author": "Evelyne Lachance <eslachance@gmail.com> (https://evie.codes/)",
   "license": "Apache-2.0",
   "dependencies": {
-    "lodash": "^4.17.15"
+    "lodash": "^4.17.15",
+    "on-change": "^2.0.1"
   },
   "peerDependencies": {
-    "better-sqlite3": "^5.4.1"
+    "better-sqlite3": "^7.0.1"
   },
   "devDependencies": {
     "eslint": "^4.19.1",
