@@ -718,7 +718,7 @@ class Enmap extends Map {
       if (isArray(propValue)) {
         const index = propValue.indexOf(val);
         if (index > -1) {
-          propValue.splice(index.indexOf(val), 1);
+          propValue.splice(index, 1);
         }
         _set(data, path, propValue);
       } else if (isObject(propValue)) {
