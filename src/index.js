@@ -698,6 +698,57 @@ class Enmap extends Map {
   }
 
   /**
+   * Creates an array with all the entries of the Enmap, including the value and key.
+   * @example
+   * var myEnmap = new Enmap();
+   * myEnmap.set("Favourite Food", "Apple");
+   * myEnmap.set("Worst Food Ever", "Caviar")
+   * let array = myEnmap.entriesArray();
+   * console.log(array);
+   * // returns [{key: "Favourite Food", value: "Apple"}, {key: "Worst Food Ever", value: "Caviar"}]
+   * @returns {Array<{key: string|number, value: any}>}
+   */
+  entriesArray() {
+    let arr = [];
+    super.forEach((value, key) => {
+      arr.push({key: key, value: value});
+    });
+    return arr;
+  }
+
+  /**
+   * Creates an array that is sorted by the key.
+   * @param {Function} algorithm The algorithm to sort by, defaults to the system algorithm.
+   * @see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/sort
+   * @example
+   * var myEnmap = new Enmap();
+   * myEnmap.set("Abby", "44");
+   * myEnmap.set("1", "23");
+   * myEnmap.set("Aaron", "42");
+   * // Using the system algorithm.
+   * let array = myEnmap.sortedArray();
+   * console.log(array);
+   * // returns [{key: "1", value: "23"},{key: "Aaron", value: "42"}, {key: "Abby", value: "44"}]
+   * @example
+   * // Sorting keys that are only number.
+   * let NumberSortArray = myEnmap.sortedArray((a, b) => {
+   *      return a - b;
+   * });
+   * // Sorting keys that are only string.
+   * let StringSortArray = myEnmap.sortedArray((a, b) => {
+   *      return a - b;
+   * });
+   * @returns {Array<{key: string|number, value: any}}
+   * 
+   */
+  sortedArray(algorithm = undefined) {
+    if(!algorithm){
+      return this.entriesArray().sort();
+    }
+    return this.entriesArray.sort(algorithm(a, b))
+  }
+
+  /**
    * Remove a value in an Array or Object element in Enmap. Note that this only works for
    * values, not keys. Complex values such as objects and arrays will not be removed this way.
    * @param {string|number} key Required. The key of the element to remove from in Enmap.
