@@ -13,6 +13,10 @@
   </p>
 </div>
 
+<div align="center">
+  <p><img src="https://evie.codes/enmap-logo.svg" alt="Enmap Logo" />
+</div>
+
 Enhanced Maps are a data structure that can be used to store data in memory that can also be saved in a database behind the scenes. These operations are fast, safe, and painless.
 
 The data is synchronized to the database automatically, seamlessly, and asynchronously for maximum effectiveness. The storage system used is an `sqlite` database which is fast,

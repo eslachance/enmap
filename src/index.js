@@ -1233,12 +1233,12 @@ class Enmap extends Map {
   }
 
   /**
-   * Partitions the collection into two collections where the first collection
+   * Partitions the enmap into two enmaps where the first enmap
    * contains the items that passed and the second contains the items that failed.
    * @param {Function} fn Function used to test (should return a boolean)
    * @param {*} [thisArg] Value to use as `this` when executing function
-   * @returns {Collection[]}
-   * @example const [big, small] = collection.partition(guild => guild.memberCount > 250);
+   * @returns {Enmap[]}
+   * @example const [big, small] = enmap.partition(guild => guild.memberCount > 250);
    */
   partition(fn, thisArg) {
     this[_readyCheck]();
@@ -1479,7 +1479,7 @@ class Enmap extends Map {
     return this.has(key, path);
   }
 
-/* END DEPRECATED METHODS */
+  /* END DEPRECATED METHODS */
 
 }
 

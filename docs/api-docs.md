@@ -46,7 +46,7 @@ Can be made persistent
         * [.sweep(fn, [thisArg])](#Enmap+sweep) ⇒ <code>number</code>
         * [.filter(fn, [thisArg])](#Enmap+filter) ⇒ [<code>Enmap</code>](#Enmap)
         * [.filterArray(fn, [thisArg])](#Enmap+filterArray) ⇒ <code>Array</code>
-        * [.partition(fn, [thisArg])](#Enmap+partition) ⇒ <code>Array.&lt;Collection&gt;</code>
+        * [.partition(fn, [thisArg])](#Enmap+partition) ⇒ [<code>Array.&lt;Enmap&gt;</code>](#Enmap)
         * [.map(fn, [thisArg])](#Enmap+map) ⇒ <code>Array</code>
         * [.some(fn, [thisArg])](#Enmap+some) ⇒ <code>boolean</code>
         * [.every(fn, [thisArg])](#Enmap+every) ⇒ <code>boolean</code>
@@ -639,8 +639,8 @@ Identical to
 
 <a name="Enmap+partition"></a>
 
-### enmap.partition(fn, [thisArg]) ⇒ <code>Array.&lt;Collection&gt;</code>
-Partitions the collection into two collections where the first collection
+### enmap.partition(fn, [thisArg]) ⇒ [<code>Array.&lt;Enmap&gt;</code>](#Enmap)
+Partitions the enmap into two enmaps where the first enmap
 contains the items that passed and the second contains the items that failed.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
@@ -652,7 +652,7 @@ contains the items that passed and the second contains the items that failed.
 
 **Example**  
 ```js
-const [big, small] = collection.partition(guild => guild.memberCount > 250);
+const [big, small] = enmap.partition(guild => guild.memberCount > 250);
 ```
 <a name="Enmap+map"></a>
 
