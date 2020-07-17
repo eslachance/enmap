@@ -30,7 +30,7 @@
   "author": "Evelyne Lachance <eslachance@gmail.com> (https://evie.codes/)",
   "license": "Apache-2.0",
   "dependencies": {
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.19",
     "on-change": "^2.0.1"
   },
   "peerDependencies": {

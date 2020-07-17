@@ -548,7 +548,7 @@ class Enmap extends Map {
     if (this.ensureProps && isObject(this.get(key))) {
       if (!isObject(clonedValue)) throw new Err(`Default value for "${key}" in enmap "${this.name}" must be an object when merging with an object value.`, 'EnmapArgumentError');
       const merged = merge(clonedValue, this.get(key));
-      super.set(key, merged);
+      this.set(key, merged);
       return merged;
     }
     if (this.has(key)) return this.get(key);

@@ -17,15 +17,12 @@
   <p><img src="https://evie.codes/enmap-logo.svg" alt="Enmap Logo" />
 </div>
 
-Enhanced Maps are a data structure that can be used to store data in memory that can also be saved in a database behind the scenes. These operations are fast, safe, and painless.
+Enhanced Maps are a data structure that can be used to store data in memory that can also be saved in a database behind the scenes.
+These operations are fast, safe, and painless.
 
-The data is synchronized to the database automatically, seamlessly, and asynchronously for maximum effectiveness. The storage system used is an `sqlite` database which is fast,
-performant, can be easily backed up, and supports multiple simultaneous connections.
-
-> ***__UPDATE 5.0__*** : Please take note that from Enmap 5.0 I am reverting my emphasis on the idea that enmap is scalable. It's not, and I can't make it better. I will be 
-> slowly reverting some of the features that I attempted to add to enmap to make it support multiple connections, such as polling. Enmap 5.0 starts this process by removing 
-> the dependency on better-sqlite-pool. So, if you're using enmap in a sharded/multithreaded/multiprocess setup, don't update, and hold off on [JOSH](https://www.npmjs.com/package/josh).
-> When JOSH is released, it'll be able to scale up with your application.
+The data is synchronized to the database automatically, seamlessly, and asynchronously for maximum effectiveness.
+The storage system used is an `sqlite` database which is fast, performant, can be easily backed up,
+and supports multiple simultaneous connections.
 
 ## Documentation
 
