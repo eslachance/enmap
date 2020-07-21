@@ -38,6 +38,8 @@ describe('Standard Enmaps', () => {
     test('supports arrays', () => {
       expect(enmap.set('array', [1, 2, 3])).not.toBe(null);
       expect(enmap.get('array').length).toBe(3);
+      expect(enmap.set('objectarray', [{ a: 1, b: 2, c: 3 }, { d: 4, e: 5, f: 6 }])).not.toBe(null);
+      expect(enmap.get('objectarray').length).toBe(2);
     });
 
     test('also supports objects', () => {
@@ -62,6 +64,8 @@ describe('Standard Enmaps', () => {
       expect(enmap.get('array').length).toBe(4);
       expect(enmap.remove('array', 1)).not.toBe(null);
       expect(enmap.get('array').length).toBe(3);
+      expect(enmap.remove('objectarray', (value) => value.e === 5)).not.toBe(null);
+      expect(enmap.get('objectarray').length).toBe(1);
     });
 
     test('supports simple observables', () => {

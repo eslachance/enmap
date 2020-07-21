@@ -699,13 +699,22 @@ class Enmap extends Map {
 
   /**
    * Remove a value in an Array or Object element in Enmap. Note that this only works for
-   * values, not keys. Complex values such as objects and arrays will not be removed this way.
+   * values, not keys. Note that only one value is removed, no more. Arrays of objects must use a function to remove,
+   * as full object matching is not supported.
    * @param {string|number} key Required. The key of the element to remove from in Enmap.
    * This value MUST be a string or number.
-   * @param {*} val Required. The value to remove from the array or object.
+   * @param {*|Function} val Required. The value to remove from the array or object. OR a function to match an object.
+   * If using a function, the function provides the object value and must return a boolean that's true for the object you want to remove.
    * @param {string} path Optional. The name of the array property to remove from.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3".
    * If not presents, removes directly from the value.
+   * @example
+   * // Assuming
+   * enmap.set('array', [1, 2, 3])
+   * enmap.set('objectarray', [{ a: 1, b: 2, c: 3 }, { d: 4, e: 5, f: 6 }])
+   *
+   * enmap.remove('array', 1); // value is now [2, 3]
+   * enmap.remove('objectarray', (value) => value.e === 5); // value is now [{ a: 1, b: 2, c: 3 }]
    * @returns {Enmap} The enmap.
    */
   remove(key, val, path = null) {
@@ -713,10 +722,12 @@ class Enmap extends Map {
     this[_fetchCheck](key);
     this[_check](key, ['Array', 'Object']);
     const data = this.get(key);
+    const criteria = isFunction(val) ? val : value => val === value;
     if (!isNil(path)) {
       const propValue = _get(data, path);
       if (isArray(propValue)) {
-        const index = propValue.indexOf(val);
+        // const index = propValue.indexOf(val);
+        const index = propValue.findIndex(criteria);
         if (index > -1) {
           propValue.splice(index, 1);
         }
@@ -725,7 +736,8 @@ class Enmap extends Map {
         _delete(data, `${path}.${val}`);
       }
     } else if (isArray(data)) {
-      const index = data.indexOf(val);
+      // const index = data.indexOf(val);
+      const index = data.findIndex(criteria);
       if (index > -1) {
         data.splice(index, 1);
       }

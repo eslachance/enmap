@@ -437,7 +437,8 @@ THIS ACTION WILL DESTROY YOUR DATA AND CANNOT BE UNDONE.
 
 ### enmap.remove(key, val, path) ⇒ [<code>Enmap</code>](#Enmap)
 Remove a value in an Array or Object element in Enmap. Note that this only works for
-values, not keys. Complex values such as objects and arrays will not be removed this way.
+values, not keys. Note that only one value is removed, no more. Arrays of objects must use a function to remove,
+as full object matching is not supported.
 
 **Kind**: instance method of [<code>Enmap</code>](#Enmap)  
 **Returns**: [<code>Enmap</code>](#Enmap) - The enmap.  
@@ -445,9 +446,18 @@ values, not keys. Complex values such as objects and arrays will not be removed 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
 | key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to remove from in Enmap. This value MUST be a string or number. |
-| val | <code>\*</code> |  | Required. The value to remove from the array or object. |
+| val | <code>\*</code> \| <code>function</code> |  | Required. The value to remove from the array or object. OR a function to match an object. If using a function, the function provides the object value and must return a boolean that's true for the object you want to remove. |
 | path | <code>string</code> | <code>null</code> | Optional. The name of the array property to remove from. Can be a path with dot notation, such as "prop1.subprop2.subprop3". If not presents, removes directly from the value. |
 
+**Example**  
+```js
+// Assuming
+enmap.set('array', [1, 2, 3])
+enmap.set('objectarray', [{ a: 1, b: 2, c: 3 }, { d: 4, e: 5, f: 6 }])
+
+enmap.remove('array', 1); // value is now [2, 3]
+enmap.remove('objectarray', (value) => value.e === 5); // value is now [{ a: 1, b: 2, c: 3 }]
+```
 <a name="Enmap+export"></a>
 
 ### enmap.export() ⇒ <code>string</code>
