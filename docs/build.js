@@ -1,31 +1,49 @@
 const jsdoc2md = require('jsdoc-to-markdown');
 const fs = require('fs');
-const regexread = /\* \[\.(.*?)\]\((.*?)\)((.*?)<code>(.*?)<\/code>(.*?))/g;
-const rpc = s => {
-  let repl = s.toLowerCase().replace(/[\s\\\|\[\]\(\)]/g, '-').replace(/[\.,_]+/g, '');
+const slug = require('limax');
 
-  console.log(repl);
+var htmlEntities = {
+  nbsp: ' ',
+  cent: '¢',
+  pound: '£',
+  yen: '¥',
+  euro: '€',
+  copy: '©',
+  reg: '®',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  amp: '&',
+  apos: '\''
+};
 
-  if (repl[repl.length - 1] !== '-') {
-    // repl += '-';
+const unescapeHTML = str => str.replace(/\&([^;]+);/g, (entity, entityCode) => {
+  let match;
+
+  if (entityCode in htmlEntities) {
+    return htmlEntities[entityCode];
+    /* eslint no-cond-assign: 0 */
+  } else if (match = entityCode.match(/^#x([\da-fA-F]+)$/)) {
+    return String.fromCharCode(parseInt(match[1], 16));
+    /* eslint no-cond-assign: 0 */
+  } else if (match = entityCode.match(/^#(\d+)$/)) {
+    return String.fromCharCode(~~match[1]);
+  } else {
+    return entity;
   }
-  return repl.replace('--', '-').replace(/--$/, '');
-};
+});
 
-const parseTable = {
-  '\\*': '',
-  '&lt;': '-less-than-',
-  '&gt;': '-greater-than',
-  '.': ''
-};
+const finalize = str => str
+  .replace(/\[Enmap\]\(#Enmap\)/gi, '[Enmap](#enmap-map)')
+  .replace(/\[<code>Enmap<\/code>\]\(#Enmap\)/gi, '[<code>Enmap</code>](#enmap-map)')
+  .replace('* [new Enmap(iterable, [options])](#new_Enmap_new)', '* [new Enmap(iterable, [options])](#new-enmap-iterable-options)');
 
-const parseReturn = s => {
-  Object.keys(parseTable).forEach(key => { s = s.replace(key, parseTable[key]); });
-  console.log(s);
-  return s.toLowerCase();
-};
+const regexread = /^ {8}\* \[\.(.*?)\]\((.*?)\)(.*?)(\(#.*?\)|)$/gm;
+
+const parseData = data => finalize(data.replace(regexread, (_, b, __, d) =>
+  `        * [.${b}](#${slug(`enmap.${b} ${unescapeHTML(d.replace(/<\/?code>/g, ''))}`)})${d}`));
 
 jsdoc2md.render({ files: './src/index.js' }).then(data =>
   fs.writeFile('./docs/api-docs.md',
-    data, // .replace(regexread, (a, b, c, d, e, f, g) => `* [${b}](#enmap-${rpc(b)}${parseReturn(e) && `-${parseReturn(e)}`})${d}<code>${e}</code>${f}`.replace('--', '-'))
+    parseData(data),
     () => false));

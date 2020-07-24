@@ -368,7 +368,7 @@ class Enmap extends Map {
    * Can be used to detect if another part of your code changed a value in enmap and react on it.
    * @example
    * enmap.changed((keyName, oldValue, newValue) => {
-   *   console.log(`Value of ${keyName} has changed from: \n${oldValue}\nto\n${newValue});
+   *   console.log(`Value of ${keyName} has changed from: \n${oldValue}\nto\n${newValue}`);
    * });
    * @param {Function} cb A callback function that will be called whenever data changes in the enmap.
    */
@@ -401,7 +401,7 @@ class Enmap extends Map {
    * enmap.set("arrayInObject", {sub: [1, 2, 3, 4]});
    *
    * enmap.push("simpleArray", 5); // adds 5 at the end of the array
-   * enmap.push("arrayInObject", "five", "sub"); adds "five" at the end of the sub array
+   * enmap.push("arrayInObject", "five", "sub"); // adds "five" at the end of the sub array
    * @returns {Enmap} The enmap.
    */
   push(key, val, path = null, allowDupes = false) {
@@ -764,7 +764,8 @@ class Enmap extends Map {
   }
 
   /**
-   *
+   * Import an existing json export from enmap from a string. This data must have been exported from enmap,
+   * and must be from a version that's equivalent or lower than where you're importing it.
    * @param {string} data The data to import to Enmap. Must contain all the required fields provided by export()
    * @param {boolean} overwrite Defaults to `true`. Whether to overwrite existing key/value data with incoming imported data
    * @param {boolean} clear Defaults to `false`. Whether to clear the enmap of all data before importing
