@@ -65,12 +65,12 @@ class Enmap extends Map {
    * @param {string} [options.pollingInterval] defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database.
    * The shorter the interval, the more CPU is used, so it's best not to lower this. Polling takes about 350-500ms if no data is found, and time will
    * grow with more changes fetched. In my tests, 15 rows took a little more than 1 second, every second.
-   * @param {boolean} [options.ensureProps] defaults to `false`. If enabled and the value in the enmap is an object, using ensure() will also ensure that
+   * @param {boolean} [options.ensureProps] defaults to `true`. If enabled and the value in the enmap is an object, using ensure() will also ensure that
    * every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information.
-   * @param {boolean} [options.strictType] defaults to `false`. If enabled, locks the enmap to the type of the first value written to it (such as Number or String or Object).
-   * Do not enable this option if your enmap contains different types of value or the enmap will fail to load.
-   * @param {string} [options.typeLock] Only used if strictType is enabled. Defines an initial type for every value entered in the enmap. If no value is
-   * provided, the first value written to enmap will determine its typeLock. Must be a valid JS Primitive name, such as String, Number, Object, Array.
+   * @param {*} [options.autoEnsure] default is disabled. When provided a value, essentially runs ensure(key, autoEnsure) automatically so you don't have to.
+   * This is especially useful on get(), but will also apply on set(), and any array and object methods that interact with the database.
+   * @param {boolean} [options.autoFetch] defaults to `true`. When enabled, attempting to get() a key or do any operation on existing keys (such as array push, etc)
+   * will automatically fetch the current key value from the database. Keys that are automatically fetched remain in memory and are not cleared.
    * @param {boolean} [options.wal=false] Check out Write-Ahead Logging: https://www.sqlite.org/wal.html
    * @example
    * const Enmap = require("enmap");
@@ -80,8 +80,11 @@ class Enmap extends Map {
    * // Named, Persistent enmap with string option
    * const myEnmap = new Enmap("testing");
    *
-   * // Named, Persistent enmap with a few options:
-   * const myEnmap = new Enmap({name: "testing", fetchAll: false, autoFetch: true});
+   * // Enmap that does not fetch everything, but does so on per-query basis:
+   * const myEnmap = new Enmap({name: "testing", fetchAll: false});
+   *
+   * // Enmap that automatically assigns a default object when getting or setting anything.
+   * const autoEnmap = new Enmap({name: "settings", autoEnsure: { setting1: false, message: "default message"}})
    */
   constructor(iterable, options = {}) {
     if (typeof iterable === 'string') {
@@ -103,10 +106,8 @@ class Enmap extends Map {
       cloneLevel = 'deep';
     }
 
-    // Object.defineProperty ensures that the property is "hidden" when outputting
-    // the enmap in console. Only actual map entries are shown using this method.
     this[_defineSetting]('cloneLevel', 'String', true, cloneLevel);
-    this[_defineSetting]('ensureProps', 'Boolean', true, false, options.ensureProps);
+    this[_defineSetting]('ensureProps', 'Boolean', true, true, options.ensureProps);
 
     if (options.name) {
       const Database = require('better-sqlite3');
@@ -128,19 +129,15 @@ class Enmap extends Map {
 
       // [_defineSetting](name, type, writable, defaultValue [, value]) {
 
+      // this[_defineSetting]('all', 'Symbol', false, Symbol('all_records'));
+      this[_defineSetting]('off', 'Symbol', false, Symbol('option_off'));
       this[_defineSetting]('name', 'String', true, options.name);
       this[_defineSetting]('dataDir', 'String', false, dataDir);
       this[_defineSetting]('fetchAll', 'Boolean', true, true, options.fetchAll);
       this[_defineSetting]('database', 'Database', true, database);
       this[_defineSetting]('autoFetch', 'Boolean', true, true, options.autoFetch);
-      this[_defineSetting]('strictType', 'Boolean', true, false, options.strictType);
+      this[_defineSetting]('autoEnsure', 'Object', true, this.off, options.autoEnsure);
       this[_defineSetting]('wal', 'Boolean', true, true, options.wal);
-      Object.defineProperty(this, 'typeLock', {
-        value: options.typeLock || null,
-        writable: true,
-        enumerable: false,
-        configurable: false
-      });
       this[_defineSetting]('polling', 'Boolean', true, false, options.polling);
       this[_defineSetting]('pollingInterval', 'Number', true, 1000, options.pollingInterval);
       this[_defineSetting]('defer', 'Promise', true, new Promise((res) =>
@@ -186,29 +183,16 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   set(key, val, path = null) {
-    this[_readyCheck]();
     if (isNil(key) || !['String', 'Number'].includes(key.constructor.name)) {
       throw new Err('Enmap require keys to be strings or numbers.', 'EnmapKeyTypeError');
     }
     key = key.toString();
-    this[_fetchCheck](key);
-    let data = super.get(key);
+    let data = this.get(key);
     const oldValue = super.has(key) ? this[_clone](data) : null;
     if (!isNil(path)) {
       if (isNil(data)) data = {};
       _set(data, path, val);
     } else {
-      // New 4.6.0: typecheck
-      if (this.strictType) {
-        if (!this.typeLock) {
-          this[_defineSetting]('typeLock', 'String', true, val.constructor.name);
-        } else if (data && data.constructor.name !== val.constructor.name) {
-          throw new Err(`Enmap "${this.name}" requires data to be of type "${data.constructor.name}" (got: "${val.constructor.name}" instead)`, 'EnmapStrictDataError');
-        } else if (!data && this.typeLock !== val.constructor.name) {
-          throw new Err(`Enmap "${this.name}" requires data to be of type "${this.typeLock}" (got: "${val.constructor.name}" instead)`, 'EnmapStrictDataError');
-        }
-      }
-      // end new
       data = val;
     }
     if (isFunction(this.changedCB)) {
@@ -240,12 +224,11 @@ class Enmap extends Map {
     if (isNil(key)) return null;
     this[_fetchCheck](key);
     key = key.toString();
+    const data = this.autoEnsure !== this.off ? this.ensure(key, this.autoEnsure) : super.get(key);
     if (!isNil(path)) {
       this[_check](key, ['Object', 'Array']);
-      const data = super.get(key);
       return _get(data, path);
     }
-    const data = super.get(key);
     return this[_clone](data);
   }
 
@@ -302,11 +285,6 @@ class Enmap extends Map {
     const rows = this.db.prepare(`SELECT * FROM ${this.name};`).all();
     for (const row of rows) {
       const val = this[_parseData](row.value);
-      if (this.strictType && !this.typeLock) {
-        this[_defineSetting]('typeLock', 'String', true, val.constructor.name);
-      } else if (this.strictType && this.typeLock && val.constructor.name !== this.typeLock) {
-        throw new Err(`Enmap "${this.name}" requires data to be of type "${this.typeLock}" (found: "${val.constructor.name}" in database instead)`, 'EnmapStrictDataError');
-      }
       super.set(row.key, val);
     }
     return this;
@@ -405,8 +383,6 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   push(key, val, path = null, allowDupes = false) {
-    this[_readyCheck]();
-    this[_fetchCheck](key);
     const data = this.get(key);
     this[_check](key, 'Array', path);
     if (!isNil(path)) {
@@ -443,21 +419,12 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   math(key, operation, operand, path = null) {
-    this[_readyCheck]();
-    this[_fetchCheck](key);
     this[_check](key, 'Number', path);
-    if (isNil(path)) {
-      if (operation === 'random' || operation === 'rand') {
-        return this.set(key, Math.round(Math.random() * operand));
-      }
-      return this.set(key, this[_mathop](this.get(key), operation, operand));
+    const data = this.get(key, path);
+    if (operation === 'random' || operation === 'rand') {
+      return this.set(key, Math.round(Math.random() * data), path);
     } else {
-      const data = this.get(key);
-      const propValue = _get(data, path);
-      if (operation === 'random' || operation === 'rand') {
-        return this.set(key, Math.round(Math.random() * propValue), path);
-      }
-      return this.set(key, this[_mathop](propValue, operation, operand), path);
+      return this.set(key, this[_mathop](data, operation, operand), path);
     }
   }
 
@@ -475,7 +442,6 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   inc(key, path = null) {
-    this[_readyCheck]();
     this[_check](key, 'Number', path);
     if (isNil(path)) {
       let val = this.get(key);
@@ -502,7 +468,6 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   dec(key, path = null) {
-    this[_readyCheck]();
     this[_check](key, 'Number', path);
     if (isNil(path)) {
       let val = this.get(key);
@@ -1020,7 +985,7 @@ class Enmap extends Map {
    */
   [_defineSetting](name, type, writable, defaultValue, value) {
     if (isNil(value)) value = defaultValue;
-    if (value.constructor.name !== type) {
+    if (type !== 'any' && value.constructor.name !== type) {
       throw new Err(`Wrong value type provided for options.${name}:  Provided "${defaultValue.constructor.name}", expecting "${type}", in enmap "${this.name}".`);
     }
     Object.defineProperty(this, name, {
