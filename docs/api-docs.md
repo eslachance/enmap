@@ -80,9 +80,9 @@ Initializes a new Enmap, with options.
 | [options.cloneLevel] | <code>string</code> |  | Defaults to deep. Determines how objects and arrays are treated when inserting and retrieving from the database. See https://enmap.evie.codes/usage#enmap-options for more details on this option. |
 | [options.polling] | <code>boolean</code> |  | defaults to `false`. Determines whether Enmap will attempt to retrieve changes from the database on a regular interval. This means that if another Enmap in another process modifies a value, this change will be reflected in ALL enmaps using the polling feature. |
 | [options.pollingInterval] | <code>string</code> |  | defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database. The shorter the interval, the more CPU is used, so it's best not to lower this. Polling takes about 350-500ms if no data is found, and time will grow with more changes fetched. In my tests, 15 rows took a little more than 1 second, every second. |
-| [options.ensureProps] | <code>boolean</code> |  | defaults to `false`. If enabled and the value in the enmap is an object, using ensure() will also ensure that every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information. |
-| [options.strictType] | <code>boolean</code> |  | defaults to `false`. If enabled, locks the enmap to the type of the first value written to it (such as Number or String or Object). Do not enable this option if your enmap contains different types of value or the enmap will fail to load. |
-| [options.typeLock] | <code>string</code> |  | Only used if strictType is enabled. Defines an initial type for every value entered in the enmap. If no value is provided, the first value written to enmap will determine its typeLock. Must be a valid JS Primitive name, such as String, Number, Object, Array. |
+| [options.ensureProps] | <code>boolean</code> |  | defaults to `true`. If enabled and the value in the enmap is an object, using ensure() will also ensure that every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information. |
+| [options.autoEnsure] | <code>\*</code> |  | default is disabled. When provided a value, essentially runs ensure(key, autoEnsure) automatically so you don't have to. This is especially useful on get(), but will also apply on set(), and any array and object methods that interact with the database. |
+| [options.autoFetch] | <code>boolean</code> |  | defaults to `true`. When enabled, attempting to get() a key or do any operation on existing keys (such as array push, etc) will automatically fetch the current key value from the database. Keys that are automatically fetched remain in memory and are not cleared. |
 | [options.wal] | <code>boolean</code> | <code>false</code> | Check out Write-Ahead Logging: https://www.sqlite.org/wal.html |
 
 **Example**  
@@ -94,8 +94,11 @@ const inMemory = new Enmap();
 // Named, Persistent enmap with string option
 const myEnmap = new Enmap("testing");
 
-// Named, Persistent enmap with a few options:
-const myEnmap = new Enmap({name: "testing", fetchAll: false, autoFetch: true});
+// Enmap that does not fetch everything, but does so on per-query basis:
+const myEnmap = new Enmap({name: "testing", fetchAll: false});
+
+// Enmap that automatically assigns a default object when getting or setting anything.
+const autoEnmap = new Enmap({name: "settings", autoEnsure: { setting1: false, message: "default message"}})
 ```
 <a name="Enmap+count"></a>
 

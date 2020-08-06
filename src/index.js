@@ -136,7 +136,7 @@ class Enmap extends Map {
       this[_defineSetting]('fetchAll', 'Boolean', true, true, options.fetchAll);
       this[_defineSetting]('database', 'Database', true, database);
       this[_defineSetting]('autoFetch', 'Boolean', true, true, options.autoFetch);
-      this[_defineSetting]('autoEnsure', 'Object', true, this.off, options.autoEnsure);
+      this[_defineSetting]('autoEnsure', 'any', true, this.off, options.autoEnsure);
       this[_defineSetting]('wal', 'Boolean', true, true, options.wal);
       this[_defineSetting]('polling', 'Boolean', true, false, options.polling);
       this[_defineSetting]('pollingInterval', 'Number', true, 1000, options.pollingInterval);
