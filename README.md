@@ -57,8 +57,9 @@ The more data you have, the more complex it is, the more memory it can use. You 
 
 ### Q: Who did you make this for?
 
-**A**: Myself because I do use it often. But also, I built it specifically for beginners in mind. 
-Enmap's main goal is to remain simple to use, as fast as possible, and a solid as possible.
+**A**: Enmap was made specifically for beginner in mind. It's for you, the budding javascript developer that wants to save data
+in a database but doesn't want to learn SQL - yet. It's also for people that want to rapidly prototype some app that depends on
+a database but doesn't want to have to deal with queries, even if it's not the most efficient way to do things.
 
 ### Q: What's is used for?
 

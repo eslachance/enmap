@@ -14,6 +14,7 @@ Can be made persistent
         * [.indexes](#enmap-indexes-array-less-than-string-greater-than) ⇒ <code>array.&lt;string&gt;</code>
         * [.autonum](#enmap-autonum-number) ⇒ <code>number</code>
         * [.set(key, val, path)](#enmap-set-key-val-path-enmap) ⇒ [<code>Enmap</code>]
+        * [.update(key, valueOrFunction)](#enmap-update-key-valueorfunction)
         * [.get(key, path)](#enmap-get-key-path) ⇒ <code>\*</code>
         * [.observe(key, path)](#enmap-observe-key-path) ⇒ <code>\*</code>
         * [.fetchEverything()](#enmap-fetcheverything-enmap) ⇒ [<code>Enmap</code>]
@@ -42,17 +43,16 @@ Can be made persistent
         * [.findAll(prop, value)](#enmap-findall-prop-value-array) ⇒ <code>Array</code>
         * [.find(propOrFn, [value])](#enmap-find-proporfn-value) ⇒ <code>\*</code>
         * [.findKey(propOrFn, [value])](#enmap-findkey-proporfn-value-string-or-number) ⇒ <code>string</code> \| <code>number</code>
-        * [.exists(prop, value)](#enmap-exists-prop-value-boolean) ⇒ <code>boolean</code>
         * [.sweep(fn, [thisArg])](#enmap-sweep-fn-thisarg-number) ⇒ <code>number</code>
         * [.filter(fn, [thisArg])](#enmap-filter-fn-thisarg-enmap) ⇒ [<code>Enmap</code>]
         * [.filterArray(fn, [thisArg])](#enmap-filterarray-fn-thisarg-array) ⇒ <code>Array</code>
-        * [.partition(fn, [thisArg])](#enmap-partition-fn-thisarg-array-less-than-enmap-greater-than) ⇒ [<code>Array.&lt;Enmap&gt;</code>]
         * [.map(fn, [thisArg])](#enmap-map-fn-thisarg-array) ⇒ <code>Array</code>
         * [.some(fn, [thisArg])](#enmap-some-fn-thisarg-boolean) ⇒ <code>boolean</code>
         * [.every(fn, [thisArg])](#enmap-every-fn-thisarg-boolean) ⇒ <code>boolean</code>
         * [.reduce(fn, [initialValue])](#enmap-reduce-fn-initialvalue) ⇒ <code>\*</code>
         * [.clone()](#enmap-clone-enmap) ⇒ [<code>Enmap</code>]
         * [.concat(...enmaps)](#enmap-concat-enmaps-enmap) ⇒ [<code>Enmap</code>]
+        * [.partition(fn, [thisArg])](#enmap-partition-fn-thisarg-array-less-than-enmap-greater-than) ⇒ [<code>Array.&lt;Enmap&gt;</code>]
         * [.equals(enmap)](#enmap-equals-enmap-boolean) ⇒ <code>boolean</code>
         * [.setProp(key, path, val)](#enmap-setprop-key-path-val-enmap) ⇒ [<code>Enmap</code>]
         * [.pushIn(key, path, val, allowDupes)](#enmap-pushin-key-path-val-allowdupes-enmap) ⇒ [<code>Enmap</code>]
@@ -60,6 +60,7 @@ Can be made persistent
         * [.deleteProp(key, path)](#enmap-deleteprop-key-path)
         * [.removeFrom(key, path, val)](#enmap-removefrom-key-path-val-enmap) ⇒ [<code>Enmap</code>]
         * [.hasProp(key, path)](#enmap-hasprop-key-path-boolean) ⇒ <code>boolean</code>
+        * [.exists(prop, value)](#enmap-exists-prop-value-boolean) ⇒ <code>boolean</code>
     * _static_
         * [.migrate()](#enmap-migrate)
         * [.multi(names, options)](#enmap-multi-names-options-array-less-than-map-greater-than) ⇒ <code>Array.&lt;Map&gt;</code>
@@ -83,6 +84,8 @@ Initializes a new Enmap, with options.
 | [options.ensureProps] | <code>boolean</code> |  | defaults to `true`. If enabled and the value in the enmap is an object, using ensure() will also ensure that every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information. |
 | [options.autoEnsure] | <code>\*</code> |  | default is disabled. When provided a value, essentially runs ensure(key, autoEnsure) automatically so you don't have to. This is especially useful on get(), but will also apply on set(), and any array and object methods that interact with the database. |
 | [options.autoFetch] | <code>boolean</code> |  | defaults to `true`. When enabled, attempting to get() a key or do any operation on existing keys (such as array push, etc) will automatically fetch the current key value from the database. Keys that are automatically fetched remain in memory and are not cleared. |
+| [options.serializer] | <code>function</code> |  | Optional. If a function is provided, it will execute on the data when it is written to the database. This is generally used to convert the value into a format that can be saved in the database, such as converting a complete class instance to just its ID. This function may return the value to be saved, or a promise that resolves to that value (in other words, can be an async function). |
+| [options.deserializer] | <code>function</code> |  | Optional. If a function is provided, it will execute on the data when it is read from the database. This is generally used to convert the value from a stored ID into a more complex object. This function may return a value, or a promise that resolves to that value (in other words, can be an async function). |
 | [options.wal] | <code>boolean</code> | <code>false</code> | Check out Write-Ahead Logging: https://www.sqlite.org/wal.html |
 
 **Example**  
@@ -138,7 +141,7 @@ Sets a value in Enmap.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to add to The Enmap. |
+| key | <code>string</code> |  | Required. The key of the element to add to The Enmap. |
 | val | <code>\*</code> |  | Required. The value of the element to add to The Enmap. If the Enmap is persistent this value MUST be stringifiable as JSON. |
 | path | <code>string</code> | <code>null</code> | Optional. The path to the property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
@@ -155,6 +158,38 @@ enmap.set('ArraysToo', [1, "two", "tree", "foor"])
 enmap.set('IhazObjects', 'blue', 'color'); //modified previous object
 enmap.set('ArraysToo', 'three', 2); // changes "tree" to "three" in array.
 ```
+<a name="Enmap+update"></a>
+
+### enmap.update(key, valueOrFunction)
+Update an existing object value in Enmap by merging new keys. **This only works on objects**, any other value will throw an error.
+Heavily inspired by setState from React's class components.
+This is very useful if you have many different values to update and don't want to have more than one .set(key, value, prop) lines.
+
+**Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| key | <code>string</code> | The key of the object to update. |
+| valueOrFunction | <code>\*</code> | Either an object to merge with the existing value, or a function that provides the existing object and expects a new object as a return value. In the case of a straight value, the merge is recursive and will add any missing level. If using a function, it is your responsibility to merge the objects together correctly. |
+
+**Example**  
+```js
+// Define an object we're going to update
+enmap.set("obj", { a: 1, b: 2, c: 3 });
+
+// Direct merge
+enmap.update("obj", { d: 4, e: 5 });
+// obj is now { a: 1, b: 2, c: 3, d: 4, e: 5 }
+
+// Functional update
+enmap.update("obj", (previous) => ({
+  ...obj,
+  f: 6,
+  g: 7
+}));
+// this example takes heavy advantage of the spread operators.
+// More info: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax
+```
 <a name="Enmap+get"></a>
 
 ### enmap.get(key, path) ⇒ <code>\*</code>
@@ -165,7 +200,7 @@ Retrieves a key from the enmap. If fetchAll is false, returns a promise.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | The key to retrieve from the enmap. |
+| key | <code>string</code> |  | The key to retrieve from the enmap. |
 | path | <code>string</code> | <code>null</code> | Optional. The property to retrieve from the object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 **Example**  
@@ -258,7 +293,7 @@ Push to an array value in Enmap.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | Required. The key of the array element to push to in Enmap. This value MUST be a string or number. |
+| key | <code>string</code> |  | Required. The key of the array element to push to in Enmap. This value MUST be a string or number. |
 | val | <code>\*</code> |  | Required. The value to push to the array. |
 | path | <code>string</code> | <code>null</code> | Optional. The path to the property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | allowDupes | <code>boolean</code> | <code>false</code> | Optional. Allow duplicate values in the array (default: false). |
@@ -282,7 +317,7 @@ Executes a mathematical operation on a value and saves it in the enmap.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | The enmap key on which to execute the math operation. |
+| key | <code>string</code> |  | The enmap key on which to execute the math operation. |
 | operation | <code>string</code> |  | Which mathematical operation to execute. Supports most math ops: =, -, *, /, %, ^, and english spelling of those operations. |
 | operand | <code>number</code> |  | The right operand of the operation. |
 | path | <code>string</code> | <code>null</code> | Optional. The property path to execute the operation on, if the value is an object or array. |
@@ -308,7 +343,7 @@ Increments a key's value or property by 1. Value must be a number, or a path to 
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | The enmap key where the value to increment is stored. |
+| key | <code>string</code> |  | The enmap key where the value to increment is stored. |
 | path | <code>string</code> | <code>null</code> | Optional. The property path to increment, if the value is an object or array. |
 
 **Example**  
@@ -330,7 +365,7 @@ Decrements a key's value or property by 1. Value must be a number, or a path to 
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | The enmap key where the value to decrement is stored. |
+| key | <code>string</code> |  | The enmap key where the value to decrement is stored. |
 | path | <code>string</code> | <code>null</code> | Optional. The property path to decrement, if the value is an object or array. |
 
 **Example**  
@@ -353,7 +388,7 @@ This is a shortcut to "if enmap doesn't have key, set it, then get it" which is 
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | Required. The key you want to make sure exists. |
+| key | <code>string</code> |  | Required. The key you want to make sure exists. |
 | defaultValue | <code>\*</code> |  | Required. The value you want to save in the database and return as default. |
 | path | <code>string</code> | <code>null</code> | Optional. If presents, ensures both the key exists as an object, and the full path exists. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
@@ -377,7 +412,7 @@ Returns whether or not the key exists in the Enmap.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to add to The Enmap or array. This value MUST be a string or number. |
+| key | <code>string</code> |  | Required. The key of the element to add to The Enmap or array. This value MUST be a string or number. |
 | path | <code>string</code> | <code>null</code> | Optional. The property to verify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 **Example**  
@@ -399,7 +434,7 @@ Performs Array.includes() on a certain enmap value. Works similar to
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | Required. The key of the array to check the value of. |
+| key | <code>string</code> |  | Required. The key of the array to check the value of. |
 | val | <code>string</code> \| <code>number</code> |  | Required. The value to check whether it's in the array. |
 | path | <code>\*</code> | <code></code> | Required. The property to access the array inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
@@ -413,7 +448,7 @@ Deletes a key in the Enmap.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to delete from The Enmap. |
+| key | <code>string</code> |  | Required. The key of the element to delete from The Enmap. |
 | path | <code>string</code> | <code>null</code> | Optional. The name of the property to remove from the object. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 <a name="Enmap+deleteAll"></a>
@@ -448,7 +483,7 @@ as full object matching is not supported.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element to remove from in Enmap. This value MUST be a string or number. |
+| key | <code>string</code> |  | Required. The key of the element to remove from in Enmap. This value MUST be a string or number. |
 | val | <code>\*</code> \| <code>function</code> |  | Required. The value to remove from the array or object. OR a function to match an object. If using a function, the function provides the object value and must return a boolean that's true for the object you want to remove. |
 | path | <code>string</code> | <code>null</code> | Optional. The name of the array property to remove from. Can be a path with dot notation, such as "prop1.subprop2.subprop3". If not presents, removes directly from the value. |
 
@@ -592,27 +627,6 @@ enmap.findKey('username', 'Bob');
 ```js
 enmap.findKey(val => val.username === 'Bob');
 ```
-<a name="Enmap+exists"></a>
-
-### enmap.exists(prop, value) ⇒ <code>boolean</code>
-Searches for the existence of a single item where its specified property's value is identical to the given value
-(`item[prop] === value`).
-<warn>Do not use this to check for an item by its ID. Instead, use `enmap.has(id)`. See
-[MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/has) for details.</warn>
-
-**Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| prop | <code>string</code> | The property to test against |
-| value | <code>\*</code> | The expected value |
-
-**Example**  
-```js
-if (enmap.exists('username', 'Bob')) {
- console.log('user here!');
-}
-```
 <a name="Enmap+sweep"></a>
 
 ### enmap.sweep(fn, [thisArg]) ⇒ <code>number</code>
@@ -653,23 +667,6 @@ Identical to
 | fn | <code>function</code> | Function used to test (should return a boolean) |
 | [thisArg] | <code>Object</code> | Value to use as `this` when executing function |
 
-<a name="Enmap+partition"></a>
-
-### enmap.partition(fn, [thisArg]) ⇒ [<code>Array.&lt;Enmap&gt;</code>](#Enmap)
-Partitions the enmap into two enmaps where the first enmap
-contains the items that passed and the second contains the items that failed.
-
-**Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
-
-| Param | Type | Description |
-| --- | --- | --- |
-| fn | <code>function</code> | Function used to test (should return a boolean) |
-| [thisArg] | <code>\*</code> | Value to use as `this` when executing function |
-
-**Example**  
-```js
-const [big, small] = enmap.partition(guild => guild.memberCount > 250);
-```
 <a name="Enmap+map"></a>
 
 ### enmap.map(fn, [thisArg]) ⇒ <code>Array</code>
@@ -747,12 +744,31 @@ Combines this Enmap with others into a new Enmap. None of the source Enmaps are 
 ```js
 const newColl = someColl.concat(someOtherColl, anotherColl, ohBoyAColl);
 ```
+<a name="Enmap+partition"></a>
+
+### enmap.partition(fn, [thisArg]) ⇒ [<code>Array.&lt;Enmap&gt;</code>](#Enmap)
+Partitions the enmap into two enmaps where the first enmap
+contains the items that passed and the second contains the items that failed.
+DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6!
+
+**Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| fn | <code>function</code> | Function used to test (should return a boolean) |
+| [thisArg] | <code>\*</code> | Value to use as `this` when executing function |
+
+**Example**  
+```js
+const [big, small] = enmap.partition(guild => guild.memberCount > 250);
+```
 <a name="Enmap+equals"></a>
 
 ### enmap.equals(enmap) ⇒ <code>boolean</code>
 Checks if this Enmap shares identical key-value pairings with another.
 This is different to checking for equality using equal-signs, because
 the Enmaps may be different objects, but contain the same data.
+DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>boolean</code> - Whether the Enmaps have identical contents  
@@ -773,7 +789,7 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use set() instead!
 
 | Param | Type | Description |
 | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | Required. The key of the element to add to The Enmap or array. This value MUST be a string or number. |
+| key | <code>string</code> | Required. The key of the element to add to The Enmap or array. This value MUST be a string or number. |
 | path | <code>string</code> | Required. The property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | val | <code>\*</code> | Required. The value to apply to the specified property. |
 
@@ -788,7 +804,7 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use push() instead!
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> |  | Required. The key of the element. This value MUST be a string or number. |
+| key | <code>string</code> |  | Required. The key of the element. This value MUST be a string or number. |
 | path | <code>string</code> |  | Required. The name of the array property to push to. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | val | <code>\*</code> |  | Required. The value push to the array property. |
 | allowDupes | <code>boolean</code> | <code>false</code> | Allow duplicate values in the array (default: false). |
@@ -804,7 +820,7 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use get() instead!
 
 | Param | Type | Description |
 | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | Required. The key of the element to get from The Enmap. |
+| key | <code>string</code> | Required. The key of the element to get from The Enmap. |
 | path | <code>string</code> | Required. The property to retrieve from the object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 <a name="Enmap+deleteProp"></a>
@@ -817,7 +833,7 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use delete() instead!
 
 | Param | Type | Description |
 | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | Required. The key of the element to delete the property from in Enmap. |
+| key | <code>string</code> | Required. The key of the element to delete the property from in Enmap. |
 | path | <code>string</code> | Required. The name of the property to remove from the object. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 <a name="Enmap+removeFrom"></a>
@@ -832,7 +848,7 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use remove() instead!
 
 | Param | Type | Description |
 | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | Required. The key of the element. This value MUST be a string or number. |
+| key | <code>string</code> | Required. The key of the element. This value MUST be a string or number. |
 | path | <code>string</code> | Required. The name of the array property to remove from. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | val | <code>\*</code> | Required. The value to remove from the array property. |
 
@@ -847,9 +863,31 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use has() instead!
 
 | Param | Type | Description |
 | --- | --- | --- |
-| key | <code>string</code> \| <code>number</code> | Required. The key of the element to check in the Enmap or array. |
+| key | <code>string</code> | Required. The key of the element to check in the Enmap or array. |
 | path | <code>\*</code> | Required. The property to verify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
+<a name="Enmap+exists"></a>
+
+### enmap.exists(prop, value) ⇒ <code>boolean</code>
+Searches for the existence of a single item where its specified property's value is identical to the given value
+(`item[prop] === value`).
+<warn>Do not use this to check for an item by its ID. Instead, use `enmap.has(id)`. See
+[MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/has) for details.</warn>
+DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use has("key", "path") instead!
+
+**Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| prop | <code>string</code> | The property to test against |
+| value | <code>\*</code> | The expected value |
+
+**Example**  
+```js
+if (enmap.exists('username', 'Bob')) {
+ console.log('user here!');
+}
+```
 <a name="Enmap.migrate"></a>
 
 ### Enmap.migrate()
@@ -869,7 +907,7 @@ Initialize multiple Enmaps easily.
 | Param | Type | Description |
 | --- | --- | --- |
 | names | <code>Array.&lt;string&gt;</code> | Array of strings. Each array entry will create a separate enmap with that name. |
-| options | <code>Object</code> | Options object to pass to the provider. See provider documentation for its options. |
+| options | <code>Object</code> | Options object to pass to each enmap, excluding the name.. |
 
 **Example**  
 ```js

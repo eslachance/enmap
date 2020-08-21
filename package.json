@@ -1,6 +1,6 @@
 {
   "name": "enmap",
-  "version": "5.5.1",
+  "version": "5.7.0",
   "description": "A simple database wrapper to make sqlite database interactions much easier for beginners, with additional array helper methods.",
   "types": "index.d.ts",
   "scripts": {
@@ -30,7 +30,7 @@
   "author": "Evelyne Lachance <eslachance@gmail.com> (https://evie.codes/)",
   "license": "Apache-2.0",
   "dependencies": {
-    "lodash": "^4.17.19",
+    "lodash": "^4.17.20",
     "on-change": "^2.0.1"
   },
   "peerDependencies": {

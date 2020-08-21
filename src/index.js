@@ -71,6 +71,12 @@ class Enmap extends Map {
    * This is especially useful on get(), but will also apply on set(), and any array and object methods that interact with the database.
    * @param {boolean} [options.autoFetch] defaults to `true`. When enabled, attempting to get() a key or do any operation on existing keys (such as array push, etc)
    * will automatically fetch the current key value from the database. Keys that are automatically fetched remain in memory and are not cleared.
+   * @param {Function} [options.serializer] Optional. If a function is provided, it will execute on the data when it is written to the database.
+   * This is generally used to convert the value into a format that can be saved in the database, such as converting a complete class instance to just its ID.
+   * This function may return the value to be saved, or a promise that resolves to that value (in other words, can be an async function).
+   * @param {Function} [options.deserializer] Optional. If a function is provided, it will execute on the data when it is read from the database.
+   * This is generally used to convert the value from a stored ID into a more complex object.
+   * This function may return a value, or a promise that resolves to that value (in other words, can be an async function).
    * @param {boolean} [options.wal=false] Check out Write-Ahead Logging: https://www.sqlite.org/wal.html
    * @example
    * const Enmap = require("enmap");
@@ -108,6 +114,9 @@ class Enmap extends Map {
 
     this[_defineSetting]('cloneLevel', 'String', true, cloneLevel);
     this[_defineSetting]('ensureProps', 'Boolean', true, true, options.ensureProps);
+    // Always needs to be present
+    this[_defineSetting]('serializer', 'Function', true, (data) => data, options.serializer);
+    this[_defineSetting]('deserializer', 'Function', true, (data) => data, options.deserializer);
 
     if (options.name) {
       const Database = require('better-sqlite3');
@@ -164,7 +173,7 @@ class Enmap extends Map {
 
   /**
    * Sets a value in Enmap.
-   * @param {string|number} key Required. The key of the element to add to The Enmap.
+   * @param {string} key Required. The key of the element to add to The Enmap.
    * @param {*} val Required. The value of the element to add to The Enmap.
    * If the Enmap is persistent this value MUST be stringifiable as JSON.
    * @param {string} path Optional. The path to the property to modify inside the value object or array.
@@ -183,8 +192,8 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   set(key, val, path = null) {
-    if (isNil(key) || !['String', 'Number'].includes(key.constructor.name)) {
-      throw new Err('Enmap require keys to be strings or numbers.', 'EnmapKeyTypeError');
+    if (isNil(key) || key.constructor.name !== 'String') {
+      throw new Err('Enmap require keys to be strings.', 'EnmapKeyTypeError');
     }
     key = key.toString();
     let data = this.get(key);
@@ -199,17 +208,57 @@ class Enmap extends Map {
       this.changedCB(key, oldValue, data);
     }
     if (this.persistent) {
-      this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, JSON.stringify(data));
+      this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, JSON.stringify(this.serializer(data, key)));
       if (this.polling) {
-        this.db.prepare(`INSERT INTO 'internal::changes::${this.name}' (type, key, value, timestamp, pid) VALUES (?, ?, ?, ?, ?);`).run('insert', key, JSON.stringify(data), Date.now(), process.pid);
+        this.db.prepare(`INSERT INTO 'internal::changes::${this.name}' (type, key, value, timestamp, pid) VALUES (?, ?, ?, ?, ?);`)
+          .run('insert', key, JSON.stringify(this.serializer(data, key)), Date.now(), process.pid);
       }
     }
     return super.set(key, this[_clone](data));
   }
 
   /**
+   * Update an existing object value in Enmap by merging new keys. **This only works on objects**, any other value will throw an error.
+   * Heavily inspired by setState from React's class components.
+   * This is very useful if you have many different values to update and don't want to have more than one .set(key, value, prop) lines.
+   * @param {string} key The key of the object to update.
+   * @param {*} valueOrFunction Either an object to merge with the existing value, or a function that provides the existing object
+   * and expects a new object as a return value. In the case of a straight value, the merge is recursive and will add any missing level.
+   * If using a function, it is your responsibility to merge the objects together correctly.
+   * @example
+   * // Define an object we're going to update
+   * enmap.set("obj", { a: 1, b: 2, c: 3 });
+   * 
+   * // Direct merge
+   * enmap.update("obj", { d: 4, e: 5 });
+   * // obj is now { a: 1, b: 2, c: 3, d: 4, e: 5 }
+   * 
+   * // Functional update
+   * enmap.update("obj", (previous) => ({
+   *   ...obj,
+   *   f: 6,
+   *   g: 7
+   * }));
+   * // this example takes heavy advantage of the spread operators.
+   * // More info: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax
+   */
+  update(key, valueOrFunction) {
+    this[_readyCheck]();
+    if (isNil(key)) {
+      throw new Err('Key not provided for update function', 'EnmapKeyError');
+    }
+    this[_check](key, ['Object']);
+    this[_fetchCheck](key);
+    const previousValue = this.get(key);
+    const fn = isFunction(valueOrFunction) ? valueOrFunction : () => merge(previousValue, valueOrFunction);
+    const merged = fn(previousValue);
+    this.set(key, merged);
+    return merged;
+  }
+
+  /**
    * Retrieves a key from the enmap. If fetchAll is false, returns a promise.
-   * @param {string|number} key The key to retrieve from the enmap.
+   * @param {string} key The key to retrieve from the enmap.
    * @param {string} path Optional. The property to retrieve from the object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @example
@@ -284,7 +333,7 @@ class Enmap extends Map {
     this[_readyCheck]();
     const rows = this.db.prepare(`SELECT * FROM ${this.name};`).all();
     for (const row of rows) {
-      const val = this[_parseData](row.value);
+      const val = this[_parseData](row.value, row.key);
       super.set(row.key, val);
     }
     return this;
@@ -300,14 +349,14 @@ class Enmap extends Map {
     if (isArray(keyOrKeys)) {
       const data = this.db.prepare(`SELECT * FROM ${this.name} WHERE key IN (${'?, '.repeat(keyOrKeys.length).slice(0, -2)})`).all(keyOrKeys);
       for (const row of data) {
-        super.set(row.key, this[_parseData](row.value));
+        super.set(row.key, this[_parseData](row.value, row.key));
       }
       return this;
     } else {
       const data = this.db.prepare(`SELECT * FROM ${this.name} WHERE key = ?;`).get(keyOrKeys);
       if (!data) return null;
-      super.set(keyOrKeys, this[_parseData](data.value));
-      return this[_parseData](data.value);
+      super.set(keyOrKeys, this[_parseData](data.value, keyOrKeys));
+      return this[_parseData](data.value, keyOrKeys);
     }
   }
 
@@ -367,7 +416,7 @@ class Enmap extends Map {
 
   /**
    * Push to an array value in Enmap.
-   * @param {string|number} key Required. The key of the array element to push to in Enmap.
+   * @param {string} key Required. The key of the array element to push to in Enmap.
    * This value MUST be a string or number.
    * @param {*} val Required. The value to push to the array.
    * @param {string} path Optional. The path to the property to modify inside the value object or array.
@@ -401,7 +450,7 @@ class Enmap extends Map {
 
   /**
    * Executes a mathematical operation on a value and saves it in the enmap.
-   * @param {string|number} key The enmap key on which to execute the math operation.
+   * @param {string} key The enmap key on which to execute the math operation.
    * @param {string} operation Which mathematical operation to execute. Supports most
    * math ops: =, -, *, /, %, ^, and english spelling of those operations.
    * @param {number} operand The right operand of the operation.
@@ -430,7 +479,7 @@ class Enmap extends Map {
 
   /**
    * Increments a key's value or property by 1. Value must be a number, or a path to a number.
-   * @param {string|number} key The enmap key where the value to increment is stored.
+   * @param {string} key The enmap key where the value to increment is stored.
    * @param {string} path Optional. The property path to increment, if the value is an object or array.
    * @example
    * // Assuming
@@ -456,7 +505,7 @@ class Enmap extends Map {
 
   /**
    * Decrements a key's value or property by 1. Value must be a number, or a path to a number.
-   * @param {string|number} key The enmap key where the value to decrement is stored.
+   * @param {string} key The enmap key where the value to decrement is stored.
    * @param {string} path Optional. The property path to decrement, if the value is an object or array.
    * @example
    * // Assuming
@@ -483,7 +532,7 @@ class Enmap extends Map {
   /**
    * Returns the key's value, or the default given, ensuring that the data is there.
    * This is a shortcut to "if enmap doesn't have key, set it, then get it" which is a very common pattern.
-   * @param {string|number} key Required. The key you want to make sure exists.
+   * @param {string} key Required. The key you want to make sure exists.
    * @param {*} defaultValue Required. The value you want to save in the database and return as default.
    * @param {string} path Optional. If presents, ensures both the key exists as an object, and the full path exists.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -525,7 +574,7 @@ class Enmap extends Map {
 
   /**
    * Returns whether or not the key exists in the Enmap.
-   * @param {string|number} key Required. The key of the element to add to The Enmap or array.
+   * @param {string} key Required. The key of the element to add to The Enmap or array.
    * This value MUST be a string or number.
    * @param {string} path Optional. The property to verify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -551,7 +600,7 @@ class Enmap extends Map {
   /**
    * Performs Array.includes() on a certain enmap value. Works similar to
    * [Array.includes()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes).
-   * @param {string|number} key Required. The key of the array to check the value of.
+   * @param {string} key Required. The key of the array to check the value of.
    * @param {string|number} val Required. The value to check whether it's in the array.
    * @param {*} path Required. The property to access the array inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -576,7 +625,7 @@ class Enmap extends Map {
 
   /**
    * Deletes a key in the Enmap.
-   * @param {string|number} key Required. The key of the element to delete from The Enmap.
+   * @param {string} key Required. The key of the element to delete from The Enmap.
    * @param {string} path Optional. The name of the property to remove from the object.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @returns {Enmap} The enmap.
@@ -666,7 +715,7 @@ class Enmap extends Map {
    * Remove a value in an Array or Object element in Enmap. Note that this only works for
    * values, not keys. Note that only one value is removed, no more. Arrays of objects must use a function to remove,
    * as full object matching is not supported.
-   * @param {string|number} key Required. The key of the element to remove from in Enmap.
+   * @param {string} key Required. The key of the element to remove from in Enmap.
    * This value MUST be a string or number.
    * @param {*|Function} val Required. The value to remove from the array or object. OR a function to match an object.
    * If using a function, the function provides the object value and must return a boolean that's true for the object you want to remove.
@@ -686,30 +735,13 @@ class Enmap extends Map {
     this[_readyCheck]();
     this[_fetchCheck](key);
     this[_check](key, ['Array', 'Object']);
-    const data = this.get(key);
+    const data = this.get(key, path);
     const criteria = isFunction(val) ? val : value => val === value;
-    if (!isNil(path)) {
-      const propValue = _get(data, path);
-      if (isArray(propValue)) {
-        // const index = propValue.indexOf(val);
-        const index = propValue.findIndex(criteria);
-        if (index > -1) {
-          propValue.splice(index, 1);
-        }
-        _set(data, path, propValue);
-      } else if (isObject(propValue)) {
-        _delete(data, `${path}.${val}`);
-      }
-    } else if (isArray(data)) {
-      // const index = data.indexOf(val);
-      const index = data.findIndex(criteria);
-      if (index > -1) {
-        data.splice(index, 1);
-      }
-    } else if (isObject(data)) {
-      delete data[val];
+    const index = data.findIndex(criteria);
+    if (index > -1) {
+      data.splice(index, 1);
     }
-    return this.set(key, data);
+    return this.set(key, data, path);
   }
 
   /**
@@ -757,7 +789,7 @@ class Enmap extends Map {
   /**
    * Initialize multiple Enmaps easily.
    * @param {Array<string>} names Array of strings. Each array entry will create a separate enmap with that name.
-   * @param {Object} options Options object to pass to the provider. See provider documentation for its options.
+   * @param {Object} options Options object to pass to each enmap, excluding the name..
    * @example
    * // Using local variables.
    * const Enmap = require('enmap');
@@ -841,7 +873,7 @@ class Enmap extends Map {
         for (const row of changes) {
           switch (row.type) {
           case 'insert':
-            super.set(row.key, this[_parseData](row.value));
+            super.set(row.key, this[_parseData](row.value, row.key));
             break;
           case 'delete':
             super.delete(row.key);
@@ -862,7 +894,7 @@ class Enmap extends Map {
   /*
    * INTERNAL method to verify the type of a key or property
    * Will THROW AN ERROR on wrong type, to simplify code.
-   * @param {string|number} key Required. The key of the element to check
+   * @param {string} key Required. The key of the element to check
    * @param {string} type Required. The javascript constructor to check
    * @param {string} path Optional. The dotProp path to the property in the object enmap.
    */
@@ -936,7 +968,7 @@ class Enmap extends Map {
   /*
    * Internal Method. Verifies if a key needs to be fetched from the database.
    * If persistent enmap and autoFetch is on, retrieves the key.
-   * @param {string|number} key The key to check or fetch.
+   * @param {string} key The key to check or fetch.
    */
   [_fetchCheck](key, force = false) {
     key = key.toString();
@@ -956,8 +988,8 @@ class Enmap extends Map {
    * @param {*} data The data to check/parse
    * @returns {*} An object or the original data.
    */
-  [_parseData](data) {
-    return JSON.parse(data);
+  [_parseData](data, key) {
+    return this.deserializer(JSON.parse(data), key);
   }
 
   /*
@@ -1142,24 +1174,6 @@ class Enmap extends Map {
   }
 
   /**
-   * Searches for the existence of a single item where its specified property's value is identical to the given value
-   * (`item[prop] === value`).
-   * <warn>Do not use this to check for an item by its ID. Instead, use `enmap.has(id)`. See
-   * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/has) for details.</warn>
-   * @param {string} prop The property to test against
-   * @param {*} value The expected value
-   * @returns {boolean}
-   * @example
-   * if (enmap.exists('username', 'Bob')) {
-   *  console.log('user here!');
-   * }
-   */
-  exists(prop, value) {
-    this[_readyCheck]();
-    return Boolean(this.find(prop, value));
-  }
-
-  /**
    * Removes entries that satisfy the provided filter function.
    * @param {Function} fn Function used to test (should return a boolean)
    * @param {Object} [thisArg] Value to use as `this` when executing function
@@ -1206,28 +1220,6 @@ class Enmap extends Map {
     const results = [];
     for (const [key, val] of this) {
       if (fn(val, key, this)) results.push(val);
-    }
-    return results;
-  }
-
-  /**
-   * Partitions the enmap into two enmaps where the first enmap
-   * contains the items that passed and the second contains the items that failed.
-   * @param {Function} fn Function used to test (should return a boolean)
-   * @param {*} [thisArg] Value to use as `this` when executing function
-   * @returns {Enmap[]}
-   * @example const [big, small] = enmap.partition(guild => guild.memberCount > 250);
-   */
-  partition(fn, thisArg) {
-    this[_readyCheck]();
-    if (typeof thisArg !== 'undefined') fn = fn.bind(thisArg);
-    const results = [new this.constructor(), new this.constructor()];
-    for (const [key, val] of this) {
-      if (fn(val, key, this)) {
-        results[0].set(key, val);
-      } else {
-        results[1].set(key, val);
-      }
     }
     return results;
   }
@@ -1333,14 +1325,44 @@ class Enmap extends Map {
     return newColl;
   }
 
+
+  /* DEPRECATED METHODS */
+  /* TO BE REMOVED IN VERSION 6 */
+
+  /**
+   * Partitions the enmap into two enmaps where the first enmap
+   * contains the items that passed and the second contains the items that failed.
+   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6!
+   * @param {Function} fn Function used to test (should return a boolean)
+   * @param {*} [thisArg] Value to use as `this` when executing function
+   * @returns {Enmap[]}
+   * @example const [big, small] = enmap.partition(guild => guild.memberCount > 250);
+   */
+  partition(fn, thisArg) {
+    console.warn('ENMAP DEPRECATION WARNING: partition() will be removed in the next major Enmap release (v6)!');
+    this[_readyCheck]();
+    if (typeof thisArg !== 'undefined') fn = fn.bind(thisArg);
+    const results = [new this.constructor(), new this.constructor()];
+    for (const [key, val] of this) {
+      if (fn(val, key, this)) {
+        results[0].set(key, val);
+      } else {
+        results[1].set(key, val);
+      }
+    }
+    return results;
+  }
+
   /**
    * Checks if this Enmap shares identical key-value pairings with another.
    * This is different to checking for equality using equal-signs, because
    * the Enmaps may be different objects, but contain the same data.
+   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6!
    * @param {Enmap} enmap Enmap to compare with
    * @returns {boolean} Whether the Enmaps have identical contents
    */
   equals(enmap) {
+    console.warn('ENMAP DEPRECATION WARNING: equals() will be removed in the next major Enmap release (v6)!');
     this[_readyCheck]();
     if (!enmap) return false;
     if (this === enmap) return true;
@@ -1351,14 +1373,11 @@ class Enmap extends Map {
     });
   }
 
-  /* DEPRECATED METHODS */
-  /* TO BE REMOVED IN VERSION 6 */
-
   /**
    * Modify the property of a value inside the enmap, if the value is an object or array.
    * This is a shortcut to loading the key, changing the value, and setting it back.
    * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use set() instead!
-   * @param {string|number} key Required. The key of the element to add to The Enmap or array.
+   * @param {string} key Required. The key of the element to add to The Enmap or array.
    * This value MUST be a string or number.
    * @param {string} path Required. The property to modify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -1366,7 +1385,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   setProp(key, path, val) {
-    console.warn('ENMAP DEPRECATION WARNING: setProp() will be deprecated in the next enmap version! Please use set(key, value, path) instead.');
+    console.warn('ENMAP DEPRECATION WARNING: setProp() will be removed in the next major Enmap release (v6)! Please use set(key, value, path) instead.');
     this[_readyCheck]();
     if (isNil(path)) throw new Err(`No path provided to set a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.set(key, val, path);
@@ -1375,7 +1394,7 @@ class Enmap extends Map {
   /**
    * Push to an array element inside an Object or Array element in Enmap.
    * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use push() instead!
-   * @param {string|number} key Required. The key of the element.
+   * @param {string} key Required. The key of the element.
    * This value MUST be a string or number.
    * @param {string} path Required. The name of the array property to push to.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -1384,7 +1403,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   pushIn(key, path, val, allowDupes = false) {
-    console.warn('ENMAP DEPRECATION WARNING: pushIn() will be deprecated in the next enmap version! Please use push(key, value, path) instead.');
+    console.warn('ENMAP DEPRECATION WARNING: pushIn() will be removed in the next major Enmap release (v6)! Please use push(key, value, path) instead.');
     this[_readyCheck]();
     this[_fetchCheck](key);
     if (isNil(path)) throw new Err(`No path provided to push a value in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
@@ -1394,13 +1413,13 @@ class Enmap extends Map {
   /**
    * Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
    * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use get() instead!
-   * @param {string|number} key Required. The key of the element to get from The Enmap.
+   * @param {string} key Required. The key of the element to get from The Enmap.
    * @param {string} path Required. The property to retrieve from the object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @return {*} The value of the property obtained.
    */
   getProp(key, path) {
-    console.warn('ENMAP DEPRECATION WARNING: getProp() will be deprecated in the next enmap version! Please use get(key, path) instead.');
+    console.warn('ENMAP DEPRECATION WARNING: getProp() will be removed in the next major Enmap release (v6)! Please use get(key, path) instead.');
     this[_readyCheck]();
     this[_fetchCheck](key);
     if (isNil(path)) throw new Err(`No path provided to get a property from "${key}" of enmap "${this.name}"`, 'EnmapPathError');
@@ -1410,12 +1429,12 @@ class Enmap extends Map {
   /**
    * Delete a property from an object or array value in Enmap.
    * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use delete() instead!
-   * @param {string|number} key Required. The key of the element to delete the property from in Enmap.
+   * @param {string} key Required. The key of the element to delete the property from in Enmap.
    * @param {string} path Required. The name of the property to remove from the object.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    */
   deleteProp(key, path) {
-    console.warn('ENMAP DEPRECATION WARNING: deleteProp() will be deprecated in the next enmap version! Please use delete(key, path) instead.');
+    console.warn('ENMAP DEPRECATION WARNING: deleteProp() will be removed in the next major Enmap release (v6)! Please use delete(key, path) instead.');
     this[_readyCheck]();
     this[_fetchCheck](key);
     if (isNil(path)) throw new Err(`No path provided to delete a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
@@ -1426,7 +1445,7 @@ class Enmap extends Map {
    * Remove a value from an Array or Object property inside an Array or Object element in Enmap.
    * Confusing? Sure is.
    * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use remove() instead!
-   * @param {string|number} key Required. The key of the element.
+   * @param {string} key Required. The key of the element.
    * This value MUST be a string or number.
    * @param {string} path Required. The name of the array property to remove from.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -1434,7 +1453,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   removeFrom(key, path, val) {
-    console.warn('ENMAP DEPRECATION WARNING: removeFrom() will be deprecated in the next enmap version! Please use remove(key, value, path) instead.');
+    console.warn('ENMAP DEPRECATION WARNING: removeFrom() will be removed in the next major Enmap release (v6)! Please use remove(key, value, path) instead.');
     this[_readyCheck]();
     this[_fetchCheck](key);
     if (isNil(path)) throw new Err(`No path provided to remove an array element in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
@@ -1444,17 +1463,37 @@ class Enmap extends Map {
   /**
    * Returns whether or not the property exists within an object or array value in enmap.
    * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use has() instead!
-   * @param {string|number} key Required. The key of the element to check in the Enmap or array.
+   * @param {string} key Required. The key of the element to check in the Enmap or array.
    * @param {*} path Required. The property to verify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @return {boolean} Whether the property exists.
    */
   hasProp(key, path) {
-    console.warn('ENMAP DEPRECATION WARNING: hasProp() will be deprecated in the next enmap version! Please use has(key, value) instead.');
+    console.warn('ENMAP DEPRECATION WARNING: hasProp() will be removed in the next major Enmap release (v6)! Please use has(key, path) instead.');
     this[_readyCheck]();
     this[_fetchCheck](key);
     if (isNil(path)) throw new Err(`No path provided to check for a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
     return this.has(key, path);
+  }
+
+  /**
+   * Searches for the existence of a single item where its specified property's value is identical to the given value
+   * (`item[prop] === value`).
+   * <warn>Do not use this to check for an item by its ID. Instead, use `enmap.has(id)`. See
+   * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/has) for details.</warn>
+   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use has("key", "path") instead!
+   * @param {string} prop The property to test against
+   * @param {*} value The expected value
+   * @returns {boolean}
+   * @example
+   * if (enmap.exists('username', 'Bob')) {
+   *  console.log('user here!');
+   * }
+   */
+  exists(prop, value) {
+    console.warn('ENMAP DEPRECATION WARNING: exists() will be removed in the next major Enmap release (v6)! Please use has(key, path) instead.');
+    this[_readyCheck]();
+    return Boolean(this.find(prop, value));
   }
 
   /* END DEPRECATED METHODS */
