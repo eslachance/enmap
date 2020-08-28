@@ -2,7 +2,7 @@
   "name": "enmap",
   "version": "5.7.0",
   "description": "A simple database wrapper to make sqlite database interactions much easier for beginners, with additional array helper methods.",
-  "types": "index.d.ts",
+  "main": "src/index.js",
   "scripts": {
     "test": "jest",
     "docs": "node ./docs/build.js"
@@ -47,5 +47,6 @@
     "jest": "^26.1.0",
     "jsdoc-to-markdown": "^6.0.1",
     "limax": "^2.1.0"
-  }
+  },
+  "types": "./typings/index.d.ts"
 }

@@ -193,7 +193,7 @@ class Enmap extends Map {
    */
   set(key, val, path = null) {
     if (isNil(key) || key.constructor.name !== 'String') {
-      throw new Err('Enmap require keys to be strings.', 'EnmapKeyTypeError');
+      throw new Err(`Enmap requires keys to be a string. Provided: ${isNil(key) ? 'nil' : key.constructor.name}`, 'EnmapKeyTypeError');
     }
     key = key.toString();
     let data = this.get(key);
@@ -273,7 +273,10 @@ class Enmap extends Map {
     if (isNil(key)) return null;
     this[_fetchCheck](key);
     key = key.toString();
-    const data = this.autoEnsure !== this.off ? this.ensure(key, this.autoEnsure) : super.get(key);
+    if(this.autoEnsure !== this.off && !this.has(key)) {
+      this.set(key, cloneDeep(this.autoEnsure));
+    }
+    const data = super.get(key);
     if (!isNil(path)) {
       this[_check](key, ['Object', 'Array']);
       return _get(data, path);
@@ -314,15 +317,6 @@ class Enmap extends Map {
   get indexes() {
     const rows = this.db.prepare(`SELECT key FROM '${this.name}';`).all();
     return rows.map(row => row.key);
-  }
-
-  /**
-   * Migrates an Enmap from version 3 or lower to a Version 4 enmap, which is locked to sqlite backend only.
-   * This migration MUST be executed in version 3.1.4 of Enmap, along with appropriate providers.
-   * See https://enmap.evie.codes/install/upgrade for more details.
-   */
-  static async migrate() {
-    throw new Err('PLEASE DOWNGRADE TO ENMAP@3.1.4 TO USE THE MIGRATE TOOL', 'EnmapMigrationError');
   }
 
   /**
@@ -387,7 +381,7 @@ class Enmap extends Map {
     let { lastnum } = this.db.prepare("SELECT lastnum FROM 'internal::autonum' WHERE enmap = ?").get(this.name);
     lastnum++;
     this.db.prepare("INSERT OR REPLACE INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)").run(this.name, lastnum);
-    return lastnum;
+    return lastnum.toString();
   }
 
   /**
@@ -656,7 +650,7 @@ class Enmap extends Map {
         if (this.polling) {
           this.db.prepare(`INSERT INTO 'internal::changes::${this.name}' (type, key, timestamp, pid) VALUES (?, ?, ?, ?);`).run('delete', key.toString(), Date.now(), process.pid);
         }
-        this.db.prepare(`DELETE FROM ${this.name} WHERE key = '${key}'`).run();
+        this.db.prepare(`DELETE FROM ${this.name} WHERE key = ?`).run(key);
         return this;
       }
       if (typeof this.changedCB === 'function') {
