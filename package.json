@@ -37,6 +37,7 @@
     "better-sqlite3": "^7.1.0"
   },
   "devDependencies": {
+    "better-sqlite3": "^7.1.0",
     "eslint": "^7.4.0",
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-config-standard": "^14.1.1",

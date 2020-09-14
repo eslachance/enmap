@@ -5,14 +5,14 @@ describe('Standard Enmaps', () => {
   let enmap;
 
   describe('Basic Enmap', () => {
-    enmap = new Enmap();
+    enmap = new Enmap('::memory::');
     test('inserts primitive values', () => {
       expect(enmap.set('simplevalue', 'this is a string')).not.toBe(null);
       expect(enmap.set('boolean', true)).not.toBe(null);
       expect(enmap.set('integer', 42)).not.toBe(null);
       expect(enmap.set('null', null)).not.toBe(null);
     });
-    test('remembers primivitve values', () => {
+    test('remembers primitive values', () => {
       expect(enmap.get('simplevalue')).toBe('this is a string');
       expect(enmap.get('boolean')).toBe(true);
       expect(enmap.get('integer')).toBe(42);
@@ -33,7 +33,7 @@ describe('Standard Enmaps', () => {
   });
 
   describe('Advanced Data Types', () => {
-    enmap = new Enmap();
+    enmap = new Enmap('::memory::');
 
     test('supports arrays', () => {
       expect(enmap.set('array', [1, 2, 3])).not.toBe(null);
@@ -80,7 +80,7 @@ describe('Standard Enmaps', () => {
 describe('Advanced Data Type Methods', () => {
   let enmap;
   beforeEach(() => {
-    enmap = new Enmap();
+    enmap = new Enmap('::memory::');
     enmap.set('obj1', {
       prop: 'prop',
       foo: 'bar',
@@ -131,7 +131,7 @@ describe('Basic Enmap Options', () => {
   });
 
   test('supports direct passing by reference (cloneLevel none)', () => {
-    enmap = new Enmap({ cloneLevel: 'none' });
+    enmap = new Enmap({ name:'::memory::', cloneLevel: 'none' });
     enmap.set('foo', baseObj);
     enmap.set('foo', 'other', 'prop2');
     enmap.push('foo', 4, 'prop3');
@@ -141,7 +141,7 @@ describe('Basic Enmap Options', () => {
   });
 
   test('supports shallow clones', () => {
-    enmap = new Enmap({ cloneLevel: 'shallow' });
+    enmap = new Enmap({ name:'::memory::', cloneLevel: 'shallow' });
     enmap.set('foo', baseObj);
     enmap.set('foo', 'other', 'prop2');
     enmap.push('foo', 4, 'prop3');
@@ -152,7 +152,7 @@ describe('Basic Enmap Options', () => {
   });
 
   test('supports deep clones', () => {
-    enmap = new Enmap({ cloneLevel: 'deep' });
+    enmap = new Enmap({ name:'::memory::', cloneLevel: 'deep' });
     enmap.set('foo', baseObj);
     enmap.set('foo', 'other', 'prop2');
     enmap.push('foo', 4, 'prop3');
@@ -163,7 +163,7 @@ describe('Basic Enmap Options', () => {
   });
 
   test('supports deep ensure() merge', () => {
-    enmap = new Enmap({ ensureProps: true });
+    enmap = new Enmap({ name:'::memory::', ensureProps: true });
     const defaultValue = {
       foo: 'bar',
       bar: { foo: 1 }
@@ -173,5 +173,55 @@ describe('Basic Enmap Options', () => {
     expect(enmap.get('obj', 'bar.foo')).toBe(1);
   });
 });
-// @TODO Options testing
-// @TODO performance testing
+
+describe('Enmap Advanced Options', () => {
+  let enmap;
+  const defaultData = {
+    a: 1, 
+    b: 2,
+    c: 3, 
+    d: [1, 2, 3, 4],
+    e: { a: 'a', b: 'b', c: 'c'}
+  };
+  afterEach( () => {
+    enmap.close();
+    enmap = null;
+  });
+  test('supports autoEnsure', () => {
+    enmap = new Enmap({ name: '::memory::', autoEnsure: defaultData});
+    expect(enmap.get('test')).toEqual(defaultData);
+    expect(enmap.size).toBe(1);
+    enmap.set('test', 'a', 'a');
+    expect(enmap.get('test')).toEqual({
+      ...defaultData,
+      a: 'a',
+    });
+    enmap.set('test2', 'b', 'b');
+    expect(enmap.get('test2')).toEqual({
+      ...defaultData,
+      b: 'b',
+    });
+  });
+
+  test('supports serializers', () => {
+    enmap = new Enmap({ 
+      name: '::memory::',
+      serializer: (data, key) => {
+        return {
+          ...data,
+          a: 'modified',
+        };
+      },
+      deserializer: (data, key) => {
+        return {
+          ...data,
+          a: 1
+        };
+      }
+    });
+    enmap.set('test', defaultData);
+    expect(enmap.get('test', 'a')).toBe(1);
+    const data = enmap.db.prepare(`SELECT * FROM '__memory__' WHERE key = ?;`).get('test');
+    expect(data.value).toBe('{"a":"modified","b":2,"c":3,"d":[1,2,3,4],"e":{"a":"a","b":"b","c":"c"}}');
+  })
+})

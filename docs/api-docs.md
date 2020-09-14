@@ -62,7 +62,6 @@ Can be made persistent
         * [.hasProp(key, path)](#enmap-hasprop-key-path-boolean) ⇒ <code>boolean</code>
         * [.exists(prop, value)](#enmap-exists-prop-value-boolean) ⇒ <code>boolean</code>
     * _static_
-        * [.migrate()](#enmap-migrate)
         * [.multi(names, options)](#enmap-multi-names-options-array-less-than-map-greater-than) ⇒ <code>Array.&lt;Map&gt;</code>
 
 <a name="new_Enmap_new"></a>
@@ -123,7 +122,7 @@ Retrieves all the indexes (keys) in the database for this enmap, even if they ar
 Generates an automatic numerical key for inserting a new value.
 This is a "weak" method, it ensures the value isn't duplicated, but does not
 guarantee it's sequential (if a value is deleted, another can take its place).
-Useful for logging, but not much else.
+Useful for logging, actions, items, etc - anything that doesn't already have a unique ID.
 
 **Kind**: instance property of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>number</code> - The generated key number.  
@@ -279,7 +278,7 @@ enmap.changed((keyName, oldValue, newValue) => {
 ### enmap.close() ⇒ <code>Promise.&lt;\*&gt;</code>
 Shuts down the database. WARNING: USING THIS MAKES THE ENMAP UNUSEABLE. You should
 only use this method if you are closing your entire application.
-Note that honestly I've never had to use this, shutting down the app without a close() is fine.
+This is useful if you need to copy the database somewhere else, or if you're somehow losing data on shutdown.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>Promise.&lt;\*&gt;</code> - The promise of the database closing operation.  
@@ -888,14 +887,6 @@ if (enmap.exists('username', 'Bob')) {
  console.log('user here!');
 }
 ```
-<a name="Enmap.migrate"></a>
-
-### Enmap.migrate()
-Migrates an Enmap from version 3 or lower to a Version 4 enmap, which is locked to sqlite backend only.
-This migration MUST be executed in version 3.1.4 of Enmap, along with appropriate providers.
-See https://enmap.evie.codes/install/upgrade for more details.
-
-**Kind**: static method of [<code>Enmap</code>](#enmap-map)  
 <a name="Enmap.multi"></a>
 
 ### Enmap.multi(names, options) ⇒ <code>Array.&lt;Map&gt;</code>

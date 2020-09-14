@@ -37,6 +37,7 @@ const _readyCheck = Symbol('readyCheck');
 const _clone = Symbol('clone');
 const _init = Symbol('init');
 const _defineSetting = Symbol('_defineSetting');
+const _internalSet = Symbol('_internalSet');
 
 /**
  * A enhanced Map structure with additional utility methods.
@@ -119,6 +120,11 @@ class Enmap extends Map {
     this[_defineSetting]('deserializer', 'Function', true, (data) => data, options.deserializer);
 
     if (options.name) {
+      if(options.name === '::memory::') {
+        // This option is "secret" and used for testing but if you're reading this
+        // and you want an in-memory DB with all the features, with double the memory, knock yourself out!
+        this.inMemory = true;
+      }
       const Database = require('better-sqlite3');
       this[_defineSetting]('persistent', 'Boolean', false, true);
 
@@ -127,14 +133,16 @@ class Enmap extends Map {
       this[_defineSetting]('isDestroyed', 'Boolean', true, false);
 
       // Define the data directory where the enmap is stored.
-      if (!options.dataDir) {
+      if (!options.dataDir && !this.inMemory) {
         if (!fs.existsSync('./data')) {
           fs.mkdirSync('./data');
         }
       }
 
       const dataDir = resolve(process.cwd(), options.dataDir || 'data');
-      const database = new Database(`${dataDir}${sep}enmap.sqlite`);
+      const database = this.inMemory
+        ? new Database(':memory:')
+        : new Database(`${dataDir}${sep}enmap.sqlite`);
 
       // [_defineSetting](name, type, writable, defaultValue [, value]) {
 
@@ -153,6 +161,10 @@ class Enmap extends Map {
         this[_defineSetting]('ready', 'Function', false, res))
       );
 
+      if(this.polling) {
+        console.warn('WARNING: Polling features will be removed in Enmap v6. If you need enmap in multiple processes, please consider moving to JOSH, https://josh.evie.dev/');
+      }
+
       this[_validateName]();
       this[_init](database);
     } else {
@@ -162,10 +174,10 @@ class Enmap extends Map {
 
     if (iterable) {
       if (options.name) {
-        console.log(`Iterable ignored for persistent Enmap ${options.name}`);
+        console.warn(`WARNING: Iterable ignored for persistent Enmap ${options.name}`);
       } else {
         for (const [key, value] of iterable) {
-          this.set(key, value);
+          this[_internalSet](key, value);
         }
       }
     }
@@ -207,13 +219,7 @@ class Enmap extends Map {
     if (isFunction(this.changedCB)) {
       this.changedCB(key, oldValue, data);
     }
-    if (this.persistent) {
-      this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, JSON.stringify(this.serializer(data, key)));
-      if (this.polling) {
-        this.db.prepare(`INSERT INTO 'internal::changes::${this.name}' (type, key, value, timestamp, pid) VALUES (?, ?, ?, ?, ?);`)
-          .run('insert', key, JSON.stringify(this.serializer(data, key)), Date.now(), process.pid);
-      }
-    }
+    this[_internalSet](key, data, false);
     return super.set(key, this[_clone](data));
   }
 
@@ -252,7 +258,7 @@ class Enmap extends Map {
     const previousValue = this.get(key);
     const fn = isFunction(valueOrFunction) ? valueOrFunction : () => merge(previousValue, valueOrFunction);
     const merged = fn(previousValue);
-    this.set(key, merged);
+    this[_internalSet](key, merged);
     return merged;
   }
 
@@ -274,7 +280,7 @@ class Enmap extends Map {
     this[_fetchCheck](key);
     key = key.toString();
     if(this.autoEnsure !== this.off && !this.has(key)) {
-      this.set(key, cloneDeep(this.autoEnsure));
+      this[_internalSet](key, this.autoEnsure);
     }
     const data = super.get(key);
     if (!isNil(path)) {
@@ -372,7 +378,7 @@ class Enmap extends Map {
    * Generates an automatic numerical key for inserting a new value.
    * This is a "weak" method, it ensures the value isn't duplicated, but does not
    * guarantee it's sequential (if a value is deleted, another can take its place).
-   * Useful for logging, but not much else.
+   * Useful for logging, actions, items, etc - anything that doesn't already have a unique ID.
    * @example
    * enmap.set(enmap.autonum, "This is a new value");
    * @return {number} The generated key number.
@@ -400,11 +406,12 @@ class Enmap extends Map {
   /**
    * Shuts down the database. WARNING: USING THIS MAKES THE ENMAP UNUSEABLE. You should
    * only use this method if you are closing your entire application.
-   * Note that honestly I've never had to use this, shutting down the app without a close() is fine.
+   * This is useful if you need to copy the database somewhere else, or if you're somehow losing data on shutdown.
    * @return {Promise<*>} The promise of the database closing operation.
    */
   close() {
     this[_readyCheck]();
+    this.isReady = false;
     return this.database.close();
   }
 
@@ -437,7 +444,7 @@ class Enmap extends Map {
       if (!allowDupes && data.indexOf(val) > -1) return this;
       data.push(val);
     }
-    return this.set(key, data);
+    return this[_internalSet](key, data);
   }
 
   // AWESOME MATHEMATICAL METHODS
@@ -488,12 +495,12 @@ class Enmap extends Map {
     this[_check](key, 'Number', path);
     if (isNil(path)) {
       let val = this.get(key);
-      return this.set(key, ++val);
+      return this[_internalSet](key, ++val);
     } else {
       const data = this.get(key);
       let propValue = _get(data, path);
       _set(data, path, ++propValue);
-      return this.set(key, data);
+      return this[_internalSet](key, data);
     }
   }
 
@@ -514,12 +521,12 @@ class Enmap extends Map {
     this[_check](key, 'Number', path);
     if (isNil(path)) {
       let val = this.get(key);
-      return this.set(key, --val);
+      return this[_internalSet](key, --val);
     } else {
       const data = this.get(key);
       let propValue = _get(data, path);
       _set(data, path, --propValue);
-      return this.set(key, data);
+      return this[_internalSet](key, data);
     }
   }
 
@@ -544,6 +551,10 @@ class Enmap extends Map {
   ensure(key, defaultValue, path = null) {
     this[_readyCheck]();
     this[_fetchCheck](key);
+    if(this.autoEnsure !== this.off) {
+      if(!isNil(defaultValue)) console.warn(`WARNING: Saving "${key}" autoEnsure value was provided for this enmap but a default value has also been provided. The defaultValue will be ignored, autoEnsure value is used instead.`);
+      defaultValue = this.autoEnsure;
+    }
     if (isNil(defaultValue)) throw new Err(`No default value provided on ensure method for "${key}" in "${this.name}"`, 'EnmapArgumentError');
     const clonedValue = this[_clone](defaultValue);
     if (!isNil(path)) {
@@ -772,7 +783,7 @@ class Enmap extends Map {
       for (const thisEntry of parsed.keys) {
         const { key, value } = thisEntry;
         if (!overwrite && this.has(key)) continue;
-        this.set(key, value);
+        this[_internalSet](key, value);
       }
     } catch (err) {
       throw new Err(`Data provided for import() in "${this.name}" is invalid JSON. Stacktrace:\n${err}`, 'EnmapImportError');
@@ -825,7 +836,7 @@ class Enmap extends Map {
     if (this.db) {
       Object.defineProperty(this, 'isReady', {
         value: true,
-        writable: false,
+        writable: true,
         enumerable: false,
         configurable: false
       });
@@ -844,6 +855,7 @@ class Enmap extends Map {
       await this.fetchEverything();
     }
     // TEMPORARY MIGRATE CODE FOR AUTONUM
+    // REMOVE FOR V6
     if (this.has('internal::autonum')) {
       this.db.prepare("INSERT OR REPLACE INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)").run(this.name, this.get('internal::autonum'));
       this.delete('internal::autonum');
@@ -947,6 +959,9 @@ class Enmap extends Map {
     case 'modulo' :
     case '%' :
       return base % opand;
+    case 'rand' :
+    case 'random' :
+      return Math.floor(Math.random() * Math.floor(opand));
     }
     return null;
   }
@@ -1020,6 +1035,21 @@ class Enmap extends Map {
       enumerable: false,
       configurable: false
     });
+  }
+
+  /*
+   * Internal Method. Sets data without looking at cache, fetching, or anything else. Used when fetch/ready checks are already made.
+   */
+  [_internalSet](key, value, updateCache = true) {
+    if (this.persistent) {
+      this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, JSON.stringify(this.serializer(value, key)));
+      if (this.polling) {
+        this.db.prepare(`INSERT INTO 'internal::changes::${this.name}' (type, key, value, timestamp, pid) VALUES (?, ?, ?, ?, ?);`)
+          .run('insert', key, JSON.stringify(this.serializer(data, key)), Date.now(), process.pid);
+      }
+    }
+    if(updateCache) super.set(key, value);
+    return this;
   }
 
   /*
