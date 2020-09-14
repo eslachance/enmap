@@ -471,11 +471,7 @@ class Enmap extends Map {
   math(key, operation, operand, path = null) {
     this[_check](key, 'Number', path);
     const data = this.get(key, path);
-    if (operation === 'random' || operation === 'rand') {
-      return this.set(key, Math.round(Math.random() * data), path);
-    } else {
-      return this.set(key, this[_mathop](data, operation, operand), path);
-    }
+    return this.set(key, this[_mathop](data, operation, operand), path);
   }
 
   /**
