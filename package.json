@@ -31,13 +31,11 @@
   "license": "Apache-2.0",
   "dependencies": {
     "lodash": "^4.17.20",
-    "on-change": "^2.0.1"
-  },
-  "peerDependencies": {
+    "on-change": "^2.0.1",
+    "serialize-javascript": "^5.0.1",
     "better-sqlite3": "^7.1.0"
   },
   "devDependencies": {
-    "better-sqlite3": "^7.1.0",
     "eslint": "^7.4.0",
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-config-standard": "^14.1.1",

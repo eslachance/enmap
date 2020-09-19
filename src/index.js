@@ -13,11 +13,12 @@ const {
   clone,
   cloneDeep
 } = require('lodash');
+const serialize = require('serialize-javascript');
+const onChange = require('on-change');
 
 // Custom error codes with stack support.
 const Err = require('./error.js');
 
-const onChange = require('on-change');
 
 // Native imports
 const { resolve, sep } = require('path');
@@ -753,7 +754,7 @@ class Enmap extends Map {
   export() {
     this[_readyCheck]();
     if (this.persistent) this.fetchEverything();
-    return JSON.stringify({
+    return serialize({
       name: this.name,
       version: pkgdata.version,
       exportDate: Date.now(),
@@ -775,7 +776,7 @@ class Enmap extends Map {
     if (clear) this.deleteAll();
     if (isNil(data)) throw new Err(`No data provided for import() in "${this.name}"`, 'EnmapImportError');
     try {
-      const parsed = JSON.parse(data);
+      const parsed = eval('(' + data + ')');
       for (const thisEntry of parsed.keys) {
         const { key, value } = thisEntry;
         if (!overwrite && this.has(key)) continue;
@@ -994,7 +995,7 @@ class Enmap extends Map {
    * @returns {*} An object or the original data.
    */
   [_parseData](data, key) {
-    return this.deserializer(JSON.parse(data), key);
+    return this.deserializer(eval('(' + data + ')'), key);
   }
 
   /*
@@ -1038,10 +1039,16 @@ class Enmap extends Map {
    */
   [_internalSet](key, value, updateCache = true) {
     if (this.persistent) {
-      this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, JSON.stringify(this.serializer(value, key)));
+      let serialized;
+      try {
+        serialized = serialize(this.serializer(value, key));
+      } catch (e) {
+        serialized = serialize(this.serializer(onChange.target(value), key));
+      }
+      this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, serialized);
       if (this.polling) {
         this.db.prepare(`INSERT INTO 'internal::changes::${this.name}' (type, key, value, timestamp, pid) VALUES (?, ?, ?, ?, ?);`)
-          .run('insert', key, JSON.stringify(this.serializer(data, key)), Date.now(), process.pid);
+          .run('insert', key, serialized, Date.now(), process.pid);
       }
     }
     if(updateCache) super.set(key, value);
