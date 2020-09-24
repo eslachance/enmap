@@ -3,6 +3,7 @@ const {
   get: _get,
   set: _set,
   has: _has,
+  // eslint-disable-next-line no-unused-vars
   delete: _delete,
   isNil,
   isFunction,
@@ -50,14 +51,14 @@ class Enmap extends Map {
   /**
    * Initializes a new Enmap, with options.
    * @param {iterable|string} iterable If iterable data, only valid in non-persistent enmaps.
-   * If this parameter is a string, it is assumed to be the enmap's name, which is a shorthand for adding a name in the options
+   * If this parameter is a string, it is assumed to be the Enmap's name, which is a shorthand for adding a name in the options
    * and making the enmap persistent.
    * @param {Object} [options] Additional options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details.
    * @param {string} [options.name] The name of the enmap. Represents its table name in sqlite. If present, the enmap is persistent.
    * If no name is given, the enmap is memory-only and is not saved in the database. As a shorthand, you may use a string for the name
    * instead of the options (see example).
    * @param {boolean} [options.fetchAll] Defaults to `true`. When enabled, will automatically fetch any key that's requested using get,
-   * or other retrieval methods. This is a "syncroneous" operation, which means it doesn't need any of this promise or callback use.
+   * or other retrieval methods. This is a "synchronous" operation, which means it doesn't need any of this promise or callback use.
    * @param {string} [options.dataDir] Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative
    * (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes!
    * @param {string} [options.cloneLevel] Defaults to deep. Determines how objects and arrays are treated when inserting and retrieving from the database.
@@ -121,7 +122,7 @@ class Enmap extends Map {
     this[_defineSetting]('deserializer', 'Function', true, (data) => data, options.deserializer);
 
     if (options.name) {
-      if(options.name === '::memory::') {
+      if (options.name === '::memory::') {
         // This option is "secret" and used for testing but if you're reading this
         // and you want an in-memory DB with all the features, with double the memory, knock yourself out!
         this.inMemory = true;
@@ -141,9 +142,9 @@ class Enmap extends Map {
       }
 
       const dataDir = resolve(process.cwd(), options.dataDir || 'data');
-      const database = this.inMemory
-        ? new Database(':memory:')
-        : new Database(`${dataDir}${sep}enmap.sqlite`);
+      const database = this.inMemory ?
+        new Database(':memory:') :
+        new Database(`${dataDir}${sep}enmap.sqlite`);
 
       // [_defineSetting](name, type, writable, defaultValue [, value]) {
 
@@ -162,7 +163,7 @@ class Enmap extends Map {
         this[_defineSetting]('ready', 'Function', false, res))
       );
 
-      if(this.polling) {
+      if (this.polling) {
         console.warn('WARNING: Polling features will be removed in Enmap v6. If you need enmap in multiple processes, please consider moving to JOSH, https://josh.evie.dev/');
       }
 
@@ -224,6 +225,7 @@ class Enmap extends Map {
     return super.set(key, this[_clone](data));
   }
 
+  // eslint-disable-next-line valid-jsdoc
   /**
    * Update an existing object value in Enmap by merging new keys. **This only works on objects**, any other value will throw an error.
    * Heavily inspired by setState from React's class components.
@@ -235,11 +237,11 @@ class Enmap extends Map {
    * @example
    * // Define an object we're going to update
    * enmap.set("obj", { a: 1, b: 2, c: 3 });
-   * 
+   *
    * // Direct merge
    * enmap.update("obj", { d: 4, e: 5 });
    * // obj is now { a: 1, b: 2, c: 3, d: 4, e: 5 }
-   * 
+   *
    * // Functional update
    * enmap.update("obj", (previous) => ({
    *   ...obj,
@@ -280,7 +282,7 @@ class Enmap extends Map {
     if (isNil(key)) return null;
     this[_fetchCheck](key);
     key = key.toString();
-    if(this.autoEnsure !== this.off && !this.has(key)) {
+    if (this.autoEnsure !== this.off && !this.has(key)) {
       this[_internalSet](key, this.autoEnsure);
     }
     const data = super.get(key);
@@ -405,7 +407,7 @@ class Enmap extends Map {
   }
 
   /**
-   * Shuts down the database. WARNING: USING THIS MAKES THE ENMAP UNUSEABLE. You should
+   * Shuts down the database. WARNING: USING THIS MAKES THE ENMAP UNUSABLE. You should
    * only use this method if you are closing your entire application.
    * This is useful if you need to copy the database somewhere else, or if you're somehow losing data on shutdown.
    * @return {Promise<*>} The promise of the database closing operation.
@@ -548,8 +550,9 @@ class Enmap extends Map {
   ensure(key, defaultValue, path = null) {
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if(this.autoEnsure !== this.off) {
-      if(!isNil(defaultValue)) console.warn(`WARNING: Saving "${key}" autoEnsure value was provided for this enmap but a default value has also been provided. The defaultValue will be ignored, autoEnsure value is used instead.`);
+    if (this.autoEnsure !== this.off) {
+      // eslint-disable-next-line max-len
+      if (!isNil(defaultValue)) console.warn(`WARNING: Saving "${key}" autoEnsure value was provided for this enmap but a default value has also been provided. The defaultValue will be ignored, autoEnsure value is used instead.`);
       defaultValue = this.autoEnsure;
     }
     if (isNil(defaultValue)) throw new Err(`No default value provided on ensure method for "${key}" in "${this.name}"`, 'EnmapArgumentError');
@@ -776,7 +779,7 @@ class Enmap extends Map {
     if (clear) this.deleteAll();
     if (isNil(data)) throw new Err(`No data provided for import() in "${this.name}"`, 'EnmapImportError');
     try {
-      const parsed = eval('(' + data + ')');
+      const parsed = eval(`(${data})`);
       for (const thisEntry of parsed.keys) {
         const { key, value } = thisEntry;
         if (!overwrite && this.has(key)) continue;
@@ -995,7 +998,7 @@ class Enmap extends Map {
    * @returns {*} An object or the original data.
    */
   [_parseData](data, key) {
-    return this.deserializer(eval('(' + data + ')'), key);
+    return this.deserializer(eval(`(${data})`), key);
   }
 
   /*
@@ -1051,7 +1054,7 @@ class Enmap extends Map {
           .run('insert', key, serialized, Date.now(), process.pid);
       }
     }
-    if(updateCache) super.set(key, value);
+    if (updateCache) super.set(key, value);
     return this;
   }
 
