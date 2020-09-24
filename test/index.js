@@ -90,6 +90,7 @@ describe('Standard Enmaps', () => {
         set: new Set([123, 456]),
         fn: function echo(arg) { return arg; },
         re: /([^\s]+)/g,
+        // eslint-disable-next-line no-undef
         big: BigInt(10)
       });
       expect(enmap.get('serialized', 'undef')).toBeUndefined();
