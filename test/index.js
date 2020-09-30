@@ -77,25 +77,26 @@ describe('Standard Enmaps', () => {
 
     test('supports full serialized data', () => {
       enmap.set('serialized', {
-        str  : 'string',
-        num  : 0,
-        obj  : {foo: 'foo'},
-        arr  : [1, 2, 3],
-        bool : true,
-        nil  : null,
+        str: 'string',
+        num: 0,
+        obj: { foo: 'foo' },
+        arr: [1, 2, 3],
+        bool: true,
+        nil: null,
         undef: undefined,
-        inf  : Infinity,
-        date : new Date("Thu, 28 Apr 2016 22:02:17 GMT"),
-        map  : new Map([['hello', 'world']]),
-        set  : new Set([123, 456]),
-        fn   : function echo(arg) { return arg; },
-        re   : /([^\s]+)/g,
-        big  : BigInt(10),
+        inf: Infinity,
+        date: new Date('Thu, 28 Apr 2016 22:02:17 GMT'),
+        map: new Map([['hello', 'world']]),
+        set: new Set([123, 456]),
+        fn: function echo(arg) { return arg; },
+        re: /([^\s]+)/g,
+        // eslint-disable-next-line no-undef
+        big: BigInt(10)
       });
       expect(enmap.get('serialized', 'undef')).toBeUndefined();
       expect(enmap.get('serialized', 'fn')('test')).toBe('test');
       expect(enmap.get('serialized', 'map').get('hello')).toBe('world');
-    })
+    });
   });
 });
 
@@ -153,7 +154,7 @@ describe('Basic Enmap Options', () => {
   });
 
   test('supports direct passing by reference (cloneLevel none)', () => {
-    enmap = new Enmap({ name:'::memory::', cloneLevel: 'none' });
+    enmap = new Enmap({ name: '::memory::', cloneLevel: 'none' });
     enmap.set('foo', baseObj);
     enmap.set('foo', 'other', 'prop2');
     enmap.push('foo', 4, 'prop3');
@@ -163,7 +164,7 @@ describe('Basic Enmap Options', () => {
   });
 
   test('supports shallow clones', () => {
-    enmap = new Enmap({ name:'::memory::', cloneLevel: 'shallow' });
+    enmap = new Enmap({ name: '::memory::', cloneLevel: 'shallow' });
     enmap.set('foo', baseObj);
     enmap.set('foo', 'other', 'prop2');
     enmap.push('foo', 4, 'prop3');
@@ -174,7 +175,7 @@ describe('Basic Enmap Options', () => {
   });
 
   test('supports deep clones', () => {
-    enmap = new Enmap({ name:'::memory::', cloneLevel: 'deep' });
+    enmap = new Enmap({ name: '::memory::', cloneLevel: 'deep' });
     enmap.set('foo', baseObj);
     enmap.set('foo', 'other', 'prop2');
     enmap.push('foo', 4, 'prop3');
@@ -185,7 +186,7 @@ describe('Basic Enmap Options', () => {
   });
 
   test('supports deep ensure() merge', () => {
-    enmap = new Enmap({ name:'::memory::', ensureProps: true });
+    enmap = new Enmap({ name: '::memory::', ensureProps: true });
     const defaultValue = {
       foo: 'bar',
       bar: { foo: 1 }
@@ -199,47 +200,43 @@ describe('Basic Enmap Options', () => {
 describe('Enmap Advanced Options', () => {
   let enmap;
   const defaultData = {
-    a: 1, 
+    a: 1,
     b: 2,
-    c: 3, 
+    c: 3,
     d: [1, 2, 3, 4],
-    e: { a: 'a', b: 'b', c: 'c'}
+    e: { a: 'a', b: 'b', c: 'c' }
   };
-  afterEach( () => {
+  afterEach(() => {
     enmap.close();
     enmap = null;
   });
   test('supports autoEnsure', () => {
-    enmap = new Enmap({ name: '::memory::', autoEnsure: defaultData});
+    enmap = new Enmap({ name: '::memory::', autoEnsure: defaultData });
     expect(enmap.get('test')).toEqual(defaultData);
     expect(enmap.size).toBe(1);
     enmap.set('test', 'a', 'a');
     expect(enmap.get('test')).toEqual({
       ...defaultData,
-      a: 'a',
+      a: 'a'
     });
     enmap.set('test2', 'b', 'b');
     expect(enmap.get('test2')).toEqual({
       ...defaultData,
-      b: 'b',
+      b: 'b'
     });
   });
 
   test('supports serializers', () => {
-    enmap = new Enmap({ 
+    enmap = new Enmap({
       name: '::memory::',
-      serializer: (data, key) => {
-        return {
-          ...data,
-          a: 'modified',
-        };
-      },
-      deserializer: (data, key) => {
-        return {
-          ...data,
-          a: 1
-        };
-      }
+      serializer: (data, key) => ({
+        ...data,
+        a: 'modified'
+      }),
+      deserializer: (data, key) => ({
+        ...data,
+        a: 1
+      })
     });
     enmap.set('test', defaultData);
     expect(enmap.get('test', 'a')).toBe(1);
