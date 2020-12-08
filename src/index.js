@@ -594,6 +594,7 @@ class Enmap extends Map {
   has(key, path = null) {
     this[_readyCheck]();
     this[_fetchCheck](key);
+    key = key.toString();
     if (!isNil(path)) {
       this[_check](key, 'Object');
       const data = this.get(key);
@@ -638,6 +639,7 @@ class Enmap extends Map {
   delete(key, path = null) {
     this[_readyCheck]();
     this[_fetchCheck](key);
+    key = key.toString();
     const oldValue = this.get(key);
     if (!isNil(path)) {
       let data = this.get(key);
@@ -687,7 +689,7 @@ class Enmap extends Map {
 
   /**
    * Deletes everything from the enmap. If persistent, clears the database of all its data for this table.
-   * @returns {null}
+   * @returns {undefined}
    */
   clear() { return this.deleteAll(); }
 
@@ -804,7 +806,7 @@ class Enmap extends Map {
    * const Enmap = require("enmap");
    * Object.assign(client, Enmap.multi(["settings", "tags", "blacklist"]));
    *
-   * @returns {Array<Map>} An array of initialized Enmaps.
+   * @returns {Array<Enmap>} An array of initialized Enmaps.
    */
   static multi(names, options = {}) {
     if (!names.length || names.length < 1) {
@@ -1064,7 +1066,7 @@ class Enmap extends Map {
   library. The code is from the Collections object, in discord.js version 11.
 
   All below code is sourced from Collections.
-  https://github.com/discordjs/discord.js/blob/stable/src/util/Collection.js
+  https://github.com/discordjs/collection
   */
 
   /**
