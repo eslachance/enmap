@@ -31,7 +31,7 @@ Can be made persistent
         * [.includes(key, val, path)](#enmap-includes-key-val-path-boolean) ⇒ <code>boolean</code>
         * [.delete(key, path)](#enmap-delete-key-path-enmap) ⇒ [<code>Enmap</code>]
         * [.deleteAll()](#enmap-deleteall)
-        * [.clear()](#enmap-clear-null) ⇒ <code>null</code>
+        * [.clear()](#enmap-clear-undefined) ⇒ <code>undefined</code>
         * [.destroy()](#enmap-destroy-null) ⇒ <code>null</code>
         * [.remove(key, val, path)](#enmap-remove-key-val-path-enmap) ⇒ [<code>Enmap</code>]
         * [.export()](#enmap-export-string) ⇒ <code>string</code>
@@ -62,7 +62,7 @@ Can be made persistent
         * [.hasProp(key, path)](#enmap-hasprop-key-path-boolean) ⇒ <code>boolean</code>
         * [.exists(prop, value)](#enmap-exists-prop-value-boolean) ⇒ <code>boolean</code>
     * _static_
-        * [.multi(names, options)](#enmap-multi-names-options-array-less-than-map-greater-than) ⇒ <code>Array.&lt;Map&gt;</code>
+        * [.multi(names, options)](#enmap-multi-names-options-array-less-than-enmap-greater-than) ⇒ [<code>Array.&lt;Enmap&gt;</code>]
 
 <a name="new_Enmap_new"></a>
 
@@ -72,10 +72,10 @@ Initializes a new Enmap, with options.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| iterable | <code>iterable</code> \| <code>string</code> |  | If iterable data, only valid in non-persistent enmaps. If this parameter is a string, it is assumed to be the enmap's name, which is a shorthand for adding a name in the options and making the enmap persistent. |
+| iterable | <code>iterable</code> \| <code>string</code> |  | If iterable data, only valid in non-persistent enmaps. If this parameter is a string, it is assumed to be the Enmap's name, which is a shorthand for adding a name in the options and making the enmap persistent. |
 | [options] | <code>Object</code> |  | Additional options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details. |
 | [options.name] | <code>string</code> |  | The name of the enmap. Represents its table name in sqlite. If present, the enmap is persistent. If no name is given, the enmap is memory-only and is not saved in the database. As a shorthand, you may use a string for the name instead of the options (see example). |
-| [options.fetchAll] | <code>boolean</code> |  | Defaults to `true`. When enabled, will automatically fetch any key that's requested using get, or other retrieval methods. This is a "syncroneous" operation, which means it doesn't need any of this promise or callback use. |
+| [options.fetchAll] | <code>boolean</code> |  | Defaults to `true`. When enabled, will automatically fetch any key that's requested using get, or other retrieval methods. This is a "synchronous" operation, which means it doesn't need any of this promise or callback use. |
 | [options.dataDir] | <code>string</code> |  | Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes! |
 | [options.cloneLevel] | <code>string</code> |  | Defaults to deep. Determines how objects and arrays are treated when inserting and retrieving from the database. See https://enmap.evie.codes/usage#enmap-options for more details on this option. |
 | [options.polling] | <code>boolean</code> |  | defaults to `false`. Determines whether Enmap will attempt to retrieve changes from the database on a regular interval. This means that if another Enmap in another process modifies a value, this change will be reflected in ALL enmaps using the polling feature. |
@@ -86,6 +86,7 @@ Initializes a new Enmap, with options.
 | [options.serializer] | <code>function</code> |  | Optional. If a function is provided, it will execute on the data when it is written to the database. This is generally used to convert the value into a format that can be saved in the database, such as converting a complete class instance to just its ID. This function may return the value to be saved, or a promise that resolves to that value (in other words, can be an async function). |
 | [options.deserializer] | <code>function</code> |  | Optional. If a function is provided, it will execute on the data when it is read from the database. This is generally used to convert the value from a stored ID into a more complex object. This function may return a value, or a promise that resolves to that value (in other words, can be an async function). |
 | [options.wal] | <code>boolean</code> | <code>false</code> | Check out Write-Ahead Logging: https://www.sqlite.org/wal.html |
+| [options.verbose] | <code>function</code> | <code>(query) &#x3D;&gt; null</code> | A function to call with the direct SQL statement being ran by Enmap internally |
 
 **Example**  
 ```js
@@ -276,7 +277,7 @@ enmap.changed((keyName, oldValue, newValue) => {
 <a name="Enmap+close"></a>
 
 ### enmap.close() ⇒ <code>Promise.&lt;\*&gt;</code>
-Shuts down the database. WARNING: USING THIS MAKES THE ENMAP UNUSEABLE. You should
+Shuts down the database. WARNING: USING THIS MAKES THE ENMAP UNUSABLE. You should
 only use this method if you are closing your entire application.
 This is useful if you need to copy the database somewhere else, or if you're somehow losing data on shutdown.
 
@@ -458,7 +459,7 @@ Deletes everything from the enmap. If persistent, clears the database of all its
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 <a name="Enmap+clear"></a>
 
-### enmap.clear() ⇒ <code>null</code>
+### enmap.clear() ⇒ <code>undefined</code>
 Deletes everything from the enmap. If persistent, clears the database of all its data for this table.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
@@ -889,11 +890,11 @@ if (enmap.exists('username', 'Bob')) {
 ```
 <a name="Enmap.multi"></a>
 
-### Enmap.multi(names, options) ⇒ <code>Array.&lt;Map&gt;</code>
+### Enmap.multi(names, options) ⇒ [<code>Array.&lt;Enmap&gt;</code>](#Enmap)
 Initialize multiple Enmaps easily.
 
 **Kind**: static method of [<code>Enmap</code>](#enmap-map)  
-**Returns**: <code>Array.&lt;Map&gt;</code> - An array of initialized Enmaps.  
+**Returns**: [<code>Array.&lt;Enmap&gt;</code>](#Enmap) - An array of initialized Enmaps.  
 
 | Param | Type | Description |
 | --- | --- | --- |
