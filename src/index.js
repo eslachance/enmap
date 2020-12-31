@@ -81,6 +81,7 @@ class Enmap extends Map {
    * This is generally used to convert the value from a stored ID into a more complex object.
    * This function may return a value, or a promise that resolves to that value (in other words, can be an async function).
    * @param {boolean} [options.wal=false] Check out Write-Ahead Logging: https://www.sqlite.org/wal.html
+   * @param {Function} [options.verbose=(query) => null] A function to call with the direct SQL statement being ran by Enmap internally
    * @example
    * const Enmap = require("enmap");
    * // Non-persistent enmap:
@@ -117,6 +118,7 @@ class Enmap extends Map {
 
     this[_defineSetting]('cloneLevel', 'String', true, cloneLevel);
     this[_defineSetting]('ensureProps', 'Boolean', true, true, options.ensureProps);
+    this[_defineSetting]('verbose', 'Function', true, (query) => null, options.verbose);
     // Always needs to be present
     this[_defineSetting]('serializer', 'Function', true, (data) => data, options.serializer);
     this[_defineSetting]('deserializer', 'Function', true, (data) => data, options.deserializer);
@@ -143,8 +145,8 @@ class Enmap extends Map {
 
       const dataDir = resolve(process.cwd(), options.dataDir || 'data');
       const database = this.inMemory ?
-        new Database(':memory:') :
-        new Database(`${dataDir}${sep}enmap.sqlite`);
+        new Database(':memory:', { verbose: this.verbose }) :
+        new Database(`${dataDir}${sep}enmap.sqlite`, { verbose: this.verbose });
 
       // [_defineSetting](name, type, writable, defaultValue [, value]) {
 
