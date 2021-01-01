@@ -9,6 +9,7 @@ declare module "enmap" {
         pollingInterval?: number;
         ensureProps?: boolean;
         wal?: boolean;
+        verbose?: (query: string) => void;
     };
 
     type MathOps =
