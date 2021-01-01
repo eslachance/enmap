@@ -20,6 +20,31 @@ declare module "enmap" {
         'exp'  | 'exponent' | '^' |
         'mod'  | 'modulo'   | '%';
 
+    /*
+     * see #54
+     */
+    //#region path types
+    type Path<T, Key extends keyof T = keyof T> = Key extends string
+        ? T[Key] extends Record<string, any>
+            ?
+                | `${Key}.${Path<T[Key], Exclude<keyof T[Key], keyof any[]>> &
+                  string}`
+                | `${Key}.${Exclude<keyof T[Key], keyof any[]> & string}`
+                | Key
+            : never
+        : never
+    
+    type PathValue<T, P extends Path<T>> = P extends `${infer Key}.${infer Rest}`
+        ? Key extends keyof T
+            ? Rest extends Path<T[Key]>
+                ? PathValue<T[Key], Rest>
+                : never
+            : never
+        : P extends keyof T
+        ? T[P]
+        : never
+    //#endregion
+
     /**
      * Hack to work around TypeScript's structural integrity requirement.
      * This is the Map<K, V> class without the delete method since Enmap returns this
@@ -157,7 +182,10 @@ declare module "enmap" {
          * const someSubValue = enmap.get("anObjectKey", "someprop.someOtherSubProp");
          * @return The value for this key.
          */
-        public get(key: K, path?: string): V | undefined;
+        public get(key: K): V | undefined;
+        public get<P extends keyof V>(key: K, path: P): V[P] | undefined;
+        public get<P extends Path<V>>(key: K, path: P): PathValue<V, P> | undefined;
+        public get(key: K, path: string): unknown;
 
         /**
          * Fetches every key from the persistent enmap and loads them into the current enmap value.
