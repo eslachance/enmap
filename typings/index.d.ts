@@ -1,5 +1,5 @@
 declare module "enmap" {
-    type EnmapOptions = {
+    export interface EnmapOptions {
         name?: string;
         fetchAll?: boolean;
         autoFetch?: boolean;
