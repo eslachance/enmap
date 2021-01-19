@@ -201,7 +201,7 @@ class Enmap extends Map {
         options.pollingInterval,
       );
       // Left for backwards compatibility
-      this[_defineSetting]('defer', 'Boolean', true, true);
+      this[_defineSetting]('defer', 'Promise', true, Promise.resolve());
 
       if (this.polling) {
         console.warn(
@@ -213,7 +213,6 @@ class Enmap extends Map {
       this[_init](database);
     } else {
       this[_defineSetting]('name', 'String', true, 'MemoryEnmap');
-      this[_defineSetting]('isReady', 'Boolean', true, true);
     }
 
     if (iterable) {
@@ -479,7 +478,6 @@ class Enmap extends Map {
    */
   close() {
     this[_readyCheck]();
-    this.isReady = false;
     return this.database.close();
   }
 
@@ -949,14 +947,7 @@ class Enmap extends Map {
       enumerable: false,
       configurable: false,
     });
-    if (this.db) {
-      Object.defineProperty(this, 'isReady', {
-        value: true,
-        writable: true,
-        enumerable: false,
-        configurable: false,
-      });
-    } else {
+    if (!this.db) {
       throw new Err('Database Could Not Be Opened', 'EnmapDBConnectionError');
     }
     const table = this.db
@@ -1189,11 +1180,6 @@ class Enmap extends Map {
    * Internal Method. Verifies that the database is ready, assuming persistence is used.
    */
   [_readyCheck]() {
-    if (!this.isReady)
-      throw new Err(
-        'Database is not ready. Refer to the readme to use enmap.defer',
-        'EnmapReadyError',
-      );
     if (this.isDestroyed)
       throw new Err(
         'This enmap has been destroyed and can no longer be used without being re-initialized.',
