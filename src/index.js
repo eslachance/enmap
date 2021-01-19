@@ -12,14 +12,13 @@ const {
   toPath,
   merge,
   clone,
-  cloneDeep
+  cloneDeep,
 } = require('lodash');
 const serialize = require('serialize-javascript');
 const onChange = require('on-change');
 
 // Custom error codes with stack support.
 const Err = require('./error.js');
-
 
 // Native imports
 const { resolve, sep } = require('path');
@@ -47,7 +46,6 @@ const _internalSet = Symbol('_internalSet');
  * @extends {Map}
  */
 class Enmap extends Map {
-
   /**
    * Initializes a new Enmap, with options.
    * @param {iterable|string} iterable If iterable data, only valid in non-persistent enmaps.
@@ -110,18 +108,39 @@ class Enmap extends Map {
     let cloneLevel;
     if (options.cloneLevel) {
       const accepted = ['none', 'shallow', 'deep'];
-      if (!accepted.includes(options.cloneLevel)) throw new Err('Unknown Clone Level. Options are none, shallow, deep. Default is deep.', 'EnmapOptionsError');
+      if (!accepted.includes(options.cloneLevel))
+        throw new Err(
+          'Unknown Clone Level. Options are none, shallow, deep. Default is deep.',
+          'EnmapOptionsError',
+        );
       cloneLevel = options.cloneLevel; // eslint-disable-line prefer-destructuring
     } else {
       cloneLevel = 'deep';
     }
 
     this[_defineSetting]('cloneLevel', 'String', true, cloneLevel);
-    this[_defineSetting]('ensureProps', 'Boolean', true, true, options.ensureProps);
-    this[_defineSetting]('verbose', 'Function', true, (query) => null, options.verbose);
+    this[_defineSetting](
+      'ensureProps',
+      'Boolean',
+      true,
+      true,
+      options.ensureProps,
+    );
     // Always needs to be present
-    this[_defineSetting]('serializer', 'Function', true, (data) => data, options.serializer);
-    this[_defineSetting]('deserializer', 'Function', true, (data) => data, options.deserializer);
+    this[_defineSetting](
+      'serializer',
+      'Function',
+      true,
+      (data) => data,
+      options.serializer,
+    );
+    this[_defineSetting](
+      'deserializer',
+      'Function',
+      true,
+      (data) => data,
+      options.deserializer,
+    );
 
     if (options.name) {
       if (options.name === '::memory::') {
@@ -144,9 +163,11 @@ class Enmap extends Map {
       }
 
       const dataDir = resolve(process.cwd(), options.dataDir || 'data');
-      const database = this.inMemory ?
-        new Database(':memory:', { verbose: this.verbose }) :
-        new Database(`${dataDir}${sep}enmap.sqlite`, { verbose: this.verbose });
+      const database = this.inMemory
+        ? new Database(':memory:', { verbose: this.verbose })
+        : new Database(`${dataDir}${sep}enmap.sqlite`, {
+            verbose: this.verbose,
+          });
 
       // [_defineSetting](name, type, writable, defaultValue [, value]) {
 
@@ -156,17 +177,36 @@ class Enmap extends Map {
       this[_defineSetting]('dataDir', 'String', false, dataDir);
       this[_defineSetting]('fetchAll', 'Boolean', true, true, options.fetchAll);
       this[_defineSetting]('database', 'Database', true, database);
-      this[_defineSetting]('autoFetch', 'Boolean', true, true, options.autoFetch);
-      this[_defineSetting]('autoEnsure', 'any', true, this.off, options.autoEnsure);
+      this[_defineSetting](
+        'autoFetch',
+        'Boolean',
+        true,
+        true,
+        options.autoFetch,
+      );
+      this[_defineSetting](
+        'autoEnsure',
+        'any',
+        true,
+        this.off,
+        options.autoEnsure,
+      );
       this[_defineSetting]('wal', 'Boolean', true, true, options.wal);
       this[_defineSetting]('polling', 'Boolean', true, false, options.polling);
-      this[_defineSetting]('pollingInterval', 'Number', true, 1000, options.pollingInterval);
-      this[_defineSetting]('defer', 'Promise', true, new Promise((res) =>
-        this[_defineSetting]('ready', 'Function', false, res))
+      this[_defineSetting](
+        'pollingInterval',
+        'Number',
+        true,
+        1000,
+        options.pollingInterval,
       );
+      // Left for backwards compatibility
+      this[_defineSetting]('defer', 'Boolean', true, true);
 
       if (this.polling) {
-        console.warn('WARNING: Polling features will be removed in Enmap v6. If you need enmap in multiple processes, please consider moving to JOSH, https://josh.evie.dev/');
+        console.warn(
+          'WARNING: Polling features will be removed in Enmap v6. If you need enmap in multiple processes, please consider moving to JOSH, https://josh.evie.dev/',
+        );
       }
 
       this[_validateName]();
@@ -178,7 +218,9 @@ class Enmap extends Map {
 
     if (iterable) {
       if (options.name) {
-        console.warn(`WARNING: Iterable ignored for persistent Enmap ${options.name}`);
+        console.warn(
+          `WARNING: Iterable ignored for persistent Enmap ${options.name}`,
+        );
       } else {
         for (const [key, value] of iterable) {
           this[_internalSet](key, value);
@@ -209,7 +251,12 @@ class Enmap extends Map {
    */
   set(key, val, path = null) {
     if (isNil(key) || key.constructor.name !== 'String') {
-      throw new Err(`Enmap requires keys to be a string. Provided: ${isNil(key) ? 'nil' : key.constructor.name}`, 'EnmapKeyTypeError');
+      throw new Err(
+        `Enmap requires keys to be a string. Provided: ${
+          isNil(key) ? 'nil' : key.constructor.name
+        }`,
+        'EnmapKeyTypeError',
+      );
     }
     key = key.toString();
     let data = this.get(key);
@@ -261,7 +308,9 @@ class Enmap extends Map {
     this[_check](key, ['Object']);
     this[_fetchCheck](key);
     const previousValue = this.get(key);
-    const fn = isFunction(valueOrFunction) ? valueOrFunction : () => merge(previousValue, valueOrFunction);
+    const fn = isFunction(valueOrFunction)
+      ? valueOrFunction
+      : () => merge(previousValue, valueOrFunction);
     const merged = fn(previousValue);
     this[_internalSet](key, merged);
     return merged;
@@ -327,7 +376,7 @@ class Enmap extends Map {
    */
   get indexes() {
     const rows = this.db.prepare(`SELECT key FROM '${this.name}';`).all();
-    return rows.map(row => row.key);
+    return rows.map((row) => row.key);
   }
 
   /**
@@ -352,13 +401,21 @@ class Enmap extends Map {
   fetch(keyOrKeys) {
     this[_readyCheck]();
     if (isArray(keyOrKeys)) {
-      const data = this.db.prepare(`SELECT * FROM ${this.name} WHERE key IN (${'?, '.repeat(keyOrKeys.length).slice(0, -2)})`).all(keyOrKeys);
+      const data = this.db
+        .prepare(
+          `SELECT * FROM ${this.name} WHERE key IN (${'?, '
+            .repeat(keyOrKeys.length)
+            .slice(0, -2)})`,
+        )
+        .all(keyOrKeys);
       for (const row of data) {
         super.set(row.key, this[_parseData](row.value, row.key));
       }
       return this;
     } else {
-      const data = this.db.prepare(`SELECT * FROM ${this.name} WHERE key = ?;`).get(keyOrKeys);
+      const data = this.db
+        .prepare(`SELECT * FROM ${this.name} WHERE key = ?;`)
+        .get(keyOrKeys);
       if (!data) return null;
       super.set(keyOrKeys, this[_parseData](data.value, keyOrKeys));
       return this[_parseData](data.value, keyOrKeys);
@@ -372,7 +429,7 @@ class Enmap extends Map {
    */
   evict(keyOrArrayOfKeys) {
     if (isArray(keyOrArrayOfKeys)) {
-      keyOrArrayOfKeys.forEach(key => super.delete(key));
+      keyOrArrayOfKeys.forEach((key) => super.delete(key));
     } else {
       super.delete(keyOrArrayOfKeys);
     }
@@ -389,9 +446,15 @@ class Enmap extends Map {
    * @return {number} The generated key number.
    */
   get autonum() {
-    let { lastnum } = this.db.prepare("SELECT lastnum FROM 'internal::autonum' WHERE enmap = ?").get(this.name);
+    let { lastnum } = this.db
+      .prepare("SELECT lastnum FROM 'internal::autonum' WHERE enmap = ?")
+      .get(this.name);
     lastnum++;
-    this.db.prepare("INSERT OR REPLACE INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)").run(this.name, lastnum);
+    this.db
+      .prepare(
+        "INSERT OR REPLACE INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)",
+      )
+      .run(this.name, lastnum);
     return lastnum.toString();
   }
 
@@ -554,20 +617,35 @@ class Enmap extends Map {
     this[_fetchCheck](key);
     if (this.autoEnsure !== this.off) {
       // eslint-disable-next-line max-len
-      if (!isNil(defaultValue)) console.warn(`WARNING: Saving "${key}" autoEnsure value was provided for this enmap but a default value has also been provided. The defaultValue will be ignored, autoEnsure value is used instead.`);
+      if (!isNil(defaultValue))
+        console.warn(
+          `WARNING: Saving "${key}" autoEnsure value was provided for this enmap but a default value has also been provided. The defaultValue will be ignored, autoEnsure value is used instead.`,
+        );
       defaultValue = this.autoEnsure;
     }
-    if (isNil(defaultValue)) throw new Err(`No default value provided on ensure method for "${key}" in "${this.name}"`, 'EnmapArgumentError');
+    if (isNil(defaultValue))
+      throw new Err(
+        `No default value provided on ensure method for "${key}" in "${this.name}"`,
+        'EnmapArgumentError',
+      );
     const clonedValue = this[_clone](defaultValue);
     if (!isNil(path)) {
       if (this.ensureProps) this.ensure(key, {});
-      if (!this.has(key)) throw new Err(`Key "${key}" does not exist in "${this.name}" to ensure a property`, 'EnmapKeyError');
+      if (!this.has(key))
+        throw new Err(
+          `Key "${key}" does not exist in "${this.name}" to ensure a property`,
+          'EnmapKeyError',
+        );
       if (this.has(key, path)) return this.get(key, path);
       this.set(key, defaultValue, path);
       return defaultValue;
     }
     if (this.ensureProps && isObject(this.get(key))) {
-      if (!isObject(clonedValue)) throw new Err(`Default value for "${key}" in enmap "${this.name}" must be an object when merging with an object value.`, 'EnmapArgumentError');
+      if (!isObject(clonedValue))
+        throw new Err(
+          `Default value for "${key}" in enmap "${this.name}" must be an object when merging with an object value.`,
+          'EnmapArgumentError',
+        );
       const merged = merge(clonedValue, this.get(key));
       this.set(key, merged);
       return merged;
@@ -624,11 +702,21 @@ class Enmap extends Map {
       if (isArray(propValue)) {
         return propValue.includes(val);
       }
-      throw new Err(`The property "${path}" in key "${key}" is not an Array in the enmap "${this.name}" (property was of type "${propValue && propValue.constructor.name}")`, 'EnmapTypeError');
+      throw new Err(
+        `The property "${path}" in key "${key}" is not an Array in the enmap "${
+          this.name
+        }" (property was of type "${propValue && propValue.constructor.name}")`,
+        'EnmapTypeError',
+      );
     } else if (isArray(data)) {
       return data.includes(val);
     }
-    throw new Err(`The value of key "${key}" is not an Array in the enmap "${this.name}" (value was of type "${data && data.constructor.name}")`, 'EnmapTypeError');
+    throw new Err(
+      `The value of key "${key}" is not an Array in the enmap "${
+        this.name
+      }" (value was of type "${data && data.constructor.name}")`,
+      'EnmapTypeError',
+    );
   }
 
   /**
@@ -663,7 +751,11 @@ class Enmap extends Map {
       super.delete(key);
       if (this.persistent) {
         if (this.polling) {
-          this.db.prepare(`INSERT INTO 'internal::changes::${this.name}' (type, key, timestamp, pid) VALUES (?, ?, ?, ?);`).run('delete', key.toString(), Date.now(), process.pid);
+          this.db
+            .prepare(
+              `INSERT INTO 'internal::changes::${this.name}' (type, key, timestamp, pid) VALUES (?, ?, ?, ?);`,
+            )
+            .run('delete', key.toString(), Date.now(), process.pid);
         }
         this.db.prepare(`DELETE FROM ${this.name} WHERE key = ?`).run(key);
         return this;
@@ -683,7 +775,11 @@ class Enmap extends Map {
     if (this.persistent) {
       this.db.prepare(`DELETE FROM ${this.name};`).run();
       if (this.polling) {
-        this.db.prepare(`INSERT INTO 'internal::changes::${this.name}' (type, timestamp, pid) VALUES (?, ?, ?);`).run('clear', Date.now(), process.pid);
+        this.db
+          .prepare(
+            `INSERT INTO 'internal::changes::${this.name}' (type, timestamp, pid) VALUES (?, ?, ?);`,
+          )
+          .run('clear', Date.now(), process.pid);
       }
     }
     super.clear();
@@ -693,7 +789,9 @@ class Enmap extends Map {
    * Deletes everything from the enmap. If persistent, clears the database of all its data for this table.
    * @returns {undefined}
    */
-  clear() { return this.deleteAll(); }
+  clear() {
+    return this.deleteAll();
+  }
 
   /**
    * Completely destroys the entire enmap. This deletes the database tables entirely.
@@ -715,7 +813,7 @@ class Enmap extends Map {
     transaction([
       `DROP TABLE IF EXISTS ${this.name};`,
       `DROP TABLE IF EXISTS 'internal::changes::${this.name}';`,
-      `DELETE FROM 'internal::autonum' WHERE enmap = '${this.name}';`
+      `DELETE FROM 'internal::autonum' WHERE enmap = '${this.name}';`,
     ]);
     return null;
   }
@@ -745,7 +843,7 @@ class Enmap extends Map {
     this[_fetchCheck](key);
     this[_check](key, ['Array', 'Object']);
     const data = this.get(key, path);
-    const criteria = isFunction(val) ? val : value => val === value;
+    const criteria = isFunction(val) ? val : (value) => val === value;
     const index = data.findIndex(criteria);
     if (index > -1) {
       data.splice(index, 1);
@@ -761,12 +859,16 @@ class Enmap extends Map {
   export() {
     this[_readyCheck]();
     if (this.persistent) this.fetchEverything();
-    return serialize({
-      name: this.name,
-      version: pkgdata.version,
-      exportDate: Date.now(),
-      keys: this.map((value, key) => ({ key, value }))
-    }, null, 2);
+    return serialize(
+      {
+        name: this.name,
+        version: pkgdata.version,
+        exportDate: Date.now(),
+        keys: this.map((value, key) => ({ key, value })),
+      },
+      null,
+      2,
+    );
   }
 
   /**
@@ -781,7 +883,11 @@ class Enmap extends Map {
   import(data, overwrite = true, clear = false) {
     this[_readyCheck]();
     if (clear) this.deleteAll();
-    if (isNil(data)) throw new Err(`No data provided for import() in "${this.name}"`, 'EnmapImportError');
+    if (isNil(data))
+      throw new Err(
+        `No data provided for import() in "${this.name}"`,
+        'EnmapImportError',
+      );
     try {
       const parsed = eval(`(${data})`);
       for (const thisEntry of parsed.keys) {
@@ -790,7 +896,10 @@ class Enmap extends Map {
         this[_internalSet](key, value);
       }
     } catch (err) {
-      throw new Err(`Data provided for import() in "${this.name}" is invalid JSON. Stacktrace:\n${err}`, 'EnmapImportError');
+      throw new Err(
+        `Data provided for import() in "${this.name}" is invalid JSON. Stacktrace:\n${err}`,
+        'EnmapImportError',
+      );
     }
     return this;
   }
@@ -812,7 +921,10 @@ class Enmap extends Map {
    */
   static multi(names, options = {}) {
     if (!names.length || names.length < 1) {
-      throw new Err('"names" argument must be an array of string names.', 'EnmapTypeError');
+      throw new Err(
+        '"names" argument must be an array of string names.',
+        'EnmapTypeError',
+      );
     }
 
     const returnvalue = {};
@@ -830,43 +942,67 @@ class Enmap extends Map {
    * @param {Map} database In order to set data to the Enmap, one must be provided.
    * @returns {Promise} Returns the defer promise to await the ready state.
    */
-  async [_init](database) {
+  [_init](database) {
     Object.defineProperty(this, 'db', {
       value: database,
       writable: false,
       enumerable: false,
-      configurable: false
+      configurable: false,
     });
     if (this.db) {
       Object.defineProperty(this, 'isReady', {
         value: true,
         writable: true,
         enumerable: false,
-        configurable: false
+        configurable: false,
       });
     } else {
       throw new Err('Database Could Not Be Opened', 'EnmapDBConnectionError');
     }
-    const table = this.db.prepare("SELECT count(*) FROM sqlite_master WHERE type='table' AND name = ?;").get(this.name);
+    const table = this.db
+      .prepare(
+        "SELECT count(*) FROM sqlite_master WHERE type='table' AND name = ?;",
+      )
+      .get(this.name);
     if (!table['count(*)']) {
-      this.db.prepare(`CREATE TABLE ${this.name} (key text PRIMARY KEY, value text)`).run();
+      this.db
+        .prepare(`CREATE TABLE ${this.name} (key text PRIMARY KEY, value text)`)
+        .run();
       this.db.pragma('synchronous = 1');
       if (this.wal) this.db.pragma('journal_mode = wal');
     }
-    this.db.prepare(`CREATE TABLE IF NOT EXISTS 'internal::changes::${this.name}' (type TEXT, key TEXT, value TEXT, timestamp INTEGER, pid INTEGER);`).run();
-    this.db.prepare(`CREATE TABLE IF NOT EXISTS 'internal::autonum' (enmap TEXT PRIMARY KEY, lastnum INTEGER)`).run();
+    this.db
+      .prepare(
+        `CREATE TABLE IF NOT EXISTS 'internal::changes::${this.name}' (type TEXT, key TEXT, value TEXT, timestamp INTEGER, pid INTEGER);`,
+      )
+      .run();
+    this.db
+      .prepare(
+        `CREATE TABLE IF NOT EXISTS 'internal::autonum' (enmap TEXT PRIMARY KEY, lastnum INTEGER)`,
+      )
+      .run();
     if (this.fetchAll) {
-      await this.fetchEverything();
+      this.fetchEverything();
     }
     // TEMPORARY MIGRATE CODE FOR AUTONUM
     // REMOVE FOR V6
     if (this.has('internal::autonum')) {
-      this.db.prepare("INSERT OR REPLACE INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)").run(this.name, this.get('internal::autonum'));
+      this.db
+        .prepare(
+          "INSERT OR REPLACE INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)",
+        )
+        .run(this.name, this.get('internal::autonum'));
       this.delete('internal::autonum');
     } else {
-      const row = this.db.prepare("SELECT lastnum FROM 'internal::autonum' WHERE enmap = ?").get(this.name);
+      const row = this.db
+        .prepare("SELECT lastnum FROM 'internal::autonum' WHERE enmap = ?")
+        .get(this.name);
       if (!row) {
-        this.db.prepare("INSERT INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)").run(this.name, 0);
+        this.db
+          .prepare(
+            "INSERT INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)",
+          )
+          .run(this.name, 0);
       }
     }
 
@@ -875,29 +1011,35 @@ class Enmap extends Map {
         value: new Date(),
         writable: true,
         enumerable: false,
-        configurable: false
+        configurable: false,
       });
       setInterval(() => {
-        const changes = this.db.prepare(`SELECT type, key, value FROM 'internal::changes::${this.name}' WHERE timestamp >= ? AND pid <> ? ORDER BY timestamp ASC;`)
+        const changes = this.db
+          .prepare(
+            `SELECT type, key, value FROM 'internal::changes::${this.name}' WHERE timestamp >= ? AND pid <> ? ORDER BY timestamp ASC;`,
+          )
           .all(this.lastSync.getTime(), process.pid);
         for (const row of changes) {
           switch (row.type) {
-          case 'insert':
-            super.set(row.key, this[_parseData](row.value, row.key));
-            break;
-          case 'delete':
-            super.delete(row.key);
-            break;
-          case 'clear':
-            super.clear();
-            break;
+            case 'insert':
+              super.set(row.key, this[_parseData](row.value, row.key));
+              break;
+            case 'delete':
+              super.delete(row.key);
+              break;
+            case 'clear':
+              super.clear();
+              break;
           }
         }
         this.lastSync = new Date();
-        this.db.prepare(`DELETE FROM 'internal::changes::${this.name}' WHERE ROWID IN (SELECT ROWID FROM 'internal::changes::${this.name}' ORDER BY ROWID DESC LIMIT -1 OFFSET 100);`).run();
+        this.db
+          .prepare(
+            `DELETE FROM 'internal::changes::${this.name}' WHERE ROWID IN (SELECT ROWID FROM 'internal::changes::${this.name}' ORDER BY ROWID DESC LIMIT -1 OFFSET 100);`,
+          )
+          .run();
       }, this.pollingInterval);
     }
-    this.ready();
     return this.defer;
   }
 
@@ -910,62 +1052,85 @@ class Enmap extends Map {
    */
   [_check](key, type, path = null) {
     key = key.toString();
-    if (!this.has(key)) throw new Err(`The key "${key}" does not exist in the enmap "${this.name}"`, 'EnmapPathError');
+    if (!this.has(key))
+      throw new Err(
+        `The key "${key}" does not exist in the enmap "${this.name}"`,
+        'EnmapPathError',
+      );
     if (!type) return;
     if (!isArray(type)) type = [type];
     if (!isNil(path)) {
       this[_check](key, 'Object');
       const data = this.get(key);
       if (isNil(_get(data, path))) {
-        throw new Err(`The property "${path}" in key "${key}" does not exist. Please set() it or ensure() it."`, 'EnmapPathError');
+        throw new Err(
+          `The property "${path}" in key "${key}" does not exist. Please set() it or ensure() it."`,
+          'EnmapPathError',
+        );
       }
       if (!type.includes(_get(data, path).constructor.name)) {
-        throw new Err(`The property "${path}" in key "${key}" is not of type "${type.join('" or "')}" in the enmap "${this.name}" 
-(key was of type "${_get(data, path).constructor.name}")`, 'EnmapTypeError');
+        throw new Err(
+          `The property "${path}" in key "${key}" is not of type "${type.join(
+            '" or "',
+          )}" in the enmap "${this.name}" 
+(key was of type "${_get(data, path).constructor.name}")`,
+          'EnmapTypeError',
+        );
       }
     } else if (!type.includes(this.get(key).constructor.name)) {
-      throw new Err(`The value for key "${key}" is not of type "${type.join('" or "')}" in the enmap "${this.name}" (value was of type "${this.get(key).constructor.name}")`, 'EnmapTypeError');
+      throw new Err(
+        `The value for key "${key}" is not of type "${type.join(
+          '" or "',
+        )}" in the enmap "${this.name}" (value was of type "${
+          this.get(key).constructor.name
+        }")`,
+        'EnmapTypeError',
+      );
     }
   }
 
   /*
-  * INTERNAL method to execute a mathematical operation. Cuz... javascript.
-  * And I didn't want to import mathjs!
-  * @param {number} base the lefthand operand.
-  * @param {string} op the operation.
-  * @param {number} opand the righthand operand.
-  * @return {number} the result.
-  */
+   * INTERNAL method to execute a mathematical operation. Cuz... javascript.
+   * And I didn't want to import mathjs!
+   * @param {number} base the lefthand operand.
+   * @param {string} op the operation.
+   * @param {number} opand the righthand operand.
+   * @return {number} the result.
+   */
   [_mathop](base, op, opand) {
-    if (base == undefined || op == undefined || opand == undefined) throw new Err('Math Operation requires base and operation', 'EnmapTypeError');
+    if (base == undefined || op == undefined || opand == undefined)
+      throw new Err(
+        'Math Operation requires base and operation',
+        'EnmapTypeError',
+      );
     switch (op) {
-    case 'add' :
-    case 'addition' :
-    case '+' :
-      return base + opand;
-    case 'sub' :
-    case 'subtract' :
-    case '-' :
-      return base - opand;
-    case 'mult' :
-    case 'multiply' :
-    case '*' :
-      return base * opand;
-    case 'div' :
-    case 'divide' :
-    case '/' :
-      return base / opand;
-    case 'exp' :
-    case 'exponent' :
-    case '^' :
-      return Math.pow(base, opand);
-    case 'mod' :
-    case 'modulo' :
-    case '%' :
-      return base % opand;
-    case 'rand' :
-    case 'random' :
-      return Math.floor(Math.random() * Math.floor(opand));
+      case 'add':
+      case 'addition':
+      case '+':
+        return base + opand;
+      case 'sub':
+      case 'subtract':
+      case '-':
+        return base - opand;
+      case 'mult':
+      case 'multiply':
+      case '*':
+        return base * opand;
+      case 'div':
+      case 'divide':
+      case '/':
+        return base / opand;
+      case 'exp':
+      case 'exponent':
+      case '^':
+        return Math.pow(base, opand);
+      case 'mod':
+      case 'modulo':
+      case '%':
+        return base % opand;
+      case 'rand':
+      case 'random':
+        return Math.floor(Math.random() * Math.floor(opand));
     }
     return null;
   }
@@ -1014,15 +1179,26 @@ class Enmap extends Map {
     if (this.cloneLevel === 'none') return data;
     if (this.cloneLevel === 'shallow') return clone(data);
     if (this.cloneLevel === 'deep') return cloneDeep(data);
-    throw new Err('Invalid cloneLevel. What did you *do*, this shouldn\'t happen!', 'EnmapOptionsError');
+    throw new Err(
+      "Invalid cloneLevel. What did you *do*, this shouldn't happen!",
+      'EnmapOptionsError',
+    );
   }
 
   /*
    * Internal Method. Verifies that the database is ready, assuming persistence is used.
    */
   [_readyCheck]() {
-    if (!this.isReady) throw new Err('Database is not ready. Refer to the readme to use enmap.defer', 'EnmapReadyError');
-    if (this.isDestroyed) throw new Err('This enmap has been destroyed and can no longer be used without being re-initialized.', 'EnmapDestroyedError');
+    if (!this.isReady)
+      throw new Err(
+        'Database is not ready. Refer to the readme to use enmap.defer',
+        'EnmapReadyError',
+      );
+    if (this.isDestroyed)
+      throw new Err(
+        'This enmap has been destroyed and can no longer be used without being re-initialized.',
+        'EnmapDestroyedError',
+      );
   }
 
   /*
@@ -1031,13 +1207,15 @@ class Enmap extends Map {
   [_defineSetting](name, type, writable, defaultValue, value) {
     if (isNil(value)) value = defaultValue;
     if (type !== 'any' && value.constructor.name !== type) {
-      throw new Err(`Wrong value type provided for options.${name}:  Provided "${defaultValue.constructor.name}", expecting "${type}", in enmap "${this.name}".`);
+      throw new Err(
+        `Wrong value type provided for options.${name}:  Provided "${defaultValue.constructor.name}", expecting "${type}", in enmap "${this.name}".`,
+      );
     }
     Object.defineProperty(this, name, {
       value: !isNil(value) ? value : defaultValue,
       writable,
       enumerable: false,
-      configurable: false
+      configurable: false,
     });
   }
 
@@ -1052,9 +1230,16 @@ class Enmap extends Map {
       } catch (e) {
         serialized = serialize(this.serializer(onChange.target(value), key));
       }
-      this.db.prepare(`INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`).run(key, serialized);
+      this.db
+        .prepare(
+          `INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`,
+        )
+        .run(key, serialized);
       if (this.polling) {
-        this.db.prepare(`INSERT INTO 'internal::changes::${this.name}' (type, key, value, timestamp, pid) VALUES (?, ?, ?, ?, ?);`)
+        this.db
+          .prepare(
+            `INSERT INTO 'internal::changes::${this.name}' (type, key, value, timestamp, pid) VALUES (?, ?, ?, ?, ?);`,
+          )
           .run('insert', key, serialized, Date.now(), process.pid);
       }
     }
@@ -1102,13 +1287,16 @@ class Enmap extends Map {
   random(count) {
     let arr = this.array();
     if (count === undefined) return arr[Math.floor(Math.random() * arr.length)];
-    if (typeof count !== 'number') throw new TypeError('The count must be a number.');
-    if (!Number.isInteger(count) || count < 1) throw new RangeError('The count must be an integer greater than 0.');
+    if (typeof count !== 'number')
+      throw new TypeError('The count must be a number.');
+    if (!Number.isInteger(count) || count < 1)
+      throw new RangeError('The count must be an integer greater than 0.');
     if (arr.length === 0) return [];
     const rand = new Array(count);
     arr = arr.slice();
     // eslint-disable-next-line
-    for (let i = 0; i < count; i++) rand[i] = arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
+    for (let i = 0; i < count; i++)
+      rand[i] = arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
     // because, eslint, destructuring a for loop won't fricken happen, okay mate?
     return rand;
   }
@@ -1122,13 +1310,16 @@ class Enmap extends Map {
   randomKey(count) {
     let arr = this.keyArray();
     if (count === undefined) return arr[Math.floor(Math.random() * arr.length)];
-    if (typeof count !== 'number') throw new TypeError('The count must be a number.');
-    if (!Number.isInteger(count) || count < 1) throw new RangeError('The count must be an integer greater than 0.');
+    if (typeof count !== 'number')
+      throw new TypeError('The count must be a number.');
+    if (!Number.isInteger(count) || count < 1)
+      throw new RangeError('The count must be an integer greater than 0.');
     if (arr.length === 0) return [];
     const rand = new Array(count);
     arr = arr.slice();
     // eslint-disable-next-line
-    for (let i = 0; i < count; i++) rand[i] = arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
+    for (let i = 0; i < count; i++)
+      rand[i] = arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
     return rand;
   }
 
@@ -1146,7 +1337,11 @@ class Enmap extends Map {
     if (isNil(value)) throw new Error('Value must be specified.');
     const results = [];
     for (const item of this.values()) {
-      if (item[prop] === value || (isObject(item) && _get(item, prop) === value)) results.push(item);
+      if (
+        item[prop] === value ||
+        (isObject(item) && _get(item, prop) === value)
+      )
+        results.push(item);
     }
     return results;
   }
@@ -1169,9 +1364,14 @@ class Enmap extends Map {
   find(propOrFn, value) {
     this[_readyCheck]();
     if (isNil(propOrFn) || (!isFunction(propOrFn) && isNil(value))) {
-      throw new Err('find requires either a prop and value, or a function. One of the provided arguments was null or undefined', 'EnmapArgumentError');
+      throw new Err(
+        'find requires either a prop and value, or a function. One of the provided arguments was null or undefined',
+        'EnmapArgumentError',
+      );
     }
-    const func = isFunction(propOrFn) ? propOrFn : v => value === _get(v, propOrFn);
+    const func = isFunction(propOrFn)
+      ? propOrFn
+      : (v) => value === _get(v, propOrFn);
     for (const [key, val] of this) {
       if (func(val, key, this)) return val;
     }
@@ -1195,7 +1395,11 @@ class Enmap extends Map {
     if (typeof propOrFn === 'string') {
       if (isNil(value)) throw new Error('Value must be specified.');
       for (const [key, val] of this) {
-        if (val[propOrFn] === value || (isObject(val) && _get(val, propOrFn) === value)) return key;
+        if (
+          val[propOrFn] === value ||
+          (isObject(val) && _get(val, propOrFn) === value)
+        )
+          return key;
       }
       return null;
     } else if (typeof propOrFn === 'function') {
@@ -1319,7 +1523,8 @@ class Enmap extends Map {
     let accumulator;
     if (typeof initialValue !== 'undefined') {
       accumulator = initialValue;
-      for (const [key, val] of this) accumulator = fn(accumulator, val, key, this);
+      for (const [key, val] of this)
+        accumulator = fn(accumulator, val, key, this);
     } else {
       let first = true;
       for (const [key, val] of this) {
@@ -1359,7 +1564,6 @@ class Enmap extends Map {
     return newColl;
   }
 
-
   /* DEPRECATED METHODS */
   /* TO BE REMOVED IN VERSION 6 */
 
@@ -1373,7 +1577,9 @@ class Enmap extends Map {
    * @example const [big, small] = enmap.partition(guild => guild.memberCount > 250);
    */
   partition(fn, thisArg) {
-    console.warn('ENMAP DEPRECATION WARNING: partition() will be removed in the next major Enmap release (v6)!');
+    console.warn(
+      'ENMAP DEPRECATION WARNING: partition() will be removed in the next major Enmap release (v6)!',
+    );
     this[_readyCheck]();
     if (typeof thisArg !== 'undefined') fn = fn.bind(thisArg);
     const results = [new this.constructor(), new this.constructor()];
@@ -1396,7 +1602,9 @@ class Enmap extends Map {
    * @returns {boolean} Whether the Enmaps have identical contents
    */
   equals(enmap) {
-    console.warn('ENMAP DEPRECATION WARNING: equals() will be removed in the next major Enmap release (v6)!');
+    console.warn(
+      'ENMAP DEPRECATION WARNING: equals() will be removed in the next major Enmap release (v6)!',
+    );
     this[_readyCheck]();
     if (!enmap) return false;
     if (this === enmap) return true;
@@ -1419,9 +1627,15 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   setProp(key, path, val) {
-    console.warn('ENMAP DEPRECATION WARNING: setProp() will be removed in the next major Enmap release (v6)! Please use set(key, value, path) instead.');
+    console.warn(
+      'ENMAP DEPRECATION WARNING: setProp() will be removed in the next major Enmap release (v6)! Please use set(key, value, path) instead.',
+    );
     this[_readyCheck]();
-    if (isNil(path)) throw new Err(`No path provided to set a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    if (isNil(path))
+      throw new Err(
+        `No path provided to set a property in "${key}" of enmap "${this.name}"`,
+        'EnmapPathError',
+      );
     return this.set(key, val, path);
   }
 
@@ -1437,10 +1651,16 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   pushIn(key, path, val, allowDupes = false) {
-    console.warn('ENMAP DEPRECATION WARNING: pushIn() will be removed in the next major Enmap release (v6)! Please use push(key, value, path) instead.');
+    console.warn(
+      'ENMAP DEPRECATION WARNING: pushIn() will be removed in the next major Enmap release (v6)! Please use push(key, value, path) instead.',
+    );
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (isNil(path)) throw new Err(`No path provided to push a value in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    if (isNil(path))
+      throw new Err(
+        `No path provided to push a value in "${key}" of enmap "${this.name}"`,
+        'EnmapPathError',
+      );
     return this.push(key, val, path, allowDupes);
   }
 
@@ -1453,10 +1673,16 @@ class Enmap extends Map {
    * @return {*} The value of the property obtained.
    */
   getProp(key, path) {
-    console.warn('ENMAP DEPRECATION WARNING: getProp() will be removed in the next major Enmap release (v6)! Please use get(key, path) instead.');
+    console.warn(
+      'ENMAP DEPRECATION WARNING: getProp() will be removed in the next major Enmap release (v6)! Please use get(key, path) instead.',
+    );
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (isNil(path)) throw new Err(`No path provided to get a property from "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    if (isNil(path))
+      throw new Err(
+        `No path provided to get a property from "${key}" of enmap "${this.name}"`,
+        'EnmapPathError',
+      );
     return this.get(key, path);
   }
 
@@ -1468,10 +1694,16 @@ class Enmap extends Map {
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    */
   deleteProp(key, path) {
-    console.warn('ENMAP DEPRECATION WARNING: deleteProp() will be removed in the next major Enmap release (v6)! Please use delete(key, path) instead.');
+    console.warn(
+      'ENMAP DEPRECATION WARNING: deleteProp() will be removed in the next major Enmap release (v6)! Please use delete(key, path) instead.',
+    );
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (isNil(path)) throw new Err(`No path provided to delete a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    if (isNil(path))
+      throw new Err(
+        `No path provided to delete a property in "${key}" of enmap "${this.name}"`,
+        'EnmapPathError',
+      );
     this.delete(key, path);
   }
 
@@ -1487,10 +1719,16 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   removeFrom(key, path, val) {
-    console.warn('ENMAP DEPRECATION WARNING: removeFrom() will be removed in the next major Enmap release (v6)! Please use remove(key, value, path) instead.');
+    console.warn(
+      'ENMAP DEPRECATION WARNING: removeFrom() will be removed in the next major Enmap release (v6)! Please use remove(key, value, path) instead.',
+    );
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (isNil(path)) throw new Err(`No path provided to remove an array element in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    if (isNil(path))
+      throw new Err(
+        `No path provided to remove an array element in "${key}" of enmap "${this.name}"`,
+        'EnmapPathError',
+      );
     return this.remove(key, val, path);
   }
 
@@ -1503,10 +1741,16 @@ class Enmap extends Map {
    * @return {boolean} Whether the property exists.
    */
   hasProp(key, path) {
-    console.warn('ENMAP DEPRECATION WARNING: hasProp() will be removed in the next major Enmap release (v6)! Please use has(key, path) instead.');
+    console.warn(
+      'ENMAP DEPRECATION WARNING: hasProp() will be removed in the next major Enmap release (v6)! Please use has(key, path) instead.',
+    );
     this[_readyCheck]();
     this[_fetchCheck](key);
-    if (isNil(path)) throw new Err(`No path provided to check for a property in "${key}" of enmap "${this.name}"`, 'EnmapPathError');
+    if (isNil(path))
+      throw new Err(
+        `No path provided to check for a property in "${key}" of enmap "${this.name}"`,
+        'EnmapPathError',
+      );
     return this.has(key, path);
   }
 
@@ -1525,13 +1769,14 @@ class Enmap extends Map {
    * }
    */
   exists(prop, value) {
-    console.warn('ENMAP DEPRECATION WARNING: exists() will be removed in the next major Enmap release (v6)! Please use has(key, path) instead.');
+    console.warn(
+      'ENMAP DEPRECATION WARNING: exists() will be removed in the next major Enmap release (v6)! Please use has(key, path) instead.',
+    );
     this[_readyCheck]();
     return Boolean(this.find(prop, value));
   }
 
   /* END DEPRECATED METHODS */
-
 }
 
 module.exports = Enmap;
