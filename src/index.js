@@ -316,7 +316,7 @@ class Enmap extends Map {
   }
 
   /**
-   * Retrieves a key from the enmap. If fetchAll is false, returns a promise.
+   * Retrieves a key from the enmap.
    * @param {string} key The key to retrieve from the enmap.
    * @param {string} path Optional. The property to retrieve from the object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
