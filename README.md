@@ -40,7 +40,7 @@ Support is offered on my official [Evie.Codes Discord](https://discord.gg/N7ZKH3
 ### Q: So what's Enmap
 
 **A**: Enmaps are the Javascript Map() data structure with additional utility methods. This started
-as a pretty straight clone of the [Discord.js Collections](https://discord.js.org/#/docs/main/stable/class/Collection)
+as a pretty straight clone of the [Discord.js Collections](https://discord.js.org/#/docs/main/v12/class/Collection)
 but since its creation has grown far beyond those methods alone.
 
 ### Q: What is "Persistent"?
