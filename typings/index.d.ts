@@ -10,7 +10,7 @@ declare module "enmap" {
         ensureProps?: boolean;
         wal?: boolean;
         verbose?: (query: string) => void;
-    };
+    }
 
     type MathOps =
         'add'  | 'addition' | '+' |
