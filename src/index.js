@@ -249,13 +249,8 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   set(key, val, path = null) {
-    if (isNil(key) || key.constructor.name !== 'String') {
-      throw new Err(
-        `Enmap requires keys to be a string. Provided: ${
-          isNil(key) ? 'nil' : key.constructor.name
-        }`,
-        'EnmapKeyTypeError',
-      );
+    if (isNil(key)) {
+      throw new Err('Key not provided for set function', 'EnmapKeyError');
     }
     key = key.toString();
     let data = this.get(key);
