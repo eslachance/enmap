@@ -27,8 +27,7 @@ declare module "enmap" {
     type Path<T, Key extends keyof T = keyof T> = Key extends string
         ? T[Key] extends Record<string, any>
             ?
-                | `${Key}.${Path<T[Key], Exclude<keyof T[Key], keyof any[]>> &
-                  string}`
+                | `${Key}.${Path<T[Key], Exclude<keyof T[Key], keyof any[]>> & string}`
                 | `${Key}.${Exclude<keyof T[Key], keyof any[]> & string}`
                 | Key
             : never
