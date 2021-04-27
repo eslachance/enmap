@@ -14,35 +14,32 @@
   "bugs": {
     "url": "https://github.com/eslachance/enmap/issues"
   },
-  "homepage": "https://enmap.evie.codes/",
+  "homepage": "https://enmap.evie.dev/",
   "keywords": [
     "sqlite",
+    "sql",
+    "sqlite3",
     "better-sqlite3",
+    "db",
     "database",
     "caching",
     "storing",
-    "db",
     "easy",
-    "sql",
-    "sqlite3",
+    "quick",
+    "simple",
     "wrapper"
   ],
   "author": "Evelyne Lachance <eslachance@gmail.com> (https://evie.codes/)",
   "license": "Apache-2.0",
   "dependencies": {
+    "better-sqlite3": "^7.1.0",
     "lodash": "^4.17.20",
     "on-change": "^2.0.1",
-    "serialize-javascript": "^5.0.1",
-    "better-sqlite3": "^7.1.0"
+    "serialize-javascript": "^5.0.1"
   },
   "devDependencies": {
     "eslint": "^7.4.0",
-    "eslint-config-airbnb-base": "^14.2.0",
-    "eslint-config-standard": "^14.1.1",
-    "eslint-plugin-import": "^2.18.1",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-promise": "^4.2.1",
-    "eslint-plugin-standard": "^4.0.1",
+    "eslint-config-prettier": "^8.1.0",
     "jest": "^26.1.0",
     "jsdoc-to-markdown": "^6.0.1",
     "limax": "^2.1.0"
