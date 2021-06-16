@@ -2,6 +2,7 @@ declare module "enmap" {
     export interface EnmapOptions {
         name?: string;
         fetchAll?: boolean;
+        autoEnsure?: boolean;
         autoFetch?: boolean;
         dataDir?: string;
         cloneLevel?: "none" | "shallow" | "deep";
