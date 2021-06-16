@@ -2,7 +2,7 @@ declare module "enmap" {
     export interface EnmapOptions {
         name?: string;
         fetchAll?: boolean;
-        autoEnsure?: boolean;
+        autoEnsure?: any;
         autoFetch?: boolean;
         dataDir?: string;
         cloneLevel?: "none" | "shallow" | "deep";
@@ -83,6 +83,7 @@ declare module "enmap" {
         public readonly dataDir: string;
         public readonly fetchAll: boolean;
         public readonly autoFetch: boolean;
+        public readonly autoEnsure: any;
         public readonly defer: Promise<void>;
         public readonly persistent: boolean;
         public readonly pollingInterval: number;
