@@ -1274,10 +1274,8 @@ class Enmap extends Map {
     if (arr.length === 0) return [];
     const rand = new Array(count);
     arr = arr.slice();
-    // eslint-disable-next-line
     for (let i = 0; i < count; i++)
       rand[i] = arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
-    // because, eslint, destructuring a for loop won't fricken happen, okay mate?
     return rand;
   }
 
