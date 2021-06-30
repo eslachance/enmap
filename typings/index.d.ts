@@ -1,7 +1,8 @@
 declare module "enmap" {
-    type EnmapOptions = {
+    export interface EnmapOptions {
         name?: string;
         fetchAll?: boolean;
+        autoEnsure?: any;
         autoFetch?: boolean;
         dataDir?: string;
         cloneLevel?: "none" | "shallow" | "deep";
@@ -10,7 +11,7 @@ declare module "enmap" {
         ensureProps?: boolean;
         wal?: boolean;
         verbose?: (query: string) => void;
-    };
+    }
 
     type MathOps =
         'add'  | 'addition' | '+' |
@@ -27,13 +28,12 @@ declare module "enmap" {
     type Path<T, Key extends keyof T = keyof T> = Key extends string
         ? T[Key] extends Record<string, any>
             ?
-                | `${Key}.${Path<T[Key], Exclude<keyof T[Key], keyof any[]>> &
-                  string}`
+                | `${Key}.${Path<T[Key], Exclude<keyof T[Key], keyof any[]>> & string}`
                 | `${Key}.${Exclude<keyof T[Key], keyof any[]> & string}`
                 | Key
             : never
         : never
-    
+
     type PathValue<T, P extends Path<T>> = P extends `${infer Key}.${infer Rest}`
         ? Key extends keyof T
             ? Rest extends Path<T[Key]>
@@ -75,13 +75,13 @@ declare module "enmap" {
      * A enhanced Map structure with additional utility methods.
      * Can be made persistent
      */
-    export = Enmap;
-    class Enmap<K extends string | number = string | number, V = any> extends AlmostMap<K, V> {
+    export class Enmap<K extends string | number = string | number, V = any> extends AlmostMap<K, V> {
         public readonly cloneLevel: "none" | "shallow" | "deep";
         public readonly name: string;
         public readonly dataDir: string;
         public readonly fetchAll: boolean;
         public readonly autoFetch: boolean;
+        public readonly autoEnsure: any;
         public readonly defer: Promise<void>;
         public readonly persistent: boolean;
         public readonly pollingInterval: number;
@@ -169,6 +169,33 @@ declare module "enmap" {
          * @returns The enmap.
          */
         public set(key: K, val: any, path: string): this;
+
+        /**
+         * Update an existing object value in Enmap by merging new keys. **This only works on objects**, any other value will throw an error.
+         * Heavily inspired by setState from React's class components.
+         * This is very useful if you have many different values to update and don't want to have more than one .set(key, value, prop) lines.
+         * @param {string} key The key of the object to update.
+         * @param {*} valueOrFunction Either an object to merge with the existing value, or a function that provides the existing object
+         * and expects a new object as a return value. In the case of a straight value, the merge is recursive and will add any missing level.
+         * If using a function, it is your responsibility to merge the objects together correctly.
+         * @example
+         * // Define an object we're going to update
+         * enmap.set("obj", { a: 1, b: 2, c: 3 });
+         *
+         * // Direct merge
+         * enmap.update("obj", { d: 4, e: 5 });
+         * // obj is now { a: 1, b: 2, c: 3, d: 4, e: 5 }
+         *
+         * // Functional update
+         * enmap.update("obj", (previous) => ({
+         *   ...obj,
+         *   f: 6,
+         *   g: 7
+         * }));
+         * // this example takes heavy advantage of the spread operators.
+         * // More info: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax
+         */
+        public update(key: string, valueOrFunction: any): any;
 
         /**
          * Retrieves a key from the enmap. If fetchAll is false, returns a promise.

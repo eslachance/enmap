@@ -317,7 +317,7 @@ class Enmap extends Map {
   }
 
   /**
-   * Retrieves a key from the enmap. If fetchAll is false, returns a promise.
+   * Retrieves a key from the enmap.
    * @param {string} key The key to retrieve from the enmap.
    * @param {string} path Optional. The property to retrieve from the object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -871,7 +871,7 @@ class Enmap extends Map {
    * @param {string} data The data to import to Enmap. Must contain all the required fields provided by export()
    * @param {boolean} overwrite Defaults to `true`. Whether to overwrite existing key/value data with incoming imported data
    * @param {boolean} clear Defaults to `false`. Whether to clear the enmap of all data before importing
-   * (**__WARNING__**: Any exiting data will be lost! This cannot be undone.)
+   * (**__WARNING__**: Any existing data will be lost! This cannot be undone.)
    * @returns {Enmap} The enmap with the new data.
    */
   import(data, overwrite = true, clear = false) {
