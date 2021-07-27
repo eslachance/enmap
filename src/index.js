@@ -59,6 +59,7 @@ class Enmap extends Map {
    * or other retrieval methods. This is a "synchronous" operation, which means it doesn't need any of this promise or callback use.
    * @param {string} [options.dataDir] Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative
    * (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes!
+   * *Note*: Will not automatically create the folder if set manually, so make sure it exists.
    * @param {string} [options.cloneLevel] Defaults to deep. Determines how objects and arrays are treated when inserting and retrieving from the database.
    * See https://enmap.evie.codes/usage#enmap-options for more details on this option.
    * @param {boolean} [options.polling] defaults to `false`. Determines whether Enmap will attempt to retrieve changes from the database on a regular interval.
@@ -201,7 +202,7 @@ class Enmap extends Map {
         options.pollingInterval,
       );
       // Left for backwards compatibility
-      this[_defineSetting]('defer', 'Promise', true, Promise.resolve());
+      this[_defineSetting]('defer', 'any', true, Promise.resolve());
 
       if (this.polling) {
         console.warn(
@@ -629,11 +630,6 @@ class Enmap extends Map {
     const clonedValue = this[_clone](defaultValue);
     if (!isNil(path)) {
       if (this.ensureProps) this.ensure(key, {});
-      if (!this.has(key))
-        throw new Err(
-          `Key "${key}" does not exist in "${this.name}" to ensure a property`,
-          'EnmapKeyError',
-        );
       if (this.has(key, path)) return this.get(key, path);
       this.set(key, defaultValue, path);
       return defaultValue;
@@ -686,7 +682,7 @@ class Enmap extends Map {
    * [Array.includes()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes).
    * @param {string} key Required. The key of the array to check the value of.
    * @param {string|number} val Required. The value to check whether it's in the array.
-   * @param {*} path Required. The property to access the array inside the value object or array.
+   * @param {string} path Optional. The property to access the array inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @return {boolean} Whether the array contains the value.
    */
@@ -875,7 +871,7 @@ class Enmap extends Map {
    * @param {string} data The data to import to Enmap. Must contain all the required fields provided by export()
    * @param {boolean} overwrite Defaults to `true`. Whether to overwrite existing key/value data with incoming imported data
    * @param {boolean} clear Defaults to `false`. Whether to clear the enmap of all data before importing
-   * (**__WARNING__**: Any exiting data will be lost! This cannot be undone.)
+   * (**__WARNING__**: Any existing data will be lost! This cannot be undone.)
    * @returns {Enmap} The enmap with the new data.
    */
   import(data, overwrite = true, clear = false) {
@@ -938,7 +934,6 @@ class Enmap extends Map {
   /*
    * Internal Method. Initializes the enmap depending on given values.
    * @param {Map} database In order to set data to the Enmap, one must be provided.
-   * @returns {Promise} Returns the defer promise to await the ready state.
    */
   [_init](database) {
     Object.defineProperty(this, 'db', {
@@ -1031,7 +1026,6 @@ class Enmap extends Map {
           .run();
       }, this.pollingInterval);
     }
-    return this.defer;
   }
 
   /*
@@ -1280,10 +1274,8 @@ class Enmap extends Map {
     if (arr.length === 0) return [];
     const rand = new Array(count);
     arr = arr.slice();
-    // eslint-disable-next-line
     for (let i = 0; i < count; i++)
       rand[i] = arr.splice(Math.floor(Math.random() * arr.length), 1)[0];
-    // because, eslint, destructuring a for loop won't fricken happen, okay mate?
     return rand;
   }
 

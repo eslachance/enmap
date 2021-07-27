@@ -517,7 +517,7 @@ and must be from a version that's equivalent or lower than where you're importin
 | --- | --- | --- | --- |
 | data | <code>string</code> |  | The data to import to Enmap. Must contain all the required fields provided by export() |
 | overwrite | <code>boolean</code> | <code>true</code> | Defaults to `true`. Whether to overwrite existing key/value data with incoming imported data |
-| clear | <code>boolean</code> | <code>false</code> | Defaults to `false`. Whether to clear the enmap of all data before importing (**__WARNING__**: Any exiting data will be lost! This cannot be undone.) |
+| clear | <code>boolean</code> | <code>false</code> | Defaults to `false`. Whether to clear the enmap of all data before importing (**__WARNING__**: Any existing data will be lost! This cannot be undone.) |
 
 <a name="Enmap+array"></a>
 

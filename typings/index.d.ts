@@ -35,7 +35,6 @@ declare module 'enmap' {
   /*
    * see https://github.com/eslachance/enmap/issues/54
    */
-  //#region path types
   type Path<T, Key extends keyof T = keyof T> = Key extends string
     ? T[Key] extends Record<string, any>
       ?
@@ -55,7 +54,6 @@ declare module 'enmap' {
     : P extends keyof T
     ? T[P]
     : never;
-  //#endregion
 
   /**
    * Hack to work around TypeScript's structural integrity requirement.
