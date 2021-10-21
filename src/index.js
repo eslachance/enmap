@@ -1754,6 +1754,25 @@ class Enmap extends Map {
     return Boolean(this.find(prop, value));
   }
 
+  /**
+   * Sorts the items of an Enmap in place and returns it.
+   * @param {function} sortFunction The function to sort by
+   * @returns {Enmap} The enmap.
+   * @example
+   * let newMap = enmap.sort((a, b) => a.value - b.value);
+   */
+   sort(sortFunction) {
+    const entries = [...this.entries()];
+		entries.sort((a, b) => sortFunction(a[1], b[1], a[0], b[0]));
+
+		super.clear();
+		for (const [k, v] of entries) {
+			super.set(k, v);
+		}
+		return this;
+    // This doesn't save the return value, you can add that next if you'd like
+  }
+
   /* END DEPRECATED METHODS */
 }
 
