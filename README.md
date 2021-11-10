@@ -52,7 +52,7 @@ when you restart your project, your data is not lost and is loaded on startup.
 ### Q: How big can the Enmap be?
 
 **A**: The size of the memory used is directly proportional to the size of all the keys loaded in memory.
-The more data you have, the more complex it is, the more memory it will use. You can use the
+The more data you have, the more complex it is, the more memory it may use. You can use the
 [fetchAll](https://enmap.evie.dev/usage/fetchall) option to reduce memory usage.
 
 ### Q: Who did you make this for?
