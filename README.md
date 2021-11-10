@@ -37,10 +37,10 @@ Support is offered on my official [Evie.Codes Discord](https://discord.gg/N7ZKH3
 
 ## FAQs
 
-### Q: So what's Enmap
+### Q: So what's Enmap?
 
 **A**: Enmaps are the Javascript Map() data structure with additional utility methods. This started
-as a pretty straight clone of the [Discord.js Collections](https://discord.js.org/#/docs/collection/master/class/Collection)
+as a pretty straight clone of the [Discord.js Collections](https://discord.js.org/#/docs/collection/main/class/Collection)
 but since its creation has grown far beyond those methods alone.
 
 ### Q: What is "Persistent"?
@@ -52,16 +52,16 @@ when you restart your project, your data is not lost and is loaded on startup.
 ### Q: How big can the Enmap be?
 
 **A**: The size of the memory used is directly proportional to the size of all the keys loaded in memory.
-The more data you have, the more complex it is, the more memory it can use. You can use the
-[fetchAll](https://enmap.evie.dev/usage/fetchall) options to reduce memory usage.
+The more data you have, the more complex it is, the more memory it will use. You can use the
+[fetchAll](https://enmap.evie.dev/usage/fetchall) option to reduce memory usage.
 
 ### Q: Who did you make this for?
 
-**A**: Enmap was made specifically for beginner in mind. It's for you, the budding javascript developer that wants to save data
+**A**: Enmap was made specifically for beginners in mind. It's for you, the budding javascript developer that wants to save data
 in a database but doesn't want to learn SQL - yet. It's also for people that want to rapidly prototype some app that depends on
 a database but doesn't want to have to deal with queries, even if it's not the most efficient way to do things.
 
-### Q: What's is used for?
+### Q: What can it be used for?
 
 **A**: Enmap is useful for storing very simple key/value data for easy retrieval, and also for more complex objects with many properties. 
 Mainly, because of who I originally made this for, it's used in Discord.js Bots to save currencies, content blocks, server settings, and
