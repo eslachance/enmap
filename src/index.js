@@ -887,7 +887,7 @@ class Enmap extends Map {
       for (const thisEntry of parsed.keys) {
         const { key, value } = thisEntry;
         if (!overwrite && this.has(key)) continue;
-        this[_internalSet](key, value);
+        this[_internalSet](key, this.deserializer(value, key));
       }
     } catch (err) {
       throw new Err(
