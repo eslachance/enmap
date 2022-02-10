@@ -624,7 +624,7 @@ declare module 'enmap' {
      * @example
      * enmap.find(val => val.username === 'Bob');
      */
-    public find(fn: (val: V, key: K, enamp: this) => boolean): V | undefined;
+    public find(fn: (val: V, key: K, enmap: this) => boolean): V | undefined;
 
     /**
      * Searches for a single item where its specified property's value is identical to the given value
