@@ -228,10 +228,11 @@ class Enmap extends Map {
       }
     }
 
-    const _this = this; // Because Node can be fucking stupid sometimes
     process.on('exit', () => {
       // Cleanup the database before exiting.
-      _this.db.close();
+      if (this.persistent) {
+        this.db.close();
+      }
     });
   }
 
