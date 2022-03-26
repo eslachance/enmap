@@ -40,6 +40,15 @@ const _init = Symbol('init');
 const _defineSetting = Symbol('_defineSetting');
 const _internalSet = Symbol('_internalSet');
 
+// In order to prevent an unrestricted number of event listeners on Process, we create the listeners here
+// to close the database on exit.
+const _instances = [];
+process.on('exit', () => {
+  for (let instance of _instances) {
+    instance.db.close();
+  }
+});
+
 /**
  * A enhanced Map structure with additional utility methods.
  * Can be made persistent
@@ -228,11 +237,8 @@ class Enmap extends Map {
       }
     }
 
-    const _this = this; // Because Node can be fucking stupid sometimes
-    process.on('exit', () => {
-      // Cleanup the database before exiting.
-      _this.db.close();
-    });
+    // To allow us to clean up on process exit.
+    _instances.push(this);
   }
 
   /**
