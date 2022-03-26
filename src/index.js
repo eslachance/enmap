@@ -1579,7 +1579,7 @@ class Enmap extends Map {
    * @returns {boolean} Whether the Enmaps have identical contents
    */
   equals(enmap) {
-    console.warn(
+    process.emitWarning(
       'ENMAP DEPRECATION WARNING: equals() will be removed in the next major Enmap release (v6)!',
     );
     this[_readyCheck]();
@@ -1604,7 +1604,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   setProp(key, path, val) {
-    console.warn(
+    process.emitWarning(
       'ENMAP DEPRECATION WARNING: setProp() will be removed in the next major Enmap release (v6)! Please use set(key, value, path) instead.',
     );
     this[_readyCheck]();
@@ -1628,7 +1628,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   pushIn(key, path, val, allowDupes = false) {
-    console.warn(
+    process.emitWarning(
       'ENMAP DEPRECATION WARNING: pushIn() will be removed in the next major Enmap release (v6)! Please use push(key, value, path) instead.',
     );
     this[_readyCheck]();
@@ -1650,7 +1650,7 @@ class Enmap extends Map {
    * @return {*} The value of the property obtained.
    */
   getProp(key, path) {
-    console.warn(
+    process.emitWarning(
       'ENMAP DEPRECATION WARNING: getProp() will be removed in the next major Enmap release (v6)! Please use get(key, path) instead.',
     );
     this[_readyCheck]();
@@ -1671,7 +1671,7 @@ class Enmap extends Map {
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    */
   deleteProp(key, path) {
-    console.warn(
+    process.emitWarning(
       'ENMAP DEPRECATION WARNING: deleteProp() will be removed in the next major Enmap release (v6)! Please use delete(key, path) instead.',
     );
     this[_readyCheck]();
@@ -1696,7 +1696,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   removeFrom(key, path, val) {
-    console.warn(
+    process.emitWarning(
       'ENMAP DEPRECATION WARNING: removeFrom() will be removed in the next major Enmap release (v6)! Please use remove(key, value, path) instead.',
     );
     this[_readyCheck]();
@@ -1718,7 +1718,7 @@ class Enmap extends Map {
    * @return {boolean} Whether the property exists.
    */
   hasProp(key, path) {
-    console.warn(
+    process.emitWarning(
       'ENMAP DEPRECATION WARNING: hasProp() will be removed in the next major Enmap release (v6)! Please use has(key, path) instead.',
     );
     this[_readyCheck]();
@@ -1746,7 +1746,7 @@ class Enmap extends Map {
    * }
    */
   exists(prop, value) {
-    console.warn(
+    process.emitWarning(
       'ENMAP DEPRECATION WARNING: exists() will be removed in the next major Enmap release (v6)! Please use has(key, path) instead.',
     );
     this[_readyCheck]();
@@ -1761,7 +1761,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   close() {
-    console.warn(
+    process.emitWarning(
       'ENMAP DEPRECATION WARNING: close() is now automatic and will be removed in Enmap 6. You can remove it from your code.',
     );
     return null;
