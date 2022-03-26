@@ -1548,6 +1548,7 @@ class Enmap extends Map {
    * @param {*} [thisArg] Value to use as `this` when executing function
    * @returns {Enmap[]}
    * @example const [big, small] = enmap.partition(guild => guild.memberCount > 250);
+   * @deprecated Will be removed in Enmap 6!
    */
   partition(fn, thisArg) {
     console.warn(
@@ -1573,6 +1574,7 @@ class Enmap extends Map {
    * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6!
    * @param {Enmap} enmap Enmap to compare with
    * @returns {boolean} Whether the Enmaps have identical contents
+   * @deprecated Will be removed in Enmap 6!
    */
   equals(enmap) {
     process.emitWarning(
@@ -1598,6 +1600,7 @@ class Enmap extends Map {
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @param {*} val Required. The value to apply to the specified property.
    * @returns {Enmap} The enmap.
+   * @deprecated Will be removed in Enmap 6!
    */
   setProp(key, path, val) {
     process.emitWarning(
@@ -1622,6 +1625,7 @@ class Enmap extends Map {
    * @param {*} val Required. The value push to the array property.
    * @param {boolean} allowDupes Allow duplicate values in the array (default: false).
    * @returns {Enmap} The enmap.
+   * @deprecated Will be removed in Enmap 6!
    */
   pushIn(key, path, val, allowDupes = false) {
     process.emitWarning(
@@ -1644,6 +1648,7 @@ class Enmap extends Map {
    * @param {string} path Required. The property to retrieve from the object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @return {*} The value of the property obtained.
+   * @deprecated Will be removed in Enmap 6!
    */
   getProp(key, path) {
     process.emitWarning(
@@ -1665,6 +1670,7 @@ class Enmap extends Map {
    * @param {string} key Required. The key of the element to delete the property from in Enmap.
    * @param {string} path Required. The name of the property to remove from the object.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @deprecated Will be removed in Enmap 6! Use delete() instead!
    */
   deleteProp(key, path) {
     process.emitWarning(
@@ -1690,6 +1696,7 @@ class Enmap extends Map {
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @param {*} val Required. The value to remove from the array property.
    * @returns {Enmap} The enmap.
+   * @deprecated Will be removed in Enmap 6! Use remove() instead!
    */
   removeFrom(key, path, val) {
     process.emitWarning(
@@ -1712,6 +1719,7 @@ class Enmap extends Map {
    * @param {*} path Required. The property to verify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @return {boolean} Whether the property exists.
+   * @deprecated Will be removed in Enmap 6! Use has() instead!
    */
   hasProp(key, path) {
     process.emitWarning(
@@ -1740,6 +1748,7 @@ class Enmap extends Map {
    * if (enmap.exists('username', 'Bob')) {
    *  console.log('user here!');
    * }
+   * @deprecated Will be removed in Enmap 6! Use has(key, path) instead!
    */
   exists(prop, value) {
     process.emitWarning(
@@ -1755,6 +1764,7 @@ class Enmap extends Map {
    * only use this method if you are closing your entire application.
    * This is useful if you need to copy the database somewhere else, or if you're somehow losing data on shutdown.
    * @returns {Enmap} The enmap.
+   * @deprecated This function will be removed in Enmap 6 as this is now done automatically.
    */
   close() {
     process.emitWarning(
