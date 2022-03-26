@@ -1759,6 +1759,7 @@ class Enmap extends Map {
    * only use this method if you are closing your entire application.
    * This is useful if you need to copy the database somewhere else, or if you're somehow losing data on shutdown.
    * @returns {Enmap} The enmap.
+   * @deprecated This function will be removed in Enmap 6 as this is now done automatically.
    */
   close() {
     process.emitWarning(
