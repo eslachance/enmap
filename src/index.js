@@ -39,6 +39,7 @@ const _clone = Symbol('clone');
 const _init = Symbol('init');
 const _defineSetting = Symbol('_defineSetting');
 const _internalSet = Symbol('_internalSet');
+const _close = Symbol('_close');
 
 /**
  * A enhanced Map structure with additional utility methods.
@@ -227,6 +228,11 @@ class Enmap extends Map {
         }
       }
     }
+
+    process.on('exit', () => {
+      // Cleanup the database before exiting.
+      this[_close]();
+    });
   }
 
   /**
@@ -469,17 +475,6 @@ class Enmap extends Map {
    */
   changed(cb) {
     this.changedCB = cb;
-  }
-
-  /**
-   * Shuts down the database. WARNING: USING THIS MAKES THE ENMAP UNUSABLE. You should
-   * only use this method if you are closing your entire application.
-   * This is useful if you need to copy the database somewhere else, or if you're somehow losing data on shutdown.
-   * @return {Promise<*>} The promise of the database closing operation.
-   */
-  close() {
-    this[_readyCheck]();
-    return this.database.close();
   }
 
   /**
@@ -1227,6 +1222,10 @@ class Enmap extends Map {
     return this;
   }
 
+  [_close]() {
+    this.database.close();
+  }
+
   /*
   BELOW IS DISCORD.JS COLLECTION CODE
   Per notes in the LICENSE file, this project contains code from Amish Shah's Discord.js
@@ -1752,6 +1751,20 @@ class Enmap extends Map {
     );
     this[_readyCheck]();
     return Boolean(this.find(prop, value));
+  }
+
+  /**
+   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6 AS THIS IS NOW DONE AUTOMATICALLY
+   * Shuts down the database. WARNING: USING THIS MAKES THE ENMAP UNUSABLE. You should
+   * only use this method if you are closing your entire application.
+   * This is useful if you need to copy the database somewhere else, or if you're somehow losing data on shutdown.
+   * @returns {Enmap} The enmap.
+   */
+  close() {
+    console.warn(
+      'ENMAP DEPRECATION WARNING: close() is now automatic and will be removed in Enmap 6. You can remove it from your code.',
+    );
+    return null;
   }
 
   /* END DEPRECATED METHODS */

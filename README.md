@@ -5,11 +5,7 @@
     <a href="https://discord.gg/N7ZKH3P"><img src="https://discordapp.com/api/guilds/298508738623438848/embed.png" alt="Discord server" /></a>
     <a href="https://www.npmjs.com/package/enmap"><img src="https://img.shields.io/npm/v/enmap.svg?maxAge=3600" alt="NPM version" /></a>
     <a href="https://www.npmjs.com/package/enmap"><img src="https://img.shields.io/npm/dt/enmap.svg?maxAge=3600" alt="NPM downloads" /></a>
-    <a href="https://david-dm.org/eslachance/enmap"><img src="https://img.shields.io/david/eslachance/enmap.svg?maxAge=3600" alt="Dependencies" /></a>
     <a href="https://www.patreon.com/eviecodes"><img src="https://img.shields.io/badge/donate-patreon-F96854.svg" alt="Patreon" /></a>
-  </p>
-  <p>
-    <a href="https://nodei.co/npm/enmap/"><img src="https://nodei.co/npm/enmap.png?downloads=true&stars=true" alt="npm installnfo" /></a>
   </p>
 </div>
 
@@ -26,10 +22,10 @@ and supports multiple simultaneous connections.
 
 ## Documentation
 
- * [Installation](https://enmap.evie.dev/install)
- * [Basic Setup](https://enmap.evie.dev/usage)
- * [API Reference](https://enmap.evie.dev/api)
- * [Examples](https://enmap.evie.dev/complete-examples)
+* [Installation](https://enmap.evie.dev/install)
+* [Basic Setup](https://enmap.evie.dev/usage)
+* [API Reference](https://enmap.evie.dev/api)
+* [Examples](https://enmap.evie.dev/complete-examples)
 
 ## Support
 
@@ -63,7 +59,7 @@ a database but doesn't want to have to deal with queries, even if it's not the m
 
 ### Q: What can it be used for?
 
-**A**: Enmap is useful for storing very simple key/value data for easy retrieval, and also for more complex objects with many properties. 
+**A**: Enmap is useful for storing very simple key/value data for easy retrieval, and also for more complex objects with many properties.
 Mainly, because of who I originally made this for, it's used in Discord.js Bots to save currencies, content blocks, server settings, and
 user information for bans, blacklists, timers, warning systems, etc.
 
