@@ -39,7 +39,6 @@ const _clone = Symbol('clone');
 const _init = Symbol('init');
 const _defineSetting = Symbol('_defineSetting');
 const _internalSet = Symbol('_internalSet');
-const _close = Symbol('_close');
 
 /**
  * A enhanced Map structure with additional utility methods.
@@ -229,9 +228,10 @@ class Enmap extends Map {
       }
     }
 
+    const _this = this; // Because Node can be fucking stupid sometimes
     process.on('exit', () => {
       // Cleanup the database before exiting.
-      this[_close]();
+      _this.db.close();
     });
   }
 
@@ -1220,10 +1220,6 @@ class Enmap extends Map {
     }
     if (updateCache) super.set(key, value);
     return this;
-  }
-
-  [_close]() {
-    this.db.close();
   }
 
   /*
