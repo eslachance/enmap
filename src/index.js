@@ -1223,7 +1223,7 @@ class Enmap extends Map {
   }
 
   [_close]() {
-    this.database.close();
+    this.db.close();
   }
 
   /*
