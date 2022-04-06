@@ -43,8 +43,9 @@ const _internalSet = Symbol('_internalSet');
 // In order to prevent an unrestricted number of event listeners on Process, we create the listeners here
 // to close the database on exit.
 process.on('exit', () => {
-  for (let instance of Enmap._instances) {
-    instance.db.close();
+  while (Enmap._instances[0]) {
+    Enmap._instances[0].db.close();
+    Enmap._instances.shift();
   }
 });
 
