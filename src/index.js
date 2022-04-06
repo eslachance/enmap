@@ -42,9 +42,8 @@ const _internalSet = Symbol('_internalSet');
 
 // In order to prevent an unrestricted number of event listeners on Process, we create the listeners here
 // to close the database on exit.
-const _instances = [];
 process.on('exit', () => {
-  for (let instance of _instances) {
+  for (let instance of Enmap._instances) {
     instance.db.close();
   }
 });
@@ -55,6 +54,9 @@ process.on('exit', () => {
  * @extends {Map}
  */
 class Enmap extends Map {
+  /** Stores all of the Enmap instances to be removed on close. */
+  static _instances;
+  
   /**
    * Initializes a new Enmap, with options.
    * @param {iterable|string} iterable If iterable data, only valid in non-persistent enmaps.
@@ -238,7 +240,7 @@ class Enmap extends Map {
     }
 
     // To allow us to clean up on process exit.
-    _instances.push(this);
+    Enmap._instances.push(this);
   }
 
   /**
