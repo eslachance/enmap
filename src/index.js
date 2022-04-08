@@ -43,7 +43,7 @@ const _internalSet = Symbol('_internalSet');
 const instances = [];
 
 process.on('exit', () => {
-  instances.forEach(instance => instance.close());
+  for (const instance of instances) instance.close();
 });
 
 /**
@@ -226,6 +226,9 @@ class Enmap extends Map {
 
       this[_validateName]();
       this[_init](database);
+
+      this[_defineSetting]('autoclose', 'Boolean', true, true, options.autoclose);
+      if (this.autoclose) instances.push(this);
     } else {
       this[_defineSetting]('name', 'String', true, 'MemoryEnmap');
     }
@@ -241,8 +244,6 @@ class Enmap extends Map {
         }
       }
     }
-
-    if (isNil(options.autoclose) || options.autoclose) instances.push(this);
   }
 
   /**
@@ -495,7 +496,7 @@ class Enmap extends Map {
    */
   close() {
     this[_readyCheck]();
-    instances.splice(instances.indexOf(this), 1);
+    if (this.autoclose) instances.splice(instances.indexOf(this), 1);
     this.db.close();
     return this;
   }
