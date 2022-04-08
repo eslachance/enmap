@@ -46,6 +46,7 @@ const _internalSet = Symbol('_internalSet');
  * @extends {Map}
  */
 class Enmap extends Map {
+
   /**
    * Initializes a new Enmap, with options.
    * @param {iterable|string} iterable If iterable data, only valid in non-persistent enmaps.
@@ -100,7 +101,7 @@ class Enmap extends Map {
       options.name = iterable;
       iterable = null;
     }
-    if (!iterable || typeof iterable[Symbol.iterator] !== 'function') {
+    if (!iterable || !(Symbol.iterator in iterable)) {
       options = iterable || options;
       iterable = null;
     }
