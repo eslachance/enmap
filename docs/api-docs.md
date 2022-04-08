@@ -21,7 +21,7 @@ Can be made persistent
         * [.fetch(keyOrKeys)](#enmap-fetch-keyorkeys-enmap-enmap-or) ⇒ [<code>Enmap</code>](#enmap-map) \| <code>\*</code>
         * [.evict(keyOrArrayOfKeys)](#enmap-evict-keyorarrayofkeys-enmap) ⇒ [<code>Enmap</code>]
         * [.changed(cb)](#enmap-changed-cb)
-        * [.close()](#enmap-close-promise-less-than-greater-than) ⇒ <code>Promise.&lt;\*&gt;</code>
+        * [.close()](#enmap-close-enmap) ⇒ [<code>Enmap</code>]
         * [.push(key, val, path, allowDupes)](#enmap-push-key-val-path-allowdupes-enmap) ⇒ [<code>Enmap</code>]
         * [.math(key, operation, operand, path)](#enmap-math-key-operation-operand-path-enmap) ⇒ [<code>Enmap</code>]
         * [.inc(key, path)](#enmap-inc-key-path-enmap) ⇒ [<code>Enmap</code>]
@@ -52,15 +52,15 @@ Can be made persistent
         * [.reduce(fn, [initialValue])](#enmap-reduce-fn-initialvalue) ⇒ <code>\*</code>
         * [.clone()](#enmap-clone-enmap) ⇒ [<code>Enmap</code>]
         * [.concat(...enmaps)](#enmap-concat-enmaps-enmap) ⇒ [<code>Enmap</code>]
-        * [.partition(fn, [thisArg])](#enmap-partition-fn-thisarg-array-less-than-enmap-greater-than) ⇒ [<code>Array.&lt;Enmap&gt;</code>]
-        * [.equals(enmap)](#enmap-equals-enmap-boolean) ⇒ <code>boolean</code>
-        * [.setProp(key, path, val)](#enmap-setprop-key-path-val-enmap) ⇒ [<code>Enmap</code>]
-        * [.pushIn(key, path, val, allowDupes)](#enmap-pushin-key-path-val-allowdupes-enmap) ⇒ [<code>Enmap</code>]
-        * [.getProp(key, path)](#enmap-getprop-key-path) ⇒ <code>\*</code>
-        * [.deleteProp(key, path)](#enmap-deleteprop-key-path)
-        * [.removeFrom(key, path, val)](#enmap-removefrom-key-path-val-enmap) ⇒ [<code>Enmap</code>]
-        * [.hasProp(key, path)](#enmap-hasprop-key-path-boolean) ⇒ <code>boolean</code>
-        * [.exists(prop, value)](#enmap-exists-prop-value-boolean) ⇒ <code>boolean</code>
+        * ~~[.partition(fn, [thisArg])](#Enmap+partition) ⇒ [<code>Array.&lt;Enmap&gt;</code>](#Enmap)~~
+        * ~~[.equals(enmap)](#Enmap+equals) ⇒ <code>boolean</code>~~
+        * ~~[.setProp(key, path, val)](#Enmap+setProp) ⇒ [<code>Enmap</code>](#enmap-map)~~
+        * ~~[.pushIn(key, path, val, allowDupes)](#Enmap+pushIn) ⇒ [<code>Enmap</code>](#enmap-map)~~
+        * ~~[.getProp(key, path)](#Enmap+getProp) ⇒ <code>\*</code>~~
+        * ~~[.deleteProp(key, path)](#Enmap+deleteProp)~~
+        * ~~[.removeFrom(key, path, val)](#Enmap+removeFrom) ⇒ [<code>Enmap</code>](#enmap-map)~~
+        * ~~[.hasProp(key, path)](#Enmap+hasProp) ⇒ <code>boolean</code>~~
+        * ~~[.exists(prop, value)](#Enmap+exists) ⇒ <code>boolean</code>~~
     * _static_
         * [.multi(names, options)](#enmap-multi-names-options-array-less-than-enmap-greater-than) ⇒ [<code>Array.&lt;Enmap&gt;</code>]
 
@@ -76,7 +76,7 @@ Initializes a new Enmap, with options.
 | [options] | <code>Object</code> |  | Additional options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details. |
 | [options.name] | <code>string</code> |  | The name of the enmap. Represents its table name in sqlite. If present, the enmap is persistent. If no name is given, the enmap is memory-only and is not saved in the database. As a shorthand, you may use a string for the name instead of the options (see example). |
 | [options.fetchAll] | <code>boolean</code> |  | Defaults to `true`. When enabled, will automatically fetch any key that's requested using get, or other retrieval methods. This is a "synchronous" operation, which means it doesn't need any of this promise or callback use. |
-| [options.dataDir] | <code>string</code> |  | Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes! |
+| [options.dataDir] | <code>string</code> |  | Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes! *Note*: Will not automatically create the folder if set manually, so make sure it exists. |
 | [options.cloneLevel] | <code>string</code> |  | Defaults to deep. Determines how objects and arrays are treated when inserting and retrieving from the database. See https://enmap.evie.codes/usage#enmap-options for more details on this option. |
 | [options.polling] | <code>boolean</code> |  | defaults to `false`. Determines whether Enmap will attempt to retrieve changes from the database on a regular interval. This means that if another Enmap in another process modifies a value, this change will be reflected in ALL enmaps using the polling feature. |
 | [options.pollingInterval] | <code>string</code> |  | defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database. The shorter the interval, the more CPU is used, so it's best not to lower this. Polling takes about 350-500ms if no data is found, and time will grow with more changes fetched. In my tests, 15 rows took a little more than 1 second, every second. |
@@ -87,6 +87,7 @@ Initializes a new Enmap, with options.
 | [options.deserializer] | <code>function</code> |  | Optional. If a function is provided, it will execute on the data when it is read from the database. This is generally used to convert the value from a stored ID into a more complex object. This function may return a value, or a promise that resolves to that value (in other words, can be an async function). |
 | [options.wal] | <code>boolean</code> | <code>false</code> | Check out Write-Ahead Logging: https://www.sqlite.org/wal.html |
 | [options.verbose] | <code>function</code> | <code>(query) &#x3D;&gt; null</code> | A function to call with the direct SQL statement being ran by Enmap internally |
+| [options.autoclose] | <code>boolean</code> | <code>true</code> | Automatically close enmap when the process exits |
 
 **Example**  
 ```js
@@ -193,7 +194,7 @@ enmap.update("obj", (previous) => ({
 <a name="Enmap+get"></a>
 
 ### enmap.get(key, path) ⇒ <code>\*</code>
-Retrieves a key from the enmap. If fetchAll is false, returns a promise.
+Retrieves a key from the enmap.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>\*</code> - The value for this key.  
@@ -276,13 +277,13 @@ enmap.changed((keyName, oldValue, newValue) => {
 ```
 <a name="Enmap+close"></a>
 
-### enmap.close() ⇒ <code>Promise.&lt;\*&gt;</code>
+### enmap.close() ⇒ [<code>Enmap</code>](#enmap-map)
 Shuts down the database. WARNING: USING THIS MAKES THE ENMAP UNUSABLE. You should
 only use this method if you are closing your entire application.
-This is useful if you need to copy the database somewhere else, or if you're somehow losing data on shutdown.
+This is already done by Enmap automatically on shutdown unless you disabled it.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
-**Returns**: <code>Promise.&lt;\*&gt;</code> - The promise of the database closing operation.  
+**Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
 <a name="Enmap+push"></a>
 
 ### enmap.push(key, val, path, allowDupes) ⇒ [<code>Enmap</code>](#enmap-map)
@@ -436,7 +437,7 @@ Performs Array.includes() on a certain enmap value. Works similar to
 | --- | --- | --- | --- |
 | key | <code>string</code> |  | Required. The key of the array to check the value of. |
 | val | <code>string</code> \| <code>number</code> |  | Required. The value to check whether it's in the array. |
-| path | <code>\*</code> | <code></code> | Required. The property to access the array inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| path | <code>string</code> | <code>null</code> | Optional. The property to access the array inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 <a name="Enmap+delete"></a>
 
@@ -746,7 +747,9 @@ const newColl = someColl.concat(someOtherColl, anotherColl, ohBoyAColl);
 ```
 <a name="Enmap+partition"></a>
 
-### enmap.partition(fn, [thisArg]) ⇒ [<code>Array.&lt;Enmap&gt;</code>](#Enmap)
+### ~~enmap.partition(fn, [thisArg]) ⇒ [<code>Array.&lt;Enmap&gt;</code>](#Enmap)~~
+***Deprecated***
+
 Partitions the enmap into two enmaps where the first enmap
 contains the items that passed and the second contains the items that failed.
 DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6!
@@ -764,7 +767,9 @@ const [big, small] = enmap.partition(guild => guild.memberCount > 250);
 ```
 <a name="Enmap+equals"></a>
 
-### enmap.equals(enmap) ⇒ <code>boolean</code>
+### ~~enmap.equals(enmap) ⇒ <code>boolean</code>~~
+***Deprecated***
+
 Checks if this Enmap shares identical key-value pairings with another.
 This is different to checking for equality using equal-signs, because
 the Enmaps may be different objects, but contain the same data.
@@ -779,7 +784,9 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6!
 
 <a name="Enmap+setProp"></a>
 
-### enmap.setProp(key, path, val) ⇒ [<code>Enmap</code>](#enmap-map)
+### ~~enmap.setProp(key, path, val) ⇒ [<code>Enmap</code>](#enmap-map)~~
+***Deprecated***
+
 Modify the property of a value inside the enmap, if the value is an object or array.
 This is a shortcut to loading the key, changing the value, and setting it back.
 DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use set() instead!
@@ -795,7 +802,9 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use set() instead!
 
 <a name="Enmap+pushIn"></a>
 
-### enmap.pushIn(key, path, val, allowDupes) ⇒ [<code>Enmap</code>](#enmap-map)
+### ~~enmap.pushIn(key, path, val, allowDupes) ⇒ [<code>Enmap</code>](#enmap-map)~~
+***Deprecated***
+
 Push to an array element inside an Object or Array element in Enmap.
 DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use push() instead!
 
@@ -811,7 +820,9 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use push() instead!
 
 <a name="Enmap+getProp"></a>
 
-### enmap.getProp(key, path) ⇒ <code>\*</code>
+### ~~enmap.getProp(key, path) ⇒ <code>\*</code>~~
+***Deprecated***
+
 Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
 DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use get() instead!
 
@@ -825,7 +836,9 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use get() instead!
 
 <a name="Enmap+deleteProp"></a>
 
-### enmap.deleteProp(key, path)
+### ~~enmap.deleteProp(key, path)~~
+***Deprecated***
+
 Delete a property from an object or array value in Enmap.
 DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use delete() instead!
 
@@ -838,7 +851,9 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use delete() instead!
 
 <a name="Enmap+removeFrom"></a>
 
-### enmap.removeFrom(key, path, val) ⇒ [<code>Enmap</code>](#enmap-map)
+### ~~enmap.removeFrom(key, path, val) ⇒ [<code>Enmap</code>](#enmap-map)~~
+***Deprecated***
+
 Remove a value from an Array or Object property inside an Array or Object element in Enmap.
 Confusing? Sure is.
 DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use remove() instead!
@@ -854,7 +869,9 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use remove() instead!
 
 <a name="Enmap+hasProp"></a>
 
-### enmap.hasProp(key, path) ⇒ <code>boolean</code>
+### ~~enmap.hasProp(key, path) ⇒ <code>boolean</code>~~
+***Deprecated***
+
 Returns whether or not the property exists within an object or array value in enmap.
 DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use has() instead!
 
@@ -868,7 +885,9 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use has() instead!
 
 <a name="Enmap+exists"></a>
 
-### enmap.exists(prop, value) ⇒ <code>boolean</code>
+### ~~enmap.exists(prop, value) ⇒ <code>boolean</code>~~
+***Deprecated***
+
 Searches for the existence of a single item where its specified property's value is identical to the given value
 (`item[prop] === value`).
 <warn>Do not use this to check for an item by its ID. Instead, use `enmap.has(id)`. See
