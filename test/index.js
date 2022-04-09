@@ -91,7 +91,7 @@ describe('Standard Enmaps', () => {
         fn: function echo(arg) { return arg; },
         re: /([^\s]+)/g,
         // eslint-disable-next-line no-undef
-        big: BigInt(10)
+        big: BigInt(10),
       });
       expect(enmap.get('serialized', 'undef')).toBeUndefined();
       expect(enmap.get('serialized', 'fn')('test')).toBe('test');
@@ -107,12 +107,12 @@ describe('Advanced Data Type Methods', () => {
     enmap.set('obj1', {
       prop: 'prop',
       foo: 'bar',
-      sub: { value: 'subvalue' }
+      sub: { value: 'subvalue' },
     });
     enmap.set('obj2', {
       prop: 'prop',
       foo: 'phar',
-      sub: { value: 'subvalue' }
+      sub: { value: 'subvalue' },
     });
     enmap.set('arr1', ['one', 'two', 3, 4]);
   });
@@ -131,7 +131,7 @@ describe('Advanced Data Type Methods', () => {
     expect(enmap.find('sub.value', 'subvalue')).toEqual({
       prop: 'prop',
       foo: 'bar',
-      sub: { value: 'subvalue' }
+      sub: { value: 'subvalue' },
     });
   });
 });
@@ -144,7 +144,7 @@ describe('Basic Enmap Options', () => {
       prop1: false,
       prop2: 'thing',
       prop3: [1, 2, 3],
-      obj: { thing: 'amajig' }
+      obj: { thing: 'amajig' },
     };
   });
 
@@ -189,7 +189,7 @@ describe('Basic Enmap Options', () => {
     enmap = new Enmap({ name: '::memory::', ensureProps: true });
     const defaultValue = {
       foo: 'bar',
-      bar: { foo: 1 }
+      bar: { foo: 1 },
     };
     enmap.set('obj', {});
     enmap.ensure('obj', defaultValue);
@@ -204,7 +204,7 @@ describe('Enmap Advanced Options', () => {
     b: 2,
     c: 3,
     d: [1, 2, 3, 4],
-    e: { a: 'a', b: 'b', c: 'c' }
+    e: { a: 'a', b: 'b', c: 'c' },
   };
   afterEach(() => {
     enmap.close();
@@ -217,12 +217,12 @@ describe('Enmap Advanced Options', () => {
     enmap.set('test', 'a', 'a');
     expect(enmap.get('test')).toEqual({
       ...defaultData,
-      a: 'a'
+      a: 'a',
     });
     enmap.set('test2', 'b', 'b');
     expect(enmap.get('test2')).toEqual({
       ...defaultData,
-      b: 'b'
+      b: 'b',
     });
   });
 
@@ -231,16 +231,18 @@ describe('Enmap Advanced Options', () => {
       name: '::memory::',
       serializer: (data, key) => ({
         ...data,
-        a: 'modified'
+        a: 'modified',
       }),
       deserializer: (data, key) => ({
         ...data,
-        a: 1
-      })
+        a: 1,
+      }),
     });
     enmap.set('test', defaultData);
     expect(enmap.get('test', 'a')).toBe(1);
-    const data = enmap.db.prepare(`SELECT * FROM '__memory__' WHERE key = ?;`).get('test');
+    const data = enmap.db
+      .prepare(`SELECT * FROM 'MemoryEnmap' WHERE key = ?;`)
+      .get('test');
     expect(data.value).toBe('{"a":"modified","b":2,"c":3,"d":[1,2,3,4],"e":{"a":"a","b":"b","c":"c"}}');
   });
 });
