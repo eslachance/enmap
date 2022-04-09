@@ -53,9 +53,10 @@ class Enmap extends Map {
   #pollingInterval;
   #verbose;
   #inMemory;
+  #db;
   /**
    * Initializes a new Enmap, with options.
-   * @param {iterable|string} iterable If iterable data, only valid in non-persistent enmaps.
+   * @param {Iterable|string|void} iterable If iterable data, only valid in non-persistent enmaps.
    * If this parameter is a string, it is assumed to be the Enmap's name, which is a shorthand for adding a name in the options
    * and making the enmap persistent.
    * @param {Object} [options] Additional options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details.
@@ -71,7 +72,7 @@ class Enmap extends Map {
    * See https://enmap.evie.codes/usage#enmap-options for more details on this option.
    * @param {boolean} [options.polling] defaults to `false`. Determines whether Enmap will attempt to retrieve changes from the database on a regular interval.
    * This means that if another Enmap in another process modifies a value, this change will be reflected in ALL enmaps using the polling feature.
-   * @param {string} [options.pollingInterval] defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database.
+   * @param {number} [options.pollingInterval] defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database.
    * The shorter the interval, the more CPU is used, so it's best not to lower this. Polling takes about 350-500ms if no data is found, and time will
    * grow with more changes fetched. In my tests, 15 rows took a little more than 1 second, every second.
    * @param {boolean} [options.ensureProps] defaults to `true`. If enabled and the value in the enmap is an object, using ensure() will also ensure that
@@ -177,7 +178,7 @@ class Enmap extends Map {
       this.#pollingInterval = options.pollingInterval ?? 1000;
       this.#verbose = options.verbose ? options.verbose : () => null;
 
-      if (this.polling) {
+      if (this.#polling) {
         console.warn(
           'WARNING: Polling features will be removed in Enmap v6. If you need enmap in multiple processes, please consider moving to JOSH, https://josh.evie.dev/',
         );
@@ -343,19 +344,19 @@ class Enmap extends Map {
 
   /**
    * Retrieves the number of rows in the database for this enmap, even if they aren't fetched.
-   * @return {integer} The number of rows in the database.
+   * @return {number} The number of rows in the database.
    */
   get count() {
-    const data = this.db.prepare(`SELECT count(*) FROM '${this.#name}';`).get();
+    const data = this.#db.prepare(`SELECT count(*) FROM '${this.#name}';`).get();
     return data['count(*)'];
   }
 
   /**
    * Retrieves all the indexes (keys) in the database for this enmap, even if they aren't fetched.
-   * @return {array<string>} Array of all indexes (keys) in the enmap, cached or not.
+   * @return {Array<string>} Array of all indexes (keys) in the enmap, cached or not.
    */
   get indexes() {
-    const rows = this.db.prepare(`SELECT key FROM '${this.#name}';`).all();
+    const rows = this.#db.prepare(`SELECT key FROM '${this.#name}';`).all();
     return rows.map((row) => row.key);
   }
 
@@ -365,7 +366,7 @@ class Enmap extends Map {
    */
   fetchEverything() {
     this.#readyCheck();
-    const rows = this.db.prepare(`SELECT * FROM ${this.#name};`).all();
+    const rows = this.#db.prepare(`SELECT * FROM ${this.#name};`).all();
     for (const row of rows) {
       const val = this.#parseData(row.value, row.key);
       super.set(row.key, val);
@@ -381,7 +382,7 @@ class Enmap extends Map {
   fetch(keyOrKeys) {
     this.#readyCheck();
     if (isArray(keyOrKeys)) {
-      const data = this.db
+      const data = this.#db
         .prepare(
           `SELECT * FROM ${this.#name} WHERE key IN (${'?, '
             .repeat(keyOrKeys.length)
@@ -393,7 +394,7 @@ class Enmap extends Map {
       }
       return this;
     } else {
-      const data = this.db
+      const data = this.#db
         .prepare(`SELECT * FROM ${this.#name} WHERE key = ?;`)
         .get(keyOrKeys);
       if (!data) return null;
@@ -426,11 +427,11 @@ class Enmap extends Map {
    * @return {number} The generated key number.
    */
   get autonum() {
-    let { lastnum } = this.db
+    let { lastnum } = this.#db
       .prepare("SELECT lastnum FROM 'internal::autonum' WHERE enmap = ?")
       .get(this.#name);
     lastnum++;
-    this.db
+    this.#db
       .prepare(
         "INSERT OR REPLACE INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)",
       )
@@ -461,7 +462,7 @@ class Enmap extends Map {
     this.#readyCheck();
     if (this.#persistent) {
       instances.splice(instances.indexOf(this), 1);
-      this.db.close();
+      this.#db.close();
     }
     return this;
   }
@@ -733,7 +734,7 @@ class Enmap extends Map {
       super.delete(key);
       if (this.#persistent) {
         if (this.#polling) {
-          this.db
+          this.#db
             .prepare(
               `INSERT INTO 'internal::changes::${
                 this.#name
@@ -741,7 +742,7 @@ class Enmap extends Map {
             )
             .run('delete', key.toString(), Date.now(), process.pid);
         }
-        this.db.prepare(`DELETE FROM ${this.#name} WHERE key = ?`).run(key);
+        this.#db.prepare(`DELETE FROM ${this.#name} WHERE key = ?`).run(key);
         return this;
       }
       if (typeof this.changedCB === 'function') {
@@ -757,9 +758,9 @@ class Enmap extends Map {
   deleteAll() {
     this.#readyCheck();
     if (this.#persistent) {
-      this.db.prepare(`DELETE FROM ${this.#name};`).run();
-      if (this.polling) {
-        this.db
+      this.#db.prepare(`DELETE FROM ${this.#name};`).run();
+      if (this.#polling) {
+        this.#db
           .prepare(
             `INSERT INTO 'internal::changes::${
               this.#name
@@ -773,7 +774,7 @@ class Enmap extends Map {
 
   /**
    * Deletes everything from the enmap. If persistent, clears the database of all its data for this table.
-   * @returns {undefined}
+   * @returns {void}
    */
   clear() {
     return this.deleteAll();
@@ -790,9 +791,9 @@ class Enmap extends Map {
 
     this.#isDestroyed = true;
 
-    const transaction = this.db.transaction((run) => {
+    const transaction = this.#db.transaction((run) => {
       for (const stmt of run) {
-        this.db.prepare(stmt).run();
+        this.#db.prepare(stmt).run();
       }
     });
 
@@ -852,8 +853,9 @@ class Enmap extends Map {
         exportDate: Date.now(),
         keys: this.map((value, key) => ({ key, value })),
       },
-      null,
-      2,
+      {
+        space: 2,
+      },
     );
   }
 
@@ -905,7 +907,7 @@ class Enmap extends Map {
    * const Enmap = require("enmap");
    * Object.assign(client, Enmap.multi(["settings", "tags", "blacklist"]));
    *
-   * @returns {Array<Enmap>} An array of initialized Enmaps.
+   * @returns {Object} An array of initialized Enmaps.
    */
   static multi(names, options = {}) {
     if (!names.length || names.length < 1) {
@@ -936,31 +938,31 @@ class Enmap extends Map {
       enumerable: false,
       configurable: false,
     });
-    if (!this.db) {
+    if (!this.#db) {
       throw new Err('Database Could Not Be Opened', 'EnmapDBConnectionError');
     }
-    const table = this.db
+    const table = this.#db
       .prepare(
         "SELECT count(*) FROM sqlite_master WHERE type='table' AND name = ?;",
       )
       .get(this.#name);
     if (!table['count(*)']) {
-      this.db
+      this.#db
         .prepare(
           `CREATE TABLE ${this.#name} (key text PRIMARY KEY, value text)`,
         )
         .run();
-      this.db.pragma('synchronous = 1');
-      if (this.#wal) this.db.pragma('journal_mode = wal');
+      this.#db.pragma('synchronous = 1');
+      if (this.#wal) this.#db.pragma('journal_mode = wal');
     }
-    this.db
+    this.#db
       .prepare(
         `CREATE TABLE IF NOT EXISTS 'internal::changes::${
           this.#name
         }' (type TEXT, key TEXT, value TEXT, timestamp INTEGER, pid INTEGER);`,
       )
       .run();
-    this.db
+    this.#db
       .prepare(
         `CREATE TABLE IF NOT EXISTS 'internal::autonum' (enmap TEXT PRIMARY KEY, lastnum INTEGER)`,
       )
@@ -971,18 +973,18 @@ class Enmap extends Map {
     // TEMPORARY MIGRATE CODE FOR AUTONUM
     // REMOVE FOR V6
     if (this.has('internal::autonum')) {
-      this.db
+      this.#db
         .prepare(
           "INSERT OR REPLACE INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)",
         )
         .run(this.#name, this.get('internal::autonum'));
       this.delete('internal::autonum');
     } else {
-      const row = this.db
+      const row = this.#db
         .prepare("SELECT lastnum FROM 'internal::autonum' WHERE enmap = ?")
         .get(this.#name);
       if (!row) {
-        this.db
+        this.#db
           .prepare(
             "INSERT INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)",
           )
@@ -990,7 +992,7 @@ class Enmap extends Map {
       }
     }
 
-    if (this.polling) {
+    if (this.#polling) {
       Object.defineProperty(this, 'lastSync', {
         value: new Date(),
         writable: true,
@@ -998,7 +1000,7 @@ class Enmap extends Map {
         configurable: false,
       });
       setInterval(() => {
-        const changes = this.db
+        const changes = this.#db
           .prepare(
             `SELECT type, key, value FROM 'internal::changes::${
               this.#name
@@ -1019,7 +1021,7 @@ class Enmap extends Map {
           }
         }
         this.lastSync = new Date();
-        this.db
+        this.#db
           .prepare(
             `DELETE FROM 'internal::changes::${
               this.#name
@@ -1126,7 +1128,6 @@ class Enmap extends Map {
 
   /**
    * Internal method used to validate persistent enmap names (valid Windows filenames)
-   * @private
    */
   #validateName() {
     this.#name = this.#name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
@@ -1196,13 +1197,13 @@ class Enmap extends Map {
       } catch (e) {
         serialized = serialize(this.#serializer(onChange.target(value), key));
       }
-      this.db
+      this.#db
         .prepare(
           `INSERT OR REPLACE INTO ${this.#name} (key, value) VALUES (?, ?);`,
         )
         .run(key, serialized);
-      if (this.polling) {
-        this.db
+      if (this.#polling) {
+        this.#db
           .prepare(
             `INSERT INTO 'internal::changes::${
               this.#name
@@ -1404,7 +1405,7 @@ class Enmap extends Map {
   filter(fn, thisArg) {
     this.#readyCheck();
     if (thisArg) fn = fn.bind(thisArg);
-    const results = new this.constructor();
+    const results = new Enmap();
     for (const [key, val] of this) {
       if (fn(val, key, this)) results.set(key, val);
     }
@@ -1512,7 +1513,7 @@ class Enmap extends Map {
    */
   clone() {
     this.#readyCheck();
-    return new this.constructor(this);
+    return new Enmap(this);
   }
 
   /**
@@ -1549,7 +1550,7 @@ class Enmap extends Map {
     );
     this.#readyCheck();
     if (typeof thisArg !== 'undefined') fn = fn.bind(thisArg);
-    const results = [new this.constructor(), new this.constructor()];
+    const results = [new Enmap(), new Enmap()];
     for (const [key, val] of this) {
       if (fn(val, key, this)) {
         results[0].set(key, val);
