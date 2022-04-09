@@ -201,6 +201,13 @@ class Enmap extends Map {
         1000,
         options.pollingInterval,
       );
+      this[_defineSetting](
+        'verbose',
+        'Function',
+        true,
+        () => null,
+        options.verbose,
+      );
       // Left for backwards compatibility
       this[_defineSetting]('defer', 'any', true, Promise.resolve());
 
