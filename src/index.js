@@ -24,6 +24,7 @@ const fs = require('fs');
 
 // Package.json
 const pkgdata = require('../package.json');
+const Database = require('better-sqlite3/lib/database');
 
 const instances = [];
 
@@ -54,6 +55,7 @@ class Enmap extends Map {
   #verbose;
   #inMemory;
   #db;
+  #lastSync
   /**
    * Initializes a new Enmap, with options.
    * @param {Iterable|string|void} iterable If iterable data, only valid in non-persistent enmaps.
@@ -160,13 +162,6 @@ class Enmap extends Map {
         : new Database(`${dataDir}${sep}enmap.sqlite`, {
             verbose: this.#verbose,
           });
-
-      Object.defineProperty(this, 'db', {
-        value: database,
-        writable: false,
-        enumerable: false,
-        configurable: false,
-      });
 
       this.#off = Symbol('option_off');
       this.#name = options.name;
@@ -358,6 +353,15 @@ class Enmap extends Map {
   get indexes() {
     const rows = this.#db.prepare(`SELECT key FROM '${this.#name}';`).all();
     return rows.map((row) => row.key);
+  }
+
+  /**
+   * Get the better-sqlite3 database object. Useful if you want to directly query or interact with the
+   * underlying SQLite database. Use at your own risk, as errors here might cause loss of data or corruption!
+   * @return {Database}
+   */
+  get db() {
+    return this.#db;
   }
 
   /**
@@ -932,12 +936,7 @@ class Enmap extends Map {
    * @param {Map} database In order to set data to the Enmap, one must be provided.
    */
   #init(database) {
-    Object.defineProperty(this, 'db', {
-      value: database,
-      writable: false,
-      enumerable: false,
-      configurable: false,
-    });
+    this.#db = database;
     if (!this.#db) {
       throw new Err('Database Could Not Be Opened', 'EnmapDBConnectionError');
     }
@@ -993,12 +992,7 @@ class Enmap extends Map {
     }
 
     if (this.#polling) {
-      Object.defineProperty(this, 'lastSync', {
-        value: new Date(),
-        writable: true,
-        enumerable: false,
-        configurable: false,
-      });
+      this.#lastSync = new Date();
       setInterval(() => {
         const changes = this.#db
           .prepare(
@@ -1006,7 +1000,7 @@ class Enmap extends Map {
               this.#name
             }' WHERE timestamp >= ? AND pid <> ? ORDER BY timestamp ASC;`,
           )
-          .all(this.lastSync.getTime(), process.pid);
+          .all(this.#lastSync.getTime(), process.pid);
         for (const row of changes) {
           switch (row.type) {
             case 'insert':
@@ -1020,7 +1014,7 @@ class Enmap extends Map {
               break;
           }
         }
-        this.lastSync = new Date();
+        this.#lastSync = new Date();
         this.#db
           .prepare(
             `DELETE FROM 'internal::changes::${
