@@ -3,8 +3,6 @@ const {
   get: _get,
   set: _set,
   has: _has,
-  // eslint-disable-next-line no-unused-vars
-  delete: _delete,
   isNil,
   isFunction,
   isArray,
@@ -26,19 +24,7 @@ const fs = require('fs');
 
 // Package.json
 const pkgdata = require('../package.json');
-
-// Symbols are used to create "private" methods.
-// https://medium.com/front-end-hacking/private-methods-in-es6-and-writing-your-own-db-b2e30866521f
-const _mathop = Symbol('mathop');
-const _check = Symbol('check');
-const _validateName = Symbol('validateName');
-const _fetchCheck = Symbol('fetchCheck');
-const _parseData = Symbol('parseData');
-const _readyCheck = Symbol('readyCheck');
-const _clone = Symbol('clone');
-const _init = Symbol('init');
-const _defineSetting = Symbol('_defineSetting');
-const _internalSet = Symbol('_internalSet');
+const Database = require('better-sqlite3/lib/database');
 
 const instances = [];
 
@@ -52,9 +38,25 @@ process.on('exit', () => {
  * @extends {Map}
  */
 class Enmap extends Map {
+  #cloneLevel;
+  #ensureProps;
+  #serializer;
+  #deserializer;
+  #isDestroyed;
+  #name;
+  #off;
+  #fetchAll;
+  #autoFetch;
+  #autoEnsure;
+  #wal;
+  #polling;
+  #pollingInterval;
+  #verbose;
+  #db;
+  #lastSync;
   /**
    * Initializes a new Enmap, with options.
-   * @param {iterable|string} iterable If iterable data, only valid in non-persistent enmaps.
+   * @param {Iterable|string|void} iterable If iterable data, only valid in non-persistent enmaps.
    * If this parameter is a string, it is assumed to be the Enmap's name, which is a shorthand for adding a name in the options
    * and making the enmap persistent.
    * @param {Object} [options] Additional options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details.
@@ -70,7 +72,7 @@ class Enmap extends Map {
    * See https://enmap.evie.codes/usage#enmap-options for more details on this option.
    * @param {boolean} [options.polling] defaults to `false`. Determines whether Enmap will attempt to retrieve changes from the database on a regular interval.
    * This means that if another Enmap in another process modifies a value, this change will be reflected in ALL enmaps using the polling feature.
-   * @param {string} [options.pollingInterval] defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database.
+   * @param {number} [options.pollingInterval] defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database.
    * The shorter the interval, the more CPU is used, so it's best not to lower this. Polling takes about 350-500ms if no data is found, and time will
    * grow with more changes fetched. In my tests, 15 rows took a little more than 1 second, every second.
    * @param {boolean} [options.ensureProps] defaults to `true`. If enabled and the value in the enmap is an object, using ensure() will also ensure that
@@ -107,141 +109,77 @@ class Enmap extends Map {
       iterable = null;
     }
     if (!iterable || typeof iterable[Symbol.iterator] !== 'function') {
+      //@ts-ignore
       options = iterable || options;
       iterable = null;
     }
     super();
 
-    let cloneLevel;
-    if (options.cloneLevel) {
-      const accepted = ['none', 'shallow', 'deep'];
-      if (!accepted.includes(options.cloneLevel))
-        throw new Err(
-          'Unknown Clone Level. Options are none, shallow, deep. Default is deep.',
-          'EnmapOptionsError',
-        );
-      cloneLevel = options.cloneLevel; // eslint-disable-line prefer-destructuring
-    } else {
-      cloneLevel = 'deep';
+    // Define local properties from the options.
+    this.#off = Symbol('option_off');
+    this.#name = options.name ?? '::memory::';
+    this.#fetchAll = options.fetchAll ?? true;
+    this.#autoFetch = options.autoFetch ?? true;
+    this.#autoEnsure = options.autoEnsure ?? this.#off;
+    this.#wal = options.wal ?? true;
+    this.#polling = options.polling ?? false;
+    this.#pollingInterval = options.pollingInterval ?? 1000;
+    this.#ensureProps = options.ensureProps ?? true;
+    this.#serializer = options.serializer ? options.serializer : (data) => data;
+    this.#verbose = options.verbose ? options.verbose : () => null;
+    this.#deserializer = options.deserializer
+      ? options.deserializer
+      : (data) => data;
+
+    // CloneLevel is a little more involved... This'll be easier with TS :P
+    this.#cloneLevel = options.cloneLevel ?? 'deep';
+    if (!['none', 'shallow', 'deep'].includes(this.#cloneLevel)) {
+      throw new Err(
+        'Unknown Clone Level. Options are none, shallow, deep. Default is deep.',
+        'EnmapOptionsError',
+      );
     }
 
-    this[_defineSetting]('cloneLevel', 'String', true, cloneLevel);
-    this[_defineSetting](
-      'ensureProps',
-      'Boolean',
-      true,
-      true,
-      options.ensureProps,
-    );
-    // Always needs to be present
-    this[_defineSetting](
-      'serializer',
-      'Function',
-      true,
-      (data) => data,
-      options.serializer,
-    );
-    this[_defineSetting](
-      'deserializer',
-      'Function',
-      true,
-      (data) => data,
-      options.deserializer,
-    );
-
-    if (options.name) {
-      if (options.name === '::memory::') {
-        // This option is "secret" and used for testing but if you're reading this
-        // and you want an in-memory DB with all the features, with double the memory, knock yourself out!
-        this.inMemory = true;
-      }
-      const Database = require('better-sqlite3');
-      this[_defineSetting]('persistent', 'Boolean', false, true);
-
-      // Initialize this property, to prepare for a possible destroy() call.
-      // This is completely ignored in all situations except destroying the enmap.
-      this[_defineSetting]('isDestroyed', 'Boolean', true, false);
-
+    if (this.#name !== '::memory::') {
       // Define the data directory where the enmap is stored.
-      if (!options.dataDir && !this.inMemory) {
+      if (!options.dataDir) {
         if (!fs.existsSync('./data')) {
           fs.mkdirSync('./data');
         }
       }
 
       const dataDir = resolve(process.cwd(), options.dataDir || 'data');
-      const database = this.inMemory
-        ? new Database(':memory:', { verbose: this.verbose })
-        : new Database(`${dataDir}${sep}enmap.sqlite`, {
-            verbose: this.verbose,
-          });
-
-      // [_defineSetting](name, type, writable, defaultValue [, value]) {
-
-      // this[_defineSetting]('all', 'Symbol', false, Symbol('all_records'));
-      this[_defineSetting]('off', 'Symbol', false, Symbol('option_off'));
-      this[_defineSetting]('name', 'String', true, options.name);
-      this[_defineSetting]('dataDir', 'String', false, dataDir);
-      this[_defineSetting]('fetchAll', 'Boolean', true, true, options.fetchAll);
-      this[_defineSetting]('database', 'Database', true, database);
-      this[_defineSetting](
-        'autoFetch',
-        'Boolean',
-        true,
-        true,
-        options.autoFetch,
-      );
-      this[_defineSetting](
-        'autoEnsure',
-        'any',
-        true,
-        this.off,
-        options.autoEnsure,
-      );
-      this[_defineSetting]('wal', 'Boolean', true, true, options.wal);
-      this[_defineSetting]('polling', 'Boolean', true, false, options.polling);
-      this[_defineSetting](
-        'pollingInterval',
-        'Number',
-        true,
-        1000,
-        options.pollingInterval,
-      );
-      this[_defineSetting](
-        'verbose',
-        'Function',
-        true,
-        () => null,
-        options.verbose,
-      );
-      // Left for backwards compatibility
-      this[_defineSetting]('defer', 'any', true, Promise.resolve());
-
-      if (this.polling) {
-        console.warn(
-          'WARNING: Polling features will be removed in Enmap v6. If you need enmap in multiple processes, please consider moving to JOSH, https://josh.evie.dev/',
+      this.#db = new Database(`${dataDir}${sep}enmap.sqlite`, {
+        verbose: this.#verbose,
+      });
+    } else {
+      this.#db = new Database(':memory:', { verbose: this.#verbose });
+      this.#name = 'MemoryEnmap';
+    }
+    
+    if (this.#polling) {
+      process.emitWarning(
+        'Polling features will be removed in Enmap v6. If you need enmap in multiple processes, please consider moving to JOSH, https://josh.evie.dev/',
         );
       }
-
-      this[_validateName]();
-      this[_init](database);
-
-      instances.push(this);
-    } else {
-      this[_defineSetting]('name', 'String', true, 'MemoryEnmap');
-    }
+      
+      // Initialize this property, to prepare for a possible destroy() call.
+      // This is completely ignored in all situations except destroying the enmap.
+    this.#validateName();
+    this.#isDestroyed = false;
+    this.#init(this.#db);
+    instances.push(this);
 
     if (iterable) {
-      if (options.name) {
-        console.warn(
-          `WARNING: Iterable ignored for persistent Enmap ${options.name}`,
-        );
-      } else {
-        for (const [key, value] of iterable) {
-          this[_internalSet](key, value);
-        }
+      for (const [key, value] of iterable) {
+        this.#internalSet(key, value);
       }
     }
+  }
+
+  // Left for backwards compatibility
+  get defer() {
+    return Promise.resolve();
   }
 
   /**
@@ -264,6 +202,7 @@ class Enmap extends Map {
    * enmap.set('ArraysToo', 'three', 2); // changes "tree" to "three" in array.
    * @returns {Enmap} The enmap.
    */
+  //@ts-ignore
   set(key, val, path = null) {
     if (isNil(key) || key.constructor.name !== 'String') {
       throw new Err(
@@ -275,7 +214,7 @@ class Enmap extends Map {
     }
     key = key.toString();
     let data = this.get(key);
-    const oldValue = super.has(key) ? this[_clone](data) : null;
+    const oldValue = super.has(key) ? this.#clone(data) : null;
     if (!isNil(path)) {
       if (isNil(data)) data = {};
       _set(data, path, val);
@@ -285,8 +224,8 @@ class Enmap extends Map {
     if (isFunction(this.changedCB)) {
       this.changedCB(key, oldValue, data);
     }
-    this[_internalSet](key, data, false);
-    return super.set(key, this[_clone](data));
+    this.#internalSet(key, data, false);
+    return super.set(key, this.#clone(data));
   }
 
   // eslint-disable-next-line valid-jsdoc
@@ -316,18 +255,18 @@ class Enmap extends Map {
    * // More info: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax
    */
   update(key, valueOrFunction) {
-    this[_readyCheck]();
+    this.#readyCheck();
     if (isNil(key)) {
       throw new Err('Key not provided for update function', 'EnmapKeyError');
     }
-    this[_check](key, ['Object']);
-    this[_fetchCheck](key);
+    this.#check(key, ['Object']);
+    this.#fetchCheck(key);
     const previousValue = this.get(key);
     const fn = isFunction(valueOrFunction)
       ? valueOrFunction
       : () => merge(previousValue, valueOrFunction);
     const merged = fn(previousValue);
-    this[_internalSet](key, merged);
+    this.#internalSet(key, merged);
     return merged;
   }
 
@@ -344,19 +283,19 @@ class Enmap extends Map {
    * @return {*} The value for this key.
    */
   get(key, path = null) {
-    this[_readyCheck]();
+    this.#readyCheck();
     if (isNil(key)) return null;
-    this[_fetchCheck](key);
+    this.#fetchCheck(key);
     key = key.toString();
-    if (this.autoEnsure !== this.off && !this.has(key)) {
-      this[_internalSet](key, this.autoEnsure);
+    if (this.#autoEnsure !== this.#off && !this.has(key)) {
+      this.#internalSet(key, this.#autoEnsure);
     }
     const data = super.get(key);
     if (!isNil(path)) {
-      this[_check](key, ['Object', 'Array']);
+      this.#check(key, ['Object', 'Array']);
       return _get(data, path);
     }
-    return this[_clone](data);
+    return this.#clone(data);
   }
 
   /**
@@ -368,7 +307,7 @@ class Enmap extends Map {
    * @return {*} The value for this key.
    */
   observe(key, path = null) {
-    this[_check](key, ['Object', 'Array'], path);
+    this.#check(key, ['Object', 'Array'], path);
     const data = this.get(key, path);
     const proxy = onChange(data, () => {
       this.set(key, proxy, path);
@@ -378,20 +317,31 @@ class Enmap extends Map {
 
   /**
    * Retrieves the number of rows in the database for this enmap, even if they aren't fetched.
-   * @return {integer} The number of rows in the database.
+   * @return {number} The number of rows in the database.
    */
   get count() {
-    const data = this.db.prepare(`SELECT count(*) FROM '${this.name}';`).get();
+    const data = this.#db
+      .prepare(`SELECT count(*) FROM '${this.#name}';`)
+      .get();
     return data['count(*)'];
   }
 
   /**
    * Retrieves all the indexes (keys) in the database for this enmap, even if they aren't fetched.
-   * @return {array<string>} Array of all indexes (keys) in the enmap, cached or not.
+   * @return {Array<string>} Array of all indexes (keys) in the enmap, cached or not.
    */
   get indexes() {
-    const rows = this.db.prepare(`SELECT key FROM '${this.name}';`).all();
+    const rows = this.#db.prepare(`SELECT key FROM '${this.#name}';`).all();
     return rows.map((row) => row.key);
+  }
+
+  /**
+   * Get the better-sqlite3 database object. Useful if you want to directly query or interact with the
+   * underlying SQLite database. Use at your own risk, as errors here might cause loss of data or corruption!
+   * @return {Database}
+   */
+  get db() {
+    return this.#db;
   }
 
   /**
@@ -399,10 +349,10 @@ class Enmap extends Map {
    * @return {Enmap} The enmap containing all values.
    */
   fetchEverything() {
-    this[_readyCheck]();
-    const rows = this.db.prepare(`SELECT * FROM ${this.name};`).all();
+    this.#readyCheck();
+    const rows = this.#db.prepare(`SELECT * FROM ${this.#name};`).all();
     for (const row of rows) {
-      const val = this[_parseData](row.value, row.key);
+      const val = this.#parseData(row.value, row.key);
       super.set(row.key, val);
     }
     return this;
@@ -414,26 +364,26 @@ class Enmap extends Map {
    * @return {Enmap|*} The Enmap, including the new fetched values, or the value in case the function argument is a single key.
    */
   fetch(keyOrKeys) {
-    this[_readyCheck]();
+    this.#readyCheck();
     if (isArray(keyOrKeys)) {
-      const data = this.db
+      const data = this.#db
         .prepare(
-          `SELECT * FROM ${this.name} WHERE key IN (${'?, '
+          `SELECT * FROM ${this.#name} WHERE key IN (${'?, '
             .repeat(keyOrKeys.length)
             .slice(0, -2)})`,
         )
         .all(keyOrKeys);
       for (const row of data) {
-        super.set(row.key, this[_parseData](row.value, row.key));
+        super.set(row.key, this.#parseData(row.value, row.key));
       }
       return this;
     } else {
-      const data = this.db
-        .prepare(`SELECT * FROM ${this.name} WHERE key = ?;`)
+      const data = this.#db
+        .prepare(`SELECT * FROM ${this.#name} WHERE key = ?;`)
         .get(keyOrKeys);
       if (!data) return null;
-      super.set(keyOrKeys, this[_parseData](data.value, keyOrKeys));
-      return this[_parseData](data.value, keyOrKeys);
+      super.set(keyOrKeys, this.#parseData(data.value, keyOrKeys));
+      return this.#parseData(data.value, keyOrKeys);
     }
   }
 
@@ -461,15 +411,15 @@ class Enmap extends Map {
    * @return {number} The generated key number.
    */
   get autonum() {
-    let { lastnum } = this.db
+    let { lastnum } = this.#db
       .prepare("SELECT lastnum FROM 'internal::autonum' WHERE enmap = ?")
-      .get(this.name);
+      .get(this.#name);
     lastnum++;
-    this.db
+    this.#db
       .prepare(
         "INSERT OR REPLACE INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)",
       )
-      .run(this.name, lastnum);
+      .run(this.#name, lastnum);
     return lastnum.toString();
   }
 
@@ -487,17 +437,15 @@ class Enmap extends Map {
   }
 
   /**
-   * Shuts down the database. WARNING: USING THIS MAKES THE ENMAP UNUSABLE. You should
+   * Shuts down the database. USING THIS MAKES THE ENMAP UNUSABLE. You should
    * only use this method if you are closing your entire application.
    * This is already done by Enmap automatically on shutdown unless you disabled it.
    * @returns {Enmap} The enmap.
    */
   close() {
-    this[_readyCheck]();
-    if (this.persistent) {
-      instances.splice(instances.indexOf(this), 1);
-      this.db.close();
-    }
+    this.#readyCheck();
+    instances.splice(instances.indexOf(this), 1);
+    this.#db.close();
     return this;
   }
 
@@ -520,7 +468,7 @@ class Enmap extends Map {
    */
   push(key, val, path = null, allowDupes = false) {
     const data = this.get(key);
-    this[_check](key, 'Array', path);
+    this.#check(key, 'Array', path);
     if (!isNil(path)) {
       const propValue = _get(data, path);
       if (!allowDupes && propValue.indexOf(val) > -1) return this;
@@ -530,7 +478,7 @@ class Enmap extends Map {
       if (!allowDupes && data.indexOf(val) > -1) return this;
       data.push(val);
     }
-    return this[_internalSet](key, data);
+    return this.#internalSet(key, data);
   }
 
   // AWESOME MATHEMATICAL METHODS
@@ -555,9 +503,9 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   math(key, operation, operand, path = null) {
-    this[_check](key, 'Number', path);
+    this.#check(key, 'Number', path);
     const data = this.get(key, path);
-    return this.set(key, this[_mathop](data, operation, operand), path);
+    return this.set(key, this.#mathop(data, operation, operand), path);
   }
 
   /**
@@ -574,15 +522,15 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   inc(key, path = null) {
-    this[_check](key, 'Number', path);
+    this.#check(key, 'Number', path);
     if (isNil(path)) {
       let val = this.get(key);
-      return this[_internalSet](key, ++val);
+      return this.#internalSet(key, ++val);
     } else {
       const data = this.get(key);
       let propValue = _get(data, path);
       _set(data, path, ++propValue);
-      return this[_internalSet](key, data);
+      return this.#internalSet(key, data);
     }
   }
 
@@ -600,15 +548,15 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   dec(key, path = null) {
-    this[_check](key, 'Number', path);
+    this.#check(key, 'Number', path);
     if (isNil(path)) {
       let val = this.get(key);
-      return this[_internalSet](key, --val);
+      return this.#internalSet(key, --val);
     } else {
       const data = this.get(key);
       let propValue = _get(data, path);
       _set(data, path, --propValue);
-      return this[_internalSet](key, data);
+      return this.#internalSet(key, data);
     }
   }
 
@@ -631,32 +579,36 @@ class Enmap extends Map {
    * @return {*} The value from the database for the key, or the default value provided for a new key.
    */
   ensure(key, defaultValue, path = null) {
-    this[_readyCheck]();
-    this[_fetchCheck](key);
-    if (this.autoEnsure !== this.off) {
+    this.#readyCheck();
+    this.#fetchCheck(key);
+    if (this.#autoEnsure !== this.#off) {
       // eslint-disable-next-line max-len
       if (!isNil(defaultValue))
-        console.warn(
-          `WARNING: Saving "${key}" autoEnsure value was provided for this enmap but a default value has also been provided. The defaultValue will be ignored, autoEnsure value is used instead.`,
+        process.emitWarning(
+          `Saving "${key}" autoEnsure value was provided for this enmap but a default value has also been provided. The defaultValue will be ignored, autoEnsure value is used instead.`,
         );
-      defaultValue = this.autoEnsure;
+      defaultValue = this.#autoEnsure;
     }
     if (isNil(defaultValue))
       throw new Err(
-        `No default value provided on ensure method for "${key}" in "${this.name}"`,
+        `No default value provided on ensure method for "${key}" in "${
+          this.#name
+        }"`,
         'EnmapArgumentError',
       );
-    const clonedValue = this[_clone](defaultValue);
+    const clonedValue = this.#clone(defaultValue);
     if (!isNil(path)) {
-      if (this.ensureProps) this.ensure(key, {});
+      if (this.#ensureProps) this.ensure(key, {});
       if (this.has(key, path)) return this.get(key, path);
       this.set(key, defaultValue, path);
       return defaultValue;
     }
-    if (this.ensureProps && isObject(this.get(key))) {
+    if (this.#ensureProps && isObject(this.get(key))) {
       if (!isObject(clonedValue))
         throw new Err(
-          `Default value for "${key}" in enmap "${this.name}" must be an object when merging with an object value.`,
+          `Default value for "${key}" in enmap "${
+            this.#name
+          }" must be an object when merging with an object value.`,
           'EnmapArgumentError',
         );
       const merged = merge(clonedValue, this.get(key));
@@ -685,11 +637,11 @@ class Enmap extends Map {
    * @returns {boolean}
    */
   has(key, path = null) {
-    this[_readyCheck]();
-    this[_fetchCheck](key);
+    this.#readyCheck();
+    this.#fetchCheck(key);
     key = key.toString();
     if (!isNil(path)) {
-      this[_check](key, 'Object');
+      this.#check(key, 'Object');
       const data = this.get(key);
       return _has(data, path);
     }
@@ -706,9 +658,9 @@ class Enmap extends Map {
    * @return {boolean} Whether the array contains the value.
    */
   includes(key, val, path = null) {
-    this[_readyCheck]();
-    this[_fetchCheck](key);
-    this[_check](key, ['Array', 'Object']);
+    this.#readyCheck();
+    this.#fetchCheck(key);
+    this.#check(key, ['Array', 'Object']);
     const data = this.get(key);
     if (!isNil(path)) {
       const propValue = _get(data, path);
@@ -717,7 +669,7 @@ class Enmap extends Map {
       }
       throw new Err(
         `The property "${path}" in key "${key}" is not an Array in the enmap "${
-          this.name
+          this.#name
         }" (property was of type "${propValue && propValue.constructor.name}")`,
         'EnmapTypeError',
       );
@@ -726,7 +678,7 @@ class Enmap extends Map {
     }
     throw new Err(
       `The value of key "${key}" is not an Array in the enmap "${
-        this.name
+        this.#name
       }" (value was of type "${data && data.constructor.name}")`,
       'EnmapTypeError',
     );
@@ -739,14 +691,17 @@ class Enmap extends Map {
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @returns {Enmap} The enmap.
    */
+  //@ts-ignore
   delete(key, path = null) {
-    this[_readyCheck]();
-    this[_fetchCheck](key);
+    this.#readyCheck();
+    this.#fetchCheck(key);
     key = key.toString();
     const oldValue = this.get(key);
     if (!isNil(path)) {
       let data = this.get(key);
+      //@ts-ignore
       path = toPath(path);
+      //@ts-ignore
       const last = path.pop();
       const propValue = path.length ? _get(data, path) : data;
       if (isArray(propValue)) {
@@ -762,20 +717,20 @@ class Enmap extends Map {
       this.set(key, data);
     } else {
       super.delete(key);
-      if (this.persistent) {
-        if (this.polling) {
-          this.db
-            .prepare(
-              `INSERT INTO 'internal::changes::${this.name}' (type, key, timestamp, pid) VALUES (?, ?, ?, ?);`,
-            )
-            .run('delete', key.toString(), Date.now(), process.pid);
-        }
-        this.db.prepare(`DELETE FROM ${this.name} WHERE key = ?`).run(key);
-        return this;
-      }
       if (typeof this.changedCB === 'function') {
         this.changedCB(key, oldValue, null);
       }
+      if (this.#polling) {
+        this.#db
+          .prepare(
+            `INSERT INTO 'internal::changes::${
+              this.#name
+            }' (type, key, timestamp, pid) VALUES (?, ?, ?, ?);`,
+          )
+          .run('delete', key.toString(), Date.now(), process.pid);
+      }
+      this.#db.prepare(`DELETE FROM ${this.#name} WHERE key = ?`).run(key);
+      return this;
     }
     return this;
   }
@@ -784,23 +739,23 @@ class Enmap extends Map {
    * Deletes everything from the enmap. If persistent, clears the database of all its data for this table.
    */
   deleteAll() {
-    this[_readyCheck]();
-    if (this.persistent) {
-      this.db.prepare(`DELETE FROM ${this.name};`).run();
-      if (this.polling) {
-        this.db
-          .prepare(
-            `INSERT INTO 'internal::changes::${this.name}' (type, timestamp, pid) VALUES (?, ?, ?);`,
-          )
-          .run('clear', Date.now(), process.pid);
-      }
+    this.#readyCheck();
+    this.#db.prepare(`DELETE FROM ${this.#name};`).run();
+    if (this.#polling) {
+      this.#db
+        .prepare(
+          `INSERT INTO 'internal::changes::${
+            this.#name
+          }' (type, timestamp, pid) VALUES (?, ?, ?);`,
+        )
+        .run('clear', Date.now(), process.pid);
     }
     super.clear();
   }
 
   /**
    * Deletes everything from the enmap. If persistent, clears the database of all its data for this table.
-   * @returns {undefined}
+   * @returns {void}
    */
   clear() {
     return this.deleteAll();
@@ -815,18 +770,18 @@ class Enmap extends Map {
   destroy() {
     this.deleteAll();
 
-    this.isDestroyed = true;
+    this.#isDestroyed = true;
 
-    const transaction = this.db.transaction((run) => {
+    const transaction = this.#db.transaction((run) => {
       for (const stmt of run) {
-        this.db.prepare(stmt).run();
+        this.#db.prepare(stmt).run();
       }
     });
 
     transaction([
-      `DROP TABLE IF EXISTS ${this.name};`,
-      `DROP TABLE IF EXISTS 'internal::changes::${this.name}';`,
-      `DELETE FROM 'internal::autonum' WHERE enmap = '${this.name}';`,
+      `DROP TABLE IF EXISTS ${this.#name};`,
+      `DROP TABLE IF EXISTS 'internal::changes::${this.#name}';`,
+      `DELETE FROM 'internal::autonum' WHERE enmap = '${this.#name}';`,
     ]);
     return null;
   }
@@ -852,9 +807,9 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   remove(key, val, path = null) {
-    this[_readyCheck]();
-    this[_fetchCheck](key);
-    this[_check](key, ['Array', 'Object']);
+    this.#readyCheck();
+    this.#fetchCheck(key);
+    this.#check(key, ['Array', 'Object']);
     const data = this.get(key, path);
     const criteria = isFunction(val) ? val : (value) => val === value;
     const index = data.findIndex(criteria);
@@ -870,17 +825,18 @@ class Enmap extends Map {
    * @returns {string} The enmap data in a stringified JSON format.
    */
   export() {
-    this[_readyCheck]();
-    if (this.persistent) this.fetchEverything();
+    this.#readyCheck();
+    this.fetchEverything();
     return serialize(
       {
-        name: this.name,
+        name: this.#name,
         version: pkgdata.version,
         exportDate: Date.now(),
         keys: this.map((value, key) => ({ key, value })),
       },
-      null,
-      2,
+      {
+        space: 2,
+      },
     );
   }
 
@@ -894,11 +850,11 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap with the new data.
    */
   import(data, overwrite = true, clear = false) {
-    this[_readyCheck]();
+    this.#readyCheck();
     if (clear) this.deleteAll();
     if (isNil(data))
       throw new Err(
-        `No data provided for import() in "${this.name}"`,
+        `No data provided for import() in "${this.#name}"`,
         'EnmapImportError',
       );
     try {
@@ -906,11 +862,13 @@ class Enmap extends Map {
       for (const thisEntry of parsed.keys) {
         const { key, value } = thisEntry;
         if (!overwrite && this.has(key)) continue;
-        this[_internalSet](key, this.deserializer(value, key));
+        this.#internalSet(key, this.#deserializer(value, key));
       }
     } catch (err) {
       throw new Err(
-        `Data provided for import() in "${this.name}" is invalid JSON. Stacktrace:\n${err}`,
+        `Data provided for import() in "${
+          this.#name
+        }" is invalid JSON. Stacktrace:\n${err}`,
         'EnmapImportError',
       );
     }
@@ -930,7 +888,7 @@ class Enmap extends Map {
    * const Enmap = require("enmap");
    * Object.assign(client, Enmap.multi(["settings", "tags", "blacklist"]));
    *
-   * @returns {Array<Enmap>} An array of initialized Enmaps.
+   * @returns {Object} An array of initialized Enmaps.
    */
   static multi(names, options = {}) {
     if (!names.length || names.length < 1) {
@@ -954,80 +912,76 @@ class Enmap extends Map {
    * Internal Method. Initializes the enmap depending on given values.
    * @param {Map} database In order to set data to the Enmap, one must be provided.
    */
-  [_init](database) {
-    Object.defineProperty(this, 'db', {
-      value: database,
-      writable: false,
-      enumerable: false,
-      configurable: false,
-    });
-    if (!this.db) {
+  #init(database) {
+    this.#db = database;
+    if (!this.#db) {
       throw new Err('Database Could Not Be Opened', 'EnmapDBConnectionError');
     }
-    const table = this.db
+    const table = this.#db
       .prepare(
         "SELECT count(*) FROM sqlite_master WHERE type='table' AND name = ?;",
       )
-      .get(this.name);
+      .get(this.#name);
     if (!table['count(*)']) {
-      this.db
-        .prepare(`CREATE TABLE ${this.name} (key text PRIMARY KEY, value text)`)
+      this.#db
+        .prepare(
+          `CREATE TABLE ${this.#name} (key text PRIMARY KEY, value text)`,
+        )
         .run();
-      this.db.pragma('synchronous = 1');
-      if (this.wal) this.db.pragma('journal_mode = wal');
+      this.#db.pragma('synchronous = 1');
+      if (this.#wal) this.#db.pragma('journal_mode = wal');
     }
-    this.db
+    this.#db
       .prepare(
-        `CREATE TABLE IF NOT EXISTS 'internal::changes::${this.name}' (type TEXT, key TEXT, value TEXT, timestamp INTEGER, pid INTEGER);`,
+        `CREATE TABLE IF NOT EXISTS 'internal::changes::${
+          this.#name
+        }' (type TEXT, key TEXT, value TEXT, timestamp INTEGER, pid INTEGER);`,
       )
       .run();
-    this.db
+    this.#db
       .prepare(
         `CREATE TABLE IF NOT EXISTS 'internal::autonum' (enmap TEXT PRIMARY KEY, lastnum INTEGER)`,
       )
       .run();
-    if (this.fetchAll) {
+    if (this.#fetchAll) {
       this.fetchEverything();
     }
     // TEMPORARY MIGRATE CODE FOR AUTONUM
     // REMOVE FOR V6
     if (this.has('internal::autonum')) {
-      this.db
+      this.#db
         .prepare(
           "INSERT OR REPLACE INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)",
         )
-        .run(this.name, this.get('internal::autonum'));
+        .run(this.#name, this.get('internal::autonum'));
       this.delete('internal::autonum');
     } else {
-      const row = this.db
+      const row = this.#db
         .prepare("SELECT lastnum FROM 'internal::autonum' WHERE enmap = ?")
-        .get(this.name);
+        .get(this.#name);
       if (!row) {
-        this.db
+        this.#db
           .prepare(
             "INSERT INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)",
           )
-          .run(this.name, 0);
+          .run(this.#name, 0);
       }
     }
 
-    if (this.polling) {
-      Object.defineProperty(this, 'lastSync', {
-        value: new Date(),
-        writable: true,
-        enumerable: false,
-        configurable: false,
-      });
+    if (this.#polling) {
+      this.#lastSync = new Date();
       setInterval(() => {
-        const changes = this.db
+        const changes = this.#db
           .prepare(
-            `SELECT type, key, value FROM 'internal::changes::${this.name}' WHERE timestamp >= ? AND pid <> ? ORDER BY timestamp ASC;`,
+            `SELECT type, key, value FROM 'internal::changes::${
+              this.#name
+            }' WHERE timestamp >= ? AND pid <> ? ORDER BY timestamp ASC;`,
           )
-          .all(this.lastSync.getTime(), process.pid);
+          .all(this.#lastSync.getTime(), process.pid);
         for (const row of changes) {
           switch (row.type) {
             case 'insert':
-              super.set(row.key, this[_parseData](row.value, row.key));
+              super.set(row.key, this.#parseData(row.value, row.key));
               break;
             case 'delete':
               super.delete(row.key);
@@ -1037,13 +991,17 @@ class Enmap extends Map {
               break;
           }
         }
-        this.lastSync = new Date();
-        this.db
+        this.#lastSync = new Date();
+        this.#db
           .prepare(
-            `DELETE FROM 'internal::changes::${this.name}' WHERE ROWID IN (SELECT ROWID FROM 'internal::changes::${this.name}' ORDER BY ROWID DESC LIMIT -1 OFFSET 100);`,
+            `DELETE FROM 'internal::changes::${
+              this.#name
+            }' WHERE ROWID IN (SELECT ROWID FROM 'internal::changes::${
+              this.#name
+            }' ORDER BY ROWID DESC LIMIT -1 OFFSET 100);`,
           )
           .run();
-      }, this.pollingInterval);
+      }, this.#pollingInterval);
     }
   }
 
@@ -1054,17 +1012,17 @@ class Enmap extends Map {
    * @param {string} type Required. The javascript constructor to check
    * @param {string} path Optional. The dotProp path to the property in the object enmap.
    */
-  [_check](key, type, path = null) {
+  #check(key, type, path = null) {
     key = key.toString();
     if (!this.has(key))
       throw new Err(
-        `The key "${key}" does not exist in the enmap "${this.name}"`,
+        `The key "${key}" does not exist in the enmap "${this.#name}"`,
         'EnmapPathError',
       );
     if (!type) return;
     if (!isArray(type)) type = [type];
     if (!isNil(path)) {
-      this[_check](key, 'Object');
+      this.#check(key, 'Object');
       const data = this.get(key);
       if (isNil(_get(data, path))) {
         throw new Err(
@@ -1076,7 +1034,7 @@ class Enmap extends Map {
         throw new Err(
           `The property "${path}" in key "${key}" is not of type "${type.join(
             '" or "',
-          )}" in the enmap "${this.name}" 
+          )}" in the enmap "${this.#name}" 
 (key was of type "${_get(data, path).constructor.name}")`,
           'EnmapTypeError',
         );
@@ -1085,7 +1043,7 @@ class Enmap extends Map {
       throw new Err(
         `The value for key "${key}" is not of type "${type.join(
           '" or "',
-        )}" in the enmap "${this.name}" (value was of type "${
+        )}" in the enmap "${this.#name}" (value was of type "${
           this.get(key).constructor.name
         }")`,
         'EnmapTypeError',
@@ -1101,7 +1059,7 @@ class Enmap extends Map {
    * @param {number} opand the righthand operand.
    * @return {number} the result.
    */
-  [_mathop](base, op, opand) {
+  #mathop(base, op, opand) {
     if (base == undefined || op == undefined || opand == undefined)
       throw new Err(
         'Math Operation requires base and operation',
@@ -1141,10 +1099,9 @@ class Enmap extends Map {
 
   /**
    * Internal method used to validate persistent enmap names (valid Windows filenames)
-   * @private
    */
-  [_validateName]() {
-    this.name = this.name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+  #validateName() {
+    this.#name = this.#name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
   }
 
   /*
@@ -1152,7 +1109,7 @@ class Enmap extends Map {
    * If persistent enmap and autoFetch is on, retrieves the key.
    * @param {string} key The key to check or fetch.
    */
-  [_fetchCheck](key, force = false) {
+  #fetchCheck(key, force = false) {
     key = key.toString();
     if (!['String', 'Number'].includes(key.constructor.name)) return;
     if (force) {
@@ -1160,7 +1117,7 @@ class Enmap extends Map {
       return;
     }
     if (super.has(key)) return;
-    if (!this.persistent || !this.autoFetch) return;
+    if (!this.#autoFetch) return;
     this.fetch(key);
   }
 
@@ -1170,8 +1127,8 @@ class Enmap extends Map {
    * @param {*} data The data to check/parse
    * @returns {*} An object or the original data.
    */
-  [_parseData](data, key) {
-    return this.deserializer(eval(`(${data})`), key);
+  #parseData(data, key) {
+    return this.#deserializer(eval(`(${data})`), key);
   }
 
   /*
@@ -1179,10 +1136,10 @@ class Enmap extends Map {
    * @param {*} data The data to clone.
    * @return {*} The cloned value.
    */
-  [_clone](data) {
-    if (this.cloneLevel === 'none') return data;
-    if (this.cloneLevel === 'shallow') return clone(data);
-    if (this.cloneLevel === 'deep') return cloneDeep(data);
+  #clone(data) {
+    if (this.#cloneLevel === 'none') return data;
+    if (this.#cloneLevel === 'shallow') return clone(data);
+    if (this.#cloneLevel === 'deep') return cloneDeep(data);
     throw new Err(
       "Invalid cloneLevel. What did you *do*, this shouldn't happen!",
       'EnmapOptionsError',
@@ -1192,8 +1149,8 @@ class Enmap extends Map {
   /*
    * Internal Method. Verifies that the database is ready, assuming persistence is used.
    */
-  [_readyCheck]() {
-    if (this.isDestroyed)
+  #readyCheck() {
+    if (this.#isDestroyed)
       throw new Err(
         'This enmap has been destroyed and can no longer be used without being re-initialized.',
         'EnmapDestroyedError',
@@ -1201,46 +1158,28 @@ class Enmap extends Map {
   }
 
   /*
-   * Internal Method. Defines a property with either user-provided value, or the default value.
-   */
-  [_defineSetting](name, type, writable, defaultValue, value) {
-    if (isNil(value)) value = defaultValue;
-    if (type !== 'any' && value.constructor.name !== type) {
-      throw new Err(
-        `Wrong value type provided for options.${name}:  Provided "${defaultValue.constructor.name}", expecting "${type}", in enmap "${this.name}".`,
-      );
-    }
-    Object.defineProperty(this, name, {
-      value: !isNil(value) ? value : defaultValue,
-      writable,
-      enumerable: false,
-      configurable: false,
-    });
-  }
-
-  /*
    * Internal Method. Sets data without looking at cache, fetching, or anything else. Used when fetch/ready checks are already made.
    */
-  [_internalSet](key, value, updateCache = true) {
-    if (this.persistent) {
-      let serialized;
-      try {
-        serialized = serialize(this.serializer(value, key));
-      } catch (e) {
-        serialized = serialize(this.serializer(onChange.target(value), key));
-      }
-      this.db
+  #internalSet(key, value, updateCache = true) {
+    let serialized;
+    try {
+      serialized = serialize(this.#serializer(value, key));
+    } catch (e) {
+      serialized = serialize(this.#serializer(onChange.target(value), key));
+    }
+    this.#db
+      .prepare(
+        `INSERT OR REPLACE INTO ${this.#name} (key, value) VALUES (?, ?);`,
+      )
+      .run(key, serialized);
+    if (this.#polling) {
+      this.#db
         .prepare(
-          `INSERT OR REPLACE INTO ${this.name} (key, value) VALUES (?, ?);`,
+          `INSERT INTO 'internal::changes::${
+            this.#name
+          }' (type, key, value, timestamp, pid) VALUES (?, ?, ?, ?, ?);`,
         )
-        .run(key, serialized);
-      if (this.polling) {
-        this.db
-          .prepare(
-            `INSERT INTO 'internal::changes::${this.name}' (type, key, value, timestamp, pid) VALUES (?, ?, ?, ?, ?);`,
-          )
-          .run('insert', key, serialized, Date.now(), process.pid);
-      }
+        .run('insert', key, serialized, Date.now(), process.pid);
     }
     if (updateCache) super.set(key, value);
     return this;
@@ -1359,7 +1298,7 @@ class Enmap extends Map {
    * enmap.find(val => val.username === 'Bob');
    */
   find(propOrFn, value) {
-    this[_readyCheck]();
+    this.#readyCheck();
     if (isNil(propOrFn) || (!isFunction(propOrFn) && isNil(value))) {
       throw new Err(
         'find requires either a prop and value, or a function. One of the provided arguments was null or undefined',
@@ -1368,7 +1307,8 @@ class Enmap extends Map {
     }
     const func = isFunction(propOrFn)
       ? propOrFn
-      : (v) => value === _get(v, propOrFn);
+      : //@ts-ignore
+        (v) => value === _get(v, propOrFn);
     for (const [key, val] of this) {
       if (func(val, key, this)) return val;
     }
@@ -1388,7 +1328,7 @@ class Enmap extends Map {
    * enmap.findKey(val => val.username === 'Bob');
    */
   findKey(propOrFn, value) {
-    this[_readyCheck]();
+    this.#readyCheck();
     if (typeof propOrFn === 'string') {
       if (isNil(value)) throw new Error('Value must be specified.');
       for (const [key, val] of this) {
@@ -1415,7 +1355,7 @@ class Enmap extends Map {
    * @returns {number} The number of removed entries
    */
   sweep(fn, thisArg) {
-    this[_readyCheck]();
+    this.#readyCheck();
     if (thisArg) fn = fn.bind(thisArg);
     const previousSize = this.size;
     for (const [key, val] of this) {
@@ -1433,9 +1373,9 @@ class Enmap extends Map {
    * @returns {Enmap}
    */
   filter(fn, thisArg) {
-    this[_readyCheck]();
+    this.#readyCheck();
     if (thisArg) fn = fn.bind(thisArg);
-    const results = new this.constructor();
+    const results = new Enmap();
     for (const [key, val] of this) {
       if (fn(val, key, this)) results.set(key, val);
     }
@@ -1450,7 +1390,7 @@ class Enmap extends Map {
    * @returns {Array}
    */
   filterArray(fn, thisArg) {
-    this[_readyCheck]();
+    this.#readyCheck();
     if (thisArg) fn = fn.bind(thisArg);
     const results = [];
     for (const [key, val] of this) {
@@ -1467,7 +1407,7 @@ class Enmap extends Map {
    * @returns {Array}
    */
   map(fn, thisArg) {
-    this[_readyCheck]();
+    this.#readyCheck();
     if (thisArg) fn = fn.bind(thisArg);
     const arr = new Array(this.size);
     let i = 0;
@@ -1483,7 +1423,7 @@ class Enmap extends Map {
    * @returns {boolean}
    */
   some(fn, thisArg) {
-    this[_readyCheck]();
+    this.#readyCheck();
     if (thisArg) fn = fn.bind(thisArg);
     for (const [key, val] of this) {
       if (fn(val, key, this)) return true;
@@ -1499,7 +1439,7 @@ class Enmap extends Map {
    * @returns {boolean}
    */
   every(fn, thisArg) {
-    this[_readyCheck]();
+    this.#readyCheck();
     if (thisArg) fn = fn.bind(thisArg);
     for (const [key, val] of this) {
       if (!fn(val, key, this)) return false;
@@ -1516,7 +1456,7 @@ class Enmap extends Map {
    * @returns {*}
    */
   reduce(fn, initialValue) {
-    this[_readyCheck]();
+    this.#readyCheck();
     let accumulator;
     if (typeof initialValue !== 'undefined') {
       accumulator = initialValue;
@@ -1542,8 +1482,8 @@ class Enmap extends Map {
    * @example const newColl = someColl.clone();
    */
   clone() {
-    this[_readyCheck]();
-    return new this.constructor(this);
+    this.#readyCheck();
+    return new Enmap(this);
   }
 
   /**
@@ -1553,7 +1493,7 @@ class Enmap extends Map {
    * @example const newColl = someColl.concat(someOtherColl, anotherColl, ohBoyAColl);
    */
   concat(...enmaps) {
-    this[_readyCheck]();
+    this.#readyCheck();
     const newColl = this.clone();
     for (const coll of enmaps) {
       for (const [key, val] of coll) newColl.set(key, val);
@@ -1567,7 +1507,7 @@ class Enmap extends Map {
   /**
    * Partitions the enmap into two enmaps where the first enmap
    * contains the items that passed and the second contains the items that failed.
-   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6!
+   * DEPRECATION WILL BE REMOVED IN ENMAP 6!
    * @param {Function} fn Function used to test (should return a boolean)
    * @param {*} [thisArg] Value to use as `this` when executing function
    * @returns {Enmap[]}
@@ -1575,12 +1515,12 @@ class Enmap extends Map {
    * @deprecated Will be removed in Enmap 6!
    */
   partition(fn, thisArg) {
-    console.warn(
-      'ENMAP DEPRECATION WARNING: partition() will be removed in the next major Enmap release (v6)!',
+    process.emitWarning(
+      'ENMAP DEPRECATION partition() will be removed in the next major Enmap release (v6)!',
     );
-    this[_readyCheck]();
+    this.#readyCheck();
     if (typeof thisArg !== 'undefined') fn = fn.bind(thisArg);
-    const results = [new this.constructor(), new this.constructor()];
+    const results = [new Enmap(), new Enmap()];
     for (const [key, val] of this) {
       if (fn(val, key, this)) {
         results[0].set(key, val);
@@ -1595,16 +1535,16 @@ class Enmap extends Map {
    * Checks if this Enmap shares identical key-value pairings with another.
    * This is different to checking for equality using equal-signs, because
    * the Enmaps may be different objects, but contain the same data.
-   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6!
+   * DEPRECATION WILL BE REMOVED IN ENMAP 6!
    * @param {Enmap} enmap Enmap to compare with
    * @returns {boolean} Whether the Enmaps have identical contents
    * @deprecated Will be removed in Enmap 6!
    */
   equals(enmap) {
     process.emitWarning(
-      'ENMAP DEPRECATION WARNING: equals() will be removed in the next major Enmap release (v6)!',
+      'ENMAP DEPRECATION equals() will be removed in the next major Enmap release (v6)!',
     );
-    this[_readyCheck]();
+    this.#readyCheck();
     if (!enmap) return false;
     if (this === enmap) return true;
     if (this.size !== enmap.size) return false;
@@ -1617,7 +1557,7 @@ class Enmap extends Map {
   /**
    * Modify the property of a value inside the enmap, if the value is an object or array.
    * This is a shortcut to loading the key, changing the value, and setting it back.
-   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use set() instead!
+   * DEPRECATION WILL BE REMOVED IN ENMAP 6! Use set() instead!
    * @param {string} key Required. The key of the element to add to The Enmap or array.
    * This value MUST be a string or number.
    * @param {string} path Required. The property to modify inside the value object or array.
@@ -1628,12 +1568,14 @@ class Enmap extends Map {
    */
   setProp(key, path, val) {
     process.emitWarning(
-      'ENMAP DEPRECATION WARNING: setProp() will be removed in the next major Enmap release (v6)! Please use set(key, value, path) instead.',
+      'ENMAP DEPRECATION setProp() will be removed in the next major Enmap release (v6)! Please use set(key, value, path) instead.',
     );
-    this[_readyCheck]();
+    this.#readyCheck();
     if (isNil(path))
       throw new Err(
-        `No path provided to set a property in "${key}" of enmap "${this.name}"`,
+        `No path provided to set a property in "${key}" of enmap "${
+          this.#name
+        }"`,
         'EnmapPathError',
       );
     return this.set(key, val, path);
@@ -1641,7 +1583,7 @@ class Enmap extends Map {
 
   /**
    * Push to an array element inside an Object or Array element in Enmap.
-   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use push() instead!
+   * DEPRECATION WILL BE REMOVED IN ENMAP 6! Use push() instead!
    * @param {string} key Required. The key of the element.
    * This value MUST be a string or number.
    * @param {string} path Required. The name of the array property to push to.
@@ -1653,13 +1595,13 @@ class Enmap extends Map {
    */
   pushIn(key, path, val, allowDupes = false) {
     process.emitWarning(
-      'ENMAP DEPRECATION WARNING: pushIn() will be removed in the next major Enmap release (v6)! Please use push(key, value, path) instead.',
+      'ENMAP DEPRECATION pushIn() will be removed in the next major Enmap release (v6)! Please use push(key, value, path) instead.',
     );
-    this[_readyCheck]();
-    this[_fetchCheck](key);
+    this.#readyCheck();
+    this.#fetchCheck(key);
     if (isNil(path))
       throw new Err(
-        `No path provided to push a value in "${key}" of enmap "${this.name}"`,
+        `No path provided to push a value in "${key}" of enmap "${this.#name}"`,
         'EnmapPathError',
       );
     return this.push(key, val, path, allowDupes);
@@ -1667,7 +1609,7 @@ class Enmap extends Map {
 
   /**
    * Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
-   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use get() instead!
+   * DEPRECATION WILL BE REMOVED IN ENMAP 6! Use get() instead!
    * @param {string} key Required. The key of the element to get from The Enmap.
    * @param {string} path Required. The property to retrieve from the object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -1676,13 +1618,15 @@ class Enmap extends Map {
    */
   getProp(key, path) {
     process.emitWarning(
-      'ENMAP DEPRECATION WARNING: getProp() will be removed in the next major Enmap release (v6)! Please use get(key, path) instead.',
+      'ENMAP DEPRECATION getProp() will be removed in the next major Enmap release (v6)! Please use get(key, path) instead.',
     );
-    this[_readyCheck]();
-    this[_fetchCheck](key);
+    this.#readyCheck();
+    this.#fetchCheck(key);
     if (isNil(path))
       throw new Err(
-        `No path provided to get a property from "${key}" of enmap "${this.name}"`,
+        `No path provided to get a property from "${key}" of enmap "${
+          this.#name
+        }"`,
         'EnmapPathError',
       );
     return this.get(key, path);
@@ -1690,7 +1634,7 @@ class Enmap extends Map {
 
   /**
    * Delete a property from an object or array value in Enmap.
-   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use delete() instead!
+   * DEPRECATION WILL BE REMOVED IN ENMAP 6! Use delete() instead!
    * @param {string} key Required. The key of the element to delete the property from in Enmap.
    * @param {string} path Required. The name of the property to remove from the object.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -1698,13 +1642,15 @@ class Enmap extends Map {
    */
   deleteProp(key, path) {
     process.emitWarning(
-      'ENMAP DEPRECATION WARNING: deleteProp() will be removed in the next major Enmap release (v6)! Please use delete(key, path) instead.',
+      'ENMAP DEPRECATION deleteProp() will be removed in the next major Enmap release (v6)! Please use delete(key, path) instead.',
     );
-    this[_readyCheck]();
-    this[_fetchCheck](key);
+    this.#readyCheck();
+    this.#fetchCheck(key);
     if (isNil(path))
       throw new Err(
-        `No path provided to delete a property in "${key}" of enmap "${this.name}"`,
+        `No path provided to delete a property in "${key}" of enmap "${
+          this.#name
+        }"`,
         'EnmapPathError',
       );
     this.delete(key, path);
@@ -1713,7 +1659,7 @@ class Enmap extends Map {
   /**
    * Remove a value from an Array or Object property inside an Array or Object element in Enmap.
    * Confusing? Sure is.
-   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use remove() instead!
+   * DEPRECATION WILL BE REMOVED IN ENMAP 6! Use remove() instead!
    * @param {string} key Required. The key of the element.
    * This value MUST be a string or number.
    * @param {string} path Required. The name of the array property to remove from.
@@ -1724,13 +1670,15 @@ class Enmap extends Map {
    */
   removeFrom(key, path, val) {
     process.emitWarning(
-      'ENMAP DEPRECATION WARNING: removeFrom() will be removed in the next major Enmap release (v6)! Please use remove(key, value, path) instead.',
+      'ENMAP DEPRECATION removeFrom() will be removed in the next major Enmap release (v6)! Please use remove(key, value, path) instead.',
     );
-    this[_readyCheck]();
-    this[_fetchCheck](key);
+    this.#readyCheck();
+    this.#fetchCheck(key);
     if (isNil(path))
       throw new Err(
-        `No path provided to remove an array element in "${key}" of enmap "${this.name}"`,
+        `No path provided to remove an array element in "${key}" of enmap "${
+          this.#name
+        }"`,
         'EnmapPathError',
       );
     return this.remove(key, val, path);
@@ -1738,7 +1686,7 @@ class Enmap extends Map {
 
   /**
    * Returns whether or not the property exists within an object or array value in enmap.
-   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use has() instead!
+   * DEPRECATION WILL BE REMOVED IN ENMAP 6! Use has() instead!
    * @param {string} key Required. The key of the element to check in the Enmap or array.
    * @param {*} path Required. The property to verify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -1747,13 +1695,15 @@ class Enmap extends Map {
    */
   hasProp(key, path) {
     process.emitWarning(
-      'ENMAP DEPRECATION WARNING: hasProp() will be removed in the next major Enmap release (v6)! Please use has(key, path) instead.',
+      'ENMAP DEPRECATION hasProp() will be removed in the next major Enmap release (v6)! Please use has(key, path) instead.',
     );
-    this[_readyCheck]();
-    this[_fetchCheck](key);
+    this.#readyCheck();
+    this.#fetchCheck(key);
     if (isNil(path))
       throw new Err(
-        `No path provided to check for a property in "${key}" of enmap "${this.name}"`,
+        `No path provided to check for a property in "${key}" of enmap "${
+          this.#name
+        }"`,
         'EnmapPathError',
       );
     return this.has(key, path);
@@ -1764,7 +1714,7 @@ class Enmap extends Map {
    * (`item[prop] === value`).
    * <warn>Do not use this to check for an item by its ID. Instead, use `enmap.has(id)`. See
    * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/has) for details.</warn>
-   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use has("key", "path") instead!
+   * DEPRECATION WILL BE REMOVED IN ENMAP 6! Use has("key", "path") instead!
    * @param {string} prop The property to test against
    * @param {*} value The expected value
    * @returns {boolean}
@@ -1776,9 +1726,9 @@ class Enmap extends Map {
    */
   exists(prop, value) {
     process.emitWarning(
-      'ENMAP DEPRECATION WARNING: exists() will be removed in the next major Enmap release (v6)! Please use has(key, path) instead.',
+      'ENMAP DEPRECATION exists() will be removed in the next major Enmap release (v6)! Please use has(key, path) instead.',
     );
-    this[_readyCheck]();
+    this.#readyCheck();
     return Boolean(this.find(prop, value));
   }
 

@@ -10,8 +10,9 @@ Can be made persistent
 * [Enmap](#enmap-map) ⇐ <code>Map</code>
     * [new Enmap(iterable, [options])](#new-enmap-iterable-options)
     * _instance_
-        * [.count](#enmap-count-integer) ⇒ <code>integer</code>
-        * [.indexes](#enmap-indexes-array-less-than-string-greater-than) ⇒ <code>array.&lt;string&gt;</code>
+        * [.count](#enmap-count-number) ⇒ <code>number</code>
+        * [.indexes](#enmap-indexes-array-less-than-string-greater-than) ⇒ <code>Array.&lt;string&gt;</code>
+        * [.db](#enmap-db-database) ⇒ <code>Database</code>
         * [.autonum](#enmap-autonum-number) ⇒ <code>number</code>
         * [.set(key, val, path)](#enmap-set-key-val-path-enmap) ⇒ [<code>Enmap</code>]
         * [.update(key, valueOrFunction)](#enmap-update-key-valueorfunction)
@@ -31,7 +32,7 @@ Can be made persistent
         * [.includes(key, val, path)](#enmap-includes-key-val-path-boolean) ⇒ <code>boolean</code>
         * [.delete(key, path)](#enmap-delete-key-path-enmap) ⇒ [<code>Enmap</code>]
         * [.deleteAll()](#enmap-deleteall)
-        * [.clear()](#enmap-clear-undefined) ⇒ <code>undefined</code>
+        * [.clear()](#enmap-clear-void) ⇒ <code>void</code>
         * [.destroy()](#enmap-destroy-null) ⇒ <code>null</code>
         * [.remove(key, val, path)](#enmap-remove-key-val-path-enmap) ⇒ [<code>Enmap</code>]
         * [.export()](#enmap-export-string) ⇒ <code>string</code>
@@ -62,7 +63,7 @@ Can be made persistent
         * ~~[.hasProp(key, path)](#Enmap+hasProp) ⇒ <code>boolean</code>~~
         * ~~[.exists(prop, value)](#Enmap+exists) ⇒ <code>boolean</code>~~
     * _static_
-        * [.multi(names, options)](#enmap-multi-names-options-array-less-than-enmap-greater-than) ⇒ [<code>Array.&lt;Enmap&gt;</code>]
+        * [.multi(names, options)](#enmap-multi-names-options-object) ⇒ <code>Object</code>
 
 <a name="new_Enmap_new"></a>
 
@@ -72,14 +73,14 @@ Initializes a new Enmap, with options.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| iterable | <code>iterable</code> \| <code>string</code> |  | If iterable data, only valid in non-persistent enmaps. If this parameter is a string, it is assumed to be the Enmap's name, which is a shorthand for adding a name in the options and making the enmap persistent. |
+| iterable | <code>Iterable</code> \| <code>string</code> \| <code>void</code> |  | If iterable data, only valid in non-persistent enmaps. If this parameter is a string, it is assumed to be the Enmap's name, which is a shorthand for adding a name in the options and making the enmap persistent. |
 | [options] | <code>Object</code> |  | Additional options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details. |
 | [options.name] | <code>string</code> |  | The name of the enmap. Represents its table name in sqlite. If present, the enmap is persistent. If no name is given, the enmap is memory-only and is not saved in the database. As a shorthand, you may use a string for the name instead of the options (see example). |
 | [options.fetchAll] | <code>boolean</code> |  | Defaults to `true`. When enabled, will automatically fetch any key that's requested using get, or other retrieval methods. This is a "synchronous" operation, which means it doesn't need any of this promise or callback use. |
 | [options.dataDir] | <code>string</code> |  | Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes! *Note*: Will not automatically create the folder if set manually, so make sure it exists. |
 | [options.cloneLevel] | <code>string</code> |  | Defaults to deep. Determines how objects and arrays are treated when inserting and retrieving from the database. See https://enmap.evie.codes/usage#enmap-options for more details on this option. |
 | [options.polling] | <code>boolean</code> |  | defaults to `false`. Determines whether Enmap will attempt to retrieve changes from the database on a regular interval. This means that if another Enmap in another process modifies a value, this change will be reflected in ALL enmaps using the polling feature. |
-| [options.pollingInterval] | <code>string</code> |  | defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database. The shorter the interval, the more CPU is used, so it's best not to lower this. Polling takes about 350-500ms if no data is found, and time will grow with more changes fetched. In my tests, 15 rows took a little more than 1 second, every second. |
+| [options.pollingInterval] | <code>number</code> |  | defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database. The shorter the interval, the more CPU is used, so it's best not to lower this. Polling takes about 350-500ms if no data is found, and time will grow with more changes fetched. In my tests, 15 rows took a little more than 1 second, every second. |
 | [options.ensureProps] | <code>boolean</code> |  | defaults to `true`. If enabled and the value in the enmap is an object, using ensure() will also ensure that every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information. |
 | [options.autoEnsure] | <code>\*</code> |  | default is disabled. When provided a value, essentially runs ensure(key, autoEnsure) automatically so you don't have to. This is especially useful on get(), but will also apply on set(), and any array and object methods that interact with the database. |
 | [options.autoFetch] | <code>boolean</code> |  | defaults to `true`. When enabled, attempting to get() a key or do any operation on existing keys (such as array push, etc) will automatically fetch the current key value from the database. Keys that are automatically fetched remain in memory and are not cleared. |
@@ -105,18 +106,25 @@ const autoEnmap = new Enmap({name: "settings", autoEnsure: { setting1: false, me
 ```
 <a name="Enmap+count"></a>
 
-### enmap.count ⇒ <code>integer</code>
+### enmap.count ⇒ <code>number</code>
 Retrieves the number of rows in the database for this enmap, even if they aren't fetched.
 
 **Kind**: instance property of [<code>Enmap</code>](#enmap-map)  
-**Returns**: <code>integer</code> - The number of rows in the database.  
+**Returns**: <code>number</code> - The number of rows in the database.  
 <a name="Enmap+indexes"></a>
 
-### enmap.indexes ⇒ <code>array.&lt;string&gt;</code>
+### enmap.indexes ⇒ <code>Array.&lt;string&gt;</code>
 Retrieves all the indexes (keys) in the database for this enmap, even if they aren't fetched.
 
 **Kind**: instance property of [<code>Enmap</code>](#enmap-map)  
-**Returns**: <code>array.&lt;string&gt;</code> - Array of all indexes (keys) in the enmap, cached or not.  
+**Returns**: <code>Array.&lt;string&gt;</code> - Array of all indexes (keys) in the enmap, cached or not.  
+<a name="Enmap+db"></a>
+
+### enmap.db ⇒ <code>Database</code>
+Get the better-sqlite3 database object. Useful if you want to directly query or interact with the
+underlying SQLite database. Use at your own risk, as errors here might cause loss of data or corruption!
+
+**Kind**: instance property of [<code>Enmap</code>](#enmap-map)  
 <a name="Enmap+autonum"></a>
 
 ### enmap.autonum ⇒ <code>number</code>
@@ -459,7 +467,7 @@ Deletes everything from the enmap. If persistent, clears the database of all its
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 <a name="Enmap+clear"></a>
 
-### enmap.clear() ⇒ <code>undefined</code>
+### enmap.clear() ⇒ <code>void</code>
 Deletes everything from the enmap. If persistent, clears the database of all its data for this table.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
@@ -908,11 +916,11 @@ if (enmap.exists('username', 'Bob')) {
 ```
 <a name="Enmap.multi"></a>
 
-### Enmap.multi(names, options) ⇒ [<code>Array.&lt;Enmap&gt;</code>](#Enmap)
+### Enmap.multi(names, options) ⇒ <code>Object</code>
 Initialize multiple Enmaps easily.
 
 **Kind**: static method of [<code>Enmap</code>](#enmap-map)  
-**Returns**: [<code>Array.&lt;Enmap&gt;</code>](#Enmap) - An array of initialized Enmaps.  
+**Returns**: <code>Object</code> - An array of initialized Enmaps.  
 
 | Param | Type | Description |
 | --- | --- | --- |
