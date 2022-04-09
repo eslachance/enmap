@@ -40,6 +40,12 @@ const _init = Symbol('init');
 const _defineSetting = Symbol('_defineSetting');
 const _internalSet = Symbol('_internalSet');
 
+const instances = [];
+
+process.on('exit', () => {
+  for (const instance of instances) instance.close();
+});
+
 /**
  * A enhanced Map structure with additional utility methods.
  * Can be made persistent
@@ -219,6 +225,8 @@ class Enmap extends Map {
 
       this[_validateName]();
       this[_init](database);
+
+      instances.push(this);
     } else {
       this[_defineSetting]('name', 'String', true, 'MemoryEnmap');
     }
@@ -234,13 +242,6 @@ class Enmap extends Map {
         }
       }
     }
-
-    process.on('exit', () => {
-      // Cleanup the database before exiting.
-      if (this.persistent) {
-        this.db.close();
-      }
-    });
   }
 
   /**
@@ -483,6 +484,21 @@ class Enmap extends Map {
    */
   changed(cb) {
     this.changedCB = cb;
+  }
+
+  /**
+   * Shuts down the database. WARNING: USING THIS MAKES THE ENMAP UNUSABLE. You should
+   * only use this method if you are closing your entire application.
+   * This is already done by Enmap automatically on shutdown unless you disabled it.
+   * @returns {Enmap} The enmap.
+   */
+  close() {
+    this[_readyCheck]();
+    if (this.persistent) {
+      instances.splice(instances.indexOf(this), 1);
+      this.db.close();
+    }
+    return this;
   }
 
   /**
@@ -1764,21 +1780,6 @@ class Enmap extends Map {
     );
     this[_readyCheck]();
     return Boolean(this.find(prop, value));
-  }
-
-  /**
-   * DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6 AS THIS IS NOW DONE AUTOMATICALLY
-   * Shuts down the database. WARNING: USING THIS MAKES THE ENMAP UNUSABLE. You should
-   * only use this method if you are closing your entire application.
-   * This is useful if you need to copy the database somewhere else, or if you're somehow losing data on shutdown.
-   * @returns {Enmap} The enmap.
-   * @deprecated This function will be removed in Enmap 6 as this is now done automatically.
-   */
-  close() {
-    process.emitWarning(
-      'ENMAP DEPRECATION WARNING: close() is now automatic and will be removed in Enmap 6. You can remove it from your code.',
-    );
-    return null;
   }
 
   /* END DEPRECATED METHODS */
