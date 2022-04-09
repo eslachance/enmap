@@ -108,7 +108,7 @@ class Enmap extends Map {
       options.name = iterable;
       iterable = null;
     }
-    if (!iterable || typeof iterable[Symbol.iterator] !== 'function') {
+    if (!iterable || !(Symbol.iterator in iterable)) {
       //@ts-ignore
       options = iterable || options;
       iterable = null;
