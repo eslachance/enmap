@@ -494,8 +494,10 @@ class Enmap extends Map {
    */
   close() {
     this[_readyCheck]();
-    instances.splice(instances.indexOf(this), 1);
-    this.db.close();
+    if (this.persistent) {
+      instances.splice(instances.indexOf(this), 1);
+      this.db.close();
+    }
     return this;
   }
 
