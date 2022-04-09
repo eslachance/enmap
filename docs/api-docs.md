@@ -87,7 +87,6 @@ Initializes a new Enmap, with options.
 | [options.deserializer] | <code>function</code> |  | Optional. If a function is provided, it will execute on the data when it is read from the database. This is generally used to convert the value from a stored ID into a more complex object. This function may return a value, or a promise that resolves to that value (in other words, can be an async function). |
 | [options.wal] | <code>boolean</code> | <code>false</code> | Check out Write-Ahead Logging: https://www.sqlite.org/wal.html |
 | [options.verbose] | <code>function</code> | <code>(query) &#x3D;&gt; null</code> | A function to call with the direct SQL statement being ran by Enmap internally |
-| [options.autoclose] | <code>boolean</code> | <code>true</code> | Automatically close enmap when the process exits |
 
 **Example**  
 ```js
