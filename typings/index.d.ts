@@ -10,6 +10,7 @@ declare module 'enmap' {
     ensureProps?: boolean;
     wal?: boolean;
     verbose?: (query: string) => void;
+    autoEnsure?: unknown;
   }
 
   type MathOps =
