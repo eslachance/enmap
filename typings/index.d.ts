@@ -476,7 +476,7 @@ declare module 'enmap' {
     public removeFrom(key: K, path: string, val: any): this;
 
     /**
-     * Exports the enmap data to a string. WARNING: Does not work on memory enmaps containing complex data!
+     * Exports the enmap data to stringified JSON format. WARNING: Does not work on memory enmaps containing complex data!
      * @returns The enmap data in a stringified JSON format.
      */
     public export(): string;
