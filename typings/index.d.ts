@@ -476,6 +476,21 @@ declare module 'enmap' {
     public removeFrom(key: K, path: string, val: any): this;
 
     /**
+     * Exports the enmap data to stringified JSON format. WARNING: Does not work on memory enmaps containing complex data!
+     * @returns The enmap data in a stringified JSON format.
+     */
+    public export(): string;
+
+    /**
+     * Import an existing json export from enmap from a string. This data must have been exported from enmap, and must be from a version that's equivalent or lower than where you're importing it.
+     * @param data The data to import to Enmap. Must contain all the required fields provided by export()
+     * @param overwrite Defaults to true. Whether to overwrite existing key/value data with incoming imported data
+     * @param clear Defaults to false. Whether to clear the enmap of all data before importing (WARNING: Any exiting data will be lost! This cannot be undone.)
+     * @returns The enmap.
+     */
+    public import(data: string, overwrite?: boolean, clear?: boolean): this;
+
+    /**
      * Initialize multiple Enmaps easily.
      * @param names Array of strings. Each array entry will create a separate enmap with that name.
      * @param options Options object to pass to the provider. See provider documentation for its options.
