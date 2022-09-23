@@ -156,15 +156,15 @@ class Enmap extends Map {
       this.#db = new Database(':memory:', { verbose: this.#verbose });
       this.#name = 'MemoryEnmap';
     }
-    
+
     if (this.#polling) {
       process.emitWarning(
         'Polling features will be removed in Enmap v6. If you need enmap in multiple processes, please consider moving to JOSH, https://josh.evie.dev/',
-        );
-      }
-      
-      // Initialize this property, to prepare for a possible destroy() call.
-      // This is completely ignored in all situations except destroying the enmap.
+      );
+    }
+
+    // Initialize this property, to prepare for a possible destroy() call.
+    // This is completely ignored in all situations except destroying the enmap.
     this.#validateName();
     this.#isDestroyed = false;
     this.#init(this.#db);
@@ -820,7 +820,7 @@ class Enmap extends Map {
   }
 
   /**
-   * Exports the enmap data to a JSON file.
+   * Exports the enmap data to stringified JSON format.
    * **__WARNING__**: Does not work on memory enmaps containing complex data!
    * @returns {string} The enmap data in a stringified JSON format.
    */

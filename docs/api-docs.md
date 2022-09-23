@@ -507,7 +507,7 @@ enmap.remove('objectarray', (value) => value.e === 5); // value is now [{ a: 1, 
 <a name="Enmap+export"></a>
 
 ### enmap.export() ⇒ <code>string</code>
-Exports the enmap data to a JSON file.
+Exports the enmap data to stringified JSON format.
 **__WARNING__**: Does not work on memory enmaps containing complex data!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
