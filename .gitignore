@@ -7,6 +7,7 @@ data/
 config.json
 .vscode
 data/
+dist/
 out/
 .pnp.*
 .yarn/*
