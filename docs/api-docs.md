@@ -285,7 +285,7 @@ enmap.changed((keyName, oldValue, newValue) => {
 <a name="Enmap+close"></a>
 
 ### enmap.close() ⇒ [<code>Enmap</code>](#enmap-map)
-Shuts down the database. WARNING: USING THIS MAKES THE ENMAP UNUSABLE. You should
+Shuts down the database. USING THIS MAKES THE ENMAP UNUSABLE. You should
 only use this method if you are closing your entire application.
 This is already done by Enmap automatically on shutdown unless you disabled it.
 
@@ -759,7 +759,7 @@ const newColl = someColl.concat(someOtherColl, anotherColl, ohBoyAColl);
 
 Partitions the enmap into two enmaps where the first enmap
 contains the items that passed and the second contains the items that failed.
-DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6!
+DEPRECATION WILL BE REMOVED IN ENMAP 6!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
@@ -780,7 +780,7 @@ const [big, small] = enmap.partition(guild => guild.memberCount > 250);
 Checks if this Enmap shares identical key-value pairings with another.
 This is different to checking for equality using equal-signs, because
 the Enmaps may be different objects, but contain the same data.
-DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6!
+DEPRECATION WILL BE REMOVED IN ENMAP 6!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>boolean</code> - Whether the Enmaps have identical contents  
@@ -796,7 +796,7 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6!
 
 Modify the property of a value inside the enmap, if the value is an object or array.
 This is a shortcut to loading the key, changing the value, and setting it back.
-DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use set() instead!
+DEPRECATION WILL BE REMOVED IN ENMAP 6! Use set() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
@@ -813,7 +813,7 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use set() instead!
 ***Deprecated***
 
 Push to an array element inside an Object or Array element in Enmap.
-DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use push() instead!
+DEPRECATION WILL BE REMOVED IN ENMAP 6! Use push() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
@@ -831,7 +831,7 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use push() instead!
 ***Deprecated***
 
 Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
-DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use get() instead!
+DEPRECATION WILL BE REMOVED IN ENMAP 6! Use get() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>\*</code> - The value of the property obtained.  
@@ -847,7 +847,7 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use get() instead!
 ***Deprecated***
 
 Delete a property from an object or array value in Enmap.
-DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use delete() instead!
+DEPRECATION WILL BE REMOVED IN ENMAP 6! Use delete() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
@@ -863,7 +863,7 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use delete() instead!
 
 Remove a value from an Array or Object property inside an Array or Object element in Enmap.
 Confusing? Sure is.
-DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use remove() instead!
+DEPRECATION WILL BE REMOVED IN ENMAP 6! Use remove() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
@@ -880,7 +880,7 @@ DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use remove() instead!
 ***Deprecated***
 
 Returns whether or not the property exists within an object or array value in enmap.
-DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use has() instead!
+DEPRECATION WILL BE REMOVED IN ENMAP 6! Use has() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>boolean</code> - Whether the property exists.  
@@ -899,7 +899,7 @@ Searches for the existence of a single item where its specified property's value
 (`item[prop] === value`).
 <warn>Do not use this to check for an item by its ID. Instead, use `enmap.has(id)`. See
 [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/has) for details.</warn>
-DEPRECATION WARNING: WILL BE REMOVED IN ENMAP 6! Use has("key", "path") instead!
+DEPRECATION WILL BE REMOVED IN ENMAP 6! Use has("key", "path") instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
