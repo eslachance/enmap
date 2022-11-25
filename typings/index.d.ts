@@ -1,3 +1,5 @@
+import Database from "better-sqlite3";
+
 declare module 'enmap' {
   export interface EnmapOptions {
     name?: string;
@@ -125,6 +127,13 @@ declare module 'enmap' {
     public readonly indexes: string[];
 
     /**
+     * Get the better-sqlite3 database object. Useful if you want to directly query or interact with the
+     * underlying SQLite database. Use at your own risk, as errors here might cause loss of data or corruption!
+     * @return {Database}
+     */
+    public readonly db: Database
+
+    /**
      * Generates an automatic numerical key for inserting a new value.
      * This is a "weak" method, it ensures the value isn't duplicated, but does not
      * guarantee it's sequential (if a value is deleted, another can take its place).
@@ -219,6 +228,17 @@ declare module 'enmap' {
     public get<P extends keyof V>(key: string, path: P): V[P] | undefined;
     public get<P extends Path<V>>(key: string, path: P): PathValue<V, P> | undefined;
     public get(key: string, path: string): unknown;
+
+
+    /**
+     * Returns an observable object. Modifying this object or any of its properties/indexes/children
+     * will automatically save those changes into enmap. This only works on
+     * objects and arrays, not "basic" values like strings or integers.
+     * @param {*} key The key to retrieve from the enmap.
+     * @param {string} path Optional. The property to retrieve from the object or array.
+     * @return {*} The value for this key.
+     */
+    public observe(key: string, path: string = null): V | undefined;
 
     /**
      * Fetches every key from the persistent enmap and loads them into the current enmap value.
@@ -412,6 +432,17 @@ declare module 'enmap' {
     public has(key: string, path?: string): boolean;
 
     /**
+     * Performs Array.includes() on a certain enmap value. Works similar to
+     * [Array.includes()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes).
+     * @param {string} key Required. The key of the array to check the value of.
+     * @param {string|number} val Required. The value to check whether it's in the array.
+     * @param {string} path Optional. The property to access the array inside the value object or array.
+     * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+     * @return {boolean} Whether the array contains the value.
+     */
+    public includes(key: string, val: V, path: string = null): boolean;
+
+    /**
      * Returns whether or not the property exists within an object or array value in enmap.
      * @param key Required. The key of the element to check in the Enmap or array.
      * @param path Required. The property to verify inside the value object or array.
@@ -443,6 +474,18 @@ declare module 'enmap' {
      */
     public deleteAll(): void;
 
+    /**
+     * Completely destroys the entire enmap. This deletes the database tables entirely.
+     * It will not affect other enmap data in the same database, however.
+     * THIS ACTION WILL DESTROY YOUR DATA AND CANNOT BE UNDONE.
+     * @returns {null}
+     */
+    public destroy(): null;
+
+    /**
+     * Deletes everything from the enmap. If persistent, clears the database of all its data for this table.
+     * @returns {void}
+     */
     public clear(): void;
 
     /**
@@ -506,14 +549,21 @@ declare module 'enmap' {
     /* INTERNAL (Private) METHODS */
 
     /**
-     * Internal Method. Initializes the enmap depending on given values.
+     * INTERNAL METHOD. Initializes the enmap depending on given values.
      * @param pool In order to set data to the Enmap, one must be provided.
      * @returns Returns the defer promise to await the ready state.
      */
     private _init(pool: any): Promise<void>;
 
+    /** 
+     * INTERNAL METHOD. Checks if the key is valid.
+     * Will THROW AN ERROR if the key is nil or not a string.
+     * @param {string|Array<string>} keys The key(s) to check.
+     **/
+    private _checkKeyOrArrayOfKeys(keys: string | Array<string>): void;
+
     /**
-     * INTERNAL method to verify the type of a key or property
+     * INTERNAL METHOD to verify the type of a key or property
      * Will THROW AN ERROR on wrong type, to simplify code.
      * @param key Required. The key of the element to check
      * @param type Required. The javascript constructor to check
@@ -522,7 +572,7 @@ declare module 'enmap' {
     private _check(key: string, type: string, path?: string): void;
 
     /**
-     * INTERNAL method to execute a mathematical operation. Cuz... javascript.
+     * INTERNAL METHOD to execute a mathematical operation. Cuz... javascript.
      * And I didn't want to import mathjs!
      * @param base the lefthand operand.
      * @param op the operation.
@@ -532,19 +582,19 @@ declare module 'enmap' {
     private _mathop(base: number, op: string, opand: number): number;
 
     /**
-     * Internal method used to validate persistent enmap names (valid Windows filenames)
+     * INTERNAL METHOD used to validate persistent enmap names (valid Windows filenames)
      */
     private _validateName(): void;
 
     /**
-     * Internal Method. Verifies if a key needs to be fetched from the database.
+     * INTERNAL METHOD. Verifies if a key needs to be fetched from the database.
      * If persistent enmap and autoFetch is on, retrieves the key.
      * @param key The key to check or fetch.
      */
     private _fetchCheck(key: string, force?: boolean): void;
 
     /**
-     * Internal Method. Parses JSON data.
+     * INTERNAL METHOD. Parses JSON data.
      * Reserved for future use (logical checking)
      * @param data The data to check/parse
      * @returns An object or the original data.
@@ -552,14 +602,14 @@ declare module 'enmap' {
     private _parseData(data: any): any;
 
     /**
-     * Internal Method. Clones a value or object with the enmap's set clone level.
+     * INTERNAL METHOD. Clones a value or object with the enmap's set clone level.
      * @param data The data to clone.
      * @return The cloned value.
      */
     private _clone(data: any): any;
 
     /**
-     * Internal Method. Verifies that the database is ready, assuming persistence is used.
+     * INTERNAL METHOD. Verifies that the database is ready, assuming persistence is used.
      */
     private _readyCheck(): void;
 
@@ -574,17 +624,13 @@ declare module 'enmap' {
 
     /**
      * Creates an ordered array of the values of this Enmap.
-     * The array will only be reconstructed if an item is added to or removed from the Enmap,
-     * or if you change the length of the array itself. If you don't want this caching behavior,
-     * use `Array.from(enmap.values())` instead.
+     * @return {Array<V>} The values of this Enmap.
      */
     public array(): V[];
 
     /**
      * Creates an ordered array of the keys of this Enmap
-     * The array will only be reconstructed if an item is added to or removed from the Enmap,
-     * or if you change the length of the array itself. If you don't want this caching behavior,
-     * use `Array.from(enmap.keys())` instead.
+     * @return {Array<string>} The keys of this Enmap.
      */
     public keyArray(): string[];
 
