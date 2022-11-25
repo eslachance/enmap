@@ -11,6 +11,14 @@ declare module 'enmap' {
     wal?: boolean;
     verbose?: (query: string) => void;
     autoEnsure?: unknown;
+    serializer?: <Value = unknown, SerializedValue = unknown>(
+      value: Value,
+      key: string,
+    ) => SerializedValue;
+    deserializer?: <SerializedValue = unknown, Value = unknown>(
+      value: SerializedValue,
+      key: string,
+    ) => Value;
   }
 
   type MathOps =
