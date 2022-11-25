@@ -13,7 +13,7 @@ Can be made persistent
         * [.count](#enmap-count-number) ⇒ <code>number</code>
         * [.indexes](#enmap-indexes-array-less-than-string-greater-than) ⇒ <code>Array.&lt;string&gt;</code>
         * [.db](#enmap-db-database) ⇒ <code>Database</code>
-        * [.autonum](#enmap-autonum-number) ⇒ <code>number</code>
+        * [.autonum](#enmap-autonum-number) ⇒ <code>string</code>
         * [.set(key, val, path)](#enmap-set-key-val-path-enmap) ⇒ [<code>Enmap</code>]
         * [.update(key, valueOrFunction)](#enmap-update-key-valueorfunction)
         * [.get(key, path)](#enmap-get-key-path) ⇒ <code>\*</code>

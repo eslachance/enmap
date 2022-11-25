@@ -134,7 +134,7 @@ declare module 'enmap' {
      * enmap.set(enmap.autonum, "This is a new value");
      * @return The generated key number.
      */
-    public readonly autonum: number;
+    public readonly autonum: string;
 
     /**
      * Initializes a new Enmap, with options.
