@@ -58,28 +58,28 @@ declare module 'enmap' {
 
   /**
    * Hack to work around TypeScript's structural integrity requirement.
-   * This is the Map<K, V> class without the delete method since Enmap returns this
+   * This is the Map<string, V> class without the delete method since Enmap returns this
    * while the standard returns boolean.
    */
-  class AlmostMap<K, V> {
+  class AlmostMap<V> {
     readonly size: number;
     readonly [Symbol.toStringTag]: 'Map';
 
     clear(): void;
     forEach(
-      callbackfn: (value: V, key: K, map: Map<K, V>) => void,
+      callbackfn: (value: V, key: string, map: Map<string, V>) => void,
       thisArg?: any,
     ): void;
 
-    get(key: K): V | undefined;
-    has(key: K): boolean;
-    set(key: K, value: V): this;
+    get(key: string): V | undefined;
+    has(key: string): boolean;
+    set(key: string, value: V): this;
 
-    entries(): IterableIterator<[K, V]>;
-    keys(): IterableIterator<K>;
+    entries(): IterableIterator<[string, V]>;
+    keys(): IterableIterator<string>;
     values(): IterableIterator<V>;
 
-    [Symbol.iterator](): IterableIterator<[K, V]>;
+    [Symbol.iterator](): IterableIterator<[string, V]>;
   }
 
   /**
@@ -87,9 +87,8 @@ declare module 'enmap' {
    * Can be made persistent
    */
   export default class Enmap<
-    K extends string | number = string | number,
     V = any,
-  > extends AlmostMap<K, V> {
+  > extends AlmostMap<V> {
     public readonly cloneLevel: 'none' | 'shallow' | 'deep';
     public readonly name: string;
     public readonly dataDir: string;
@@ -104,7 +103,7 @@ declare module 'enmap' {
     public readonly ensureProps: boolean;
     public readonly wal: boolean;
     public readonly changedCB: (
-      key: K,
+      key: string,
       oldValue: V | undefined,
       newValue: V | undefined,
     ) => void;
@@ -132,7 +131,7 @@ declare module 'enmap' {
      * Useful for logging, but not much else.
      * @example
      * enmap.set(enmap.autonum, "This is a new value");
-     * @return The generated key number.
+     * @return The generated key string.
      */
     public readonly autonum: string;
 
@@ -154,7 +153,7 @@ declare module 'enmap' {
      * const myEnmap = new Enmap({name: "testing", fetchAll: false, autoFetch: true});
      */
     constructor(
-      iterable?: Iterable<[K, V]> | string | EnmapOptions,
+      iterable?: Iterable<[string, V]> | string | EnmapOptions,
       options?: EnmapOptions,
     );
 
@@ -173,7 +172,7 @@ declare module 'enmap' {
      *
      * @returns The enmap.
      */
-    public set(key: K, val: V): this;
+    public set(key: string, val: V): this;
 
     /**
      * Sets a value in Enmap.
@@ -188,7 +187,7 @@ declare module 'enmap' {
      * enmap.set('ArraysToo', 2, 'three'); // changes "tree" to "three" in array.
      * @returns The enmap.
      */
-    public set(key: K, val: any, path: string): this;
+    public set(key: string, val: any, path: string): this;
 
     /**
      * Update an existing object value in Enmap by merging new keys.
@@ -202,7 +201,7 @@ declare module 'enmap' {
      * In the case of a straight value, the merge is recursive and will add any missing level.
      * If using a function, it is your responsibility to merge the objects together correctly.
      */
-    public update(key: K, valueOrFunction: V | ((value: V) => V)): V;
+    public update(key: string, valueOrFunction: V | ((value: V) => V)): V;
 
     /**
      * Retrieves a key from the enmap. If fetchAll is false, returns a promise.
@@ -216,10 +215,10 @@ declare module 'enmap' {
      * const someSubValue = enmap.get("anObjectKey", "someprop.someOtherSubProp");
      * @return The value for this key.
      */
-    public get(key: K): V | undefined;
-    public get<P extends keyof V>(key: K, path: P): V[P] | undefined;
-    public get<P extends Path<V>>(key: K, path: P): PathValue<V, P> | undefined;
-    public get(key: K, path: string): unknown;
+    public get(key: string): V | undefined;
+    public get<P extends keyof V>(key: string, path: P): V[P] | undefined;
+    public get<P extends Path<V>>(key: string, path: P): PathValue<V, P> | undefined;
+    public get(key: string, path: string): unknown;
 
     /**
      * Fetches every key from the persistent enmap and loads them into the current enmap value.
@@ -232,21 +231,21 @@ declare module 'enmap' {
      * @param keys A single key or array of keys to force fetch from the enmap database.
      * @return The Enmap, including the new fetched values
      */
-    public fetch(keys: K[]): this;
+    public fetch(keys: string[]): this;
 
     /**
      * Force fetch one or more key values from the enmap. If the database has changed, that new value is used.
      * @param key A single key to force fetch from the enmap database.
      * @return The value.
      */
-    public fetch(key: K): V;
+    public fetch(key: string): V;
 
     /**
      * Removes a key or keys from the cache - useful when disabling autoFetch.
      * @param keyOrArrayOfKeys A single key or array of keys to remove from the cache.
      * @returns the Enmap minus the evicted keys.
      */
-    public evict(keyOrArrayOfKeys: K | K[]): this;
+    public evict(keyOrArrayOfKeys: string | string[]): this;
 
     /**
      * Function called whenever data changes within Enmap after the initial load.
@@ -258,7 +257,7 @@ declare module 'enmap' {
      * @param cb A callback function that will be called whenever data changes in the enmap.
      */
     public changed(
-      cb: (key: K, oldValue: V | undefined, newValue: V | undefined) => void,
+      cb: (key: string, oldValue: V | undefined, newValue: V | undefined) => void,
     ): void;
 
     /**
@@ -273,18 +272,16 @@ declare module 'enmap' {
      * Modify the property of a value inside the enmap, if the value is an object or array.
      * This is a shortcut to loading the key, changing the value, and setting it back.
      * @param key Required. The key of the element to add to The Enmap or array.
-     * This value MUST be a string or number.
      * @param path Required. The property to modify inside the value object or array.
      * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @param val Required. The value to apply to the specified property.
      * @returns The enmap.
      */
-    public setProp(key: K, path: string, val: any): this;
+    public setProp(key: string, path: string, val: any): this;
 
     /**
      * Push to an array value in Enmap.
      * @param key Required. The key of the array element to push to in Enmap.
-     * This value MUST be a string or number.
      * @param val Required. The value to push to the array.
      * @param path Optional. The path to the property to modify inside the value object or array.
      * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -298,19 +295,18 @@ declare module 'enmap' {
      * enmap.push("arrayInObject", "five", "sub"); adds "five" at the end of the sub array
      * @returns The enmap.
      */
-    public push(key: K, val: any, path?: string, allowDupes?: boolean): this;
+    public push(key: string, val: any, path?: string, allowDupes?: boolean): this;
 
     /**
      * Push to an array element inside an Object or Array element in Enmap.
      * @param key Required. The key of the element.
-     * This value MUST be a string or number.
      * @param path Required. The name of the array property to push to.
      * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @param val Required. The value push to the array property.
      * @param allowDupes Allow duplicate values in the array (default: false).
      * @returns The enmap.
      */
-    public pushIn(key: K, path: string, val: any, allowDupes?: boolean): this;
+    public pushIn(key: string, path: string, val: any, allowDupes?: boolean): this;
 
     // AWESOME MATHEMATICAL METHODS
 
@@ -334,7 +330,7 @@ declare module 'enmap' {
      * @returns The enmap.
      */
     public math(
-      key: K,
+      key: string,
       operation: MathOps,
       operand: number,
       path?: string,
@@ -353,7 +349,7 @@ declare module 'enmap' {
      * points.inc("numberInObject", "sub.anInt"); // {sub: { anInt: 6 }}
      * @returns The enmap.
      */
-    public inc(key: K, path?: string): this;
+    public inc(key: string, path?: string): this;
 
     /**
      * Decrements a key's value or property by 1. Value must be a number, or a path to a number.
@@ -368,7 +364,7 @@ declare module 'enmap' {
      * points.dec("numberInObject", "sub.anInt"); // {sub: { anInt: 4 }}
      * @returns The enmap.
      */
-    public dec(key: K, path?: string): this;
+    public dec(key: string, path?: string): this;
 
     /**
      * Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
@@ -377,7 +373,7 @@ declare module 'enmap' {
      * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @return The value of the property obtained.
      */
-    public getProp(key: K, path: string): any;
+    public getProp(key: string, path: string): any;
 
     /**
      * Returns the key's value, or the default given, ensuring that the data is there.
@@ -397,14 +393,13 @@ declare module 'enmap' {
      * console.log(settings) // enmap's value for "1234567890" if it exists, otherwise the defaultSettings value.
      * @return The value from the database for the key, or the default value provided for a new key.
      */
-    public ensure(key: K, defaultValue: V, path?: string): V;
+    public ensure(key: string, defaultValue: V, path?: string): V;
 
     /* BOOLEAN METHODS THAT CHECKS FOR THINGS IN ENMAP */
 
     /**
      * Returns whether or not the key exists in the Enmap.
      * @param key Required. The key of the element to add to The Enmap or array.
-     * This value MUST be a string or number.
      * @param path Optional. The property to verify inside the value object or array.
      * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @example
@@ -414,7 +409,7 @@ declare module 'enmap' {
      *
      * if(!enmap.has("myOtherKey", "oneProp.otherProp.SubProp")) return false;
      */
-    public has(key: K, path?: string): boolean;
+    public has(key: string, path?: string): boolean;
 
     /**
      * Returns whether or not the property exists within an object or array value in enmap.
@@ -423,7 +418,7 @@ declare module 'enmap' {
      * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @return Whether the property exists.
      */
-    public hasProp(key: K, path: string): boolean;
+    public hasProp(key: string, path: string): boolean;
 
     /**
      * Deletes a key in the Enmap.
@@ -433,7 +428,7 @@ declare module 'enmap' {
      * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @returns The enmap.
      */
-    public delete(key: K, path?: string): this;
+    public delete(key: string, path?: string): this;
 
     /**
      * Delete a property from an object or array value in Enmap.
@@ -441,7 +436,7 @@ declare module 'enmap' {
      * @param path Required. The name of the property to remove from the object.
      * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
      */
-    public deleteProp(key: K, path: string): void;
+    public deleteProp(key: string, path: string): void;
 
     /**
      * Deletes everything from the enmap. If persistent, clears the database of all its data for this table.
@@ -454,26 +449,24 @@ declare module 'enmap' {
      * Remove a value in an Array or Object element in Enmap. Note that this only works for
      * values, not keys. Complex values such as objects and arrays will not be removed this way.
      * @param key Required. The key of the element to remove from in Enmap.
-     * This value MUST be a string or number.
      * @param val Required. The value to remove from the array or object.
      * @param path Optional. The name of the array property to remove from.
      * Can be a path with dot notation, such as "prop1.subprop2.subprop3".
      * If not presents, removes directly from the value.
      * @returns The enmap.
      */
-    public remove(key: K, val: V, path?: string): this;
+    public remove(key: string, val: V, path?: string): this;
 
     /**
      * Remove a value from an Array or Object property inside an Array or Object element in Enmap.
      * Confusing? Sure is.
      * @param key Required. The key of the element.
-     * This value MUST be a string or number.
      * @param path Required. The name of the array property to remove from.
      * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @param val Required. The value to remove from the array property.
      * @returns The enmap.
      */
-    public removeFrom(key: K, path: string, val: any): this;
+    public removeFrom(key: string, path: string, val: any): this;
 
     /**
      * Exports the enmap data to stringified JSON format. WARNING: Does not work on memory enmaps containing complex data!
@@ -505,10 +498,10 @@ declare module 'enmap' {
      *
      * @returns An array of initialized Enmaps.
      */
-    public static multi<K extends string | number, V>(
+    public static multi<V>(
       names: string[],
       options?: EnmapOptions,
-    ): Enmap<K, V>[];
+    ): Enmap<V>[];
 
     /* INTERNAL (Private) METHODS */
 
@@ -526,7 +519,7 @@ declare module 'enmap' {
      * @param type Required. The javascript constructor to check
      * @param path Optional. The dotProp path to the property in the object enmap.
      */
-    private _check(key: K, type: string, path?: string): void;
+    private _check(key: string, type: string, path?: string): void;
 
     /**
      * INTERNAL method to execute a mathematical operation. Cuz... javascript.
@@ -548,7 +541,7 @@ declare module 'enmap' {
      * If persistent enmap and autoFetch is on, retrieves the key.
      * @param key The key to check or fetch.
      */
-    private _fetchCheck(key: K, force?: boolean): void;
+    private _fetchCheck(key: string, force?: boolean): void;
 
     /**
      * Internal Method. Parses JSON data.
@@ -593,7 +586,7 @@ declare module 'enmap' {
      * or if you change the length of the array itself. If you don't want this caching behavior,
      * use `Array.from(enmap.keys())` instead.
      */
-    public keyArray(): K[];
+    public keyArray(): string[];
 
     /**
      * Obtains a random value from this Enmap. This relies on {@link Enmap#array}.
@@ -612,7 +605,7 @@ declare module 'enmap' {
      * Obtains a random key from this Enmap. This relies on {@link Enmap#keyArray}
      * @returns A random key from the Enmap
      */
-    public randomKey(): K;
+    public randomKey(): string;
 
     /**
      * Obtains random keys from this Enmap. This relies on {@link Enmap#keyArray}
@@ -640,7 +633,7 @@ declare module 'enmap' {
      * @example
      * enmap.find(val => val.username === 'Bob');
      */
-    public find(fn: (val: V, key: K, enmap: this) => boolean): V | undefined;
+    public find(fn: (val: V, key: string, enmap: this) => boolean): V | undefined;
 
     /**
      * Searches for a single item where its specified property's value is identical to the given value
@@ -662,7 +655,7 @@ declare module 'enmap' {
      * @example
      * enmap.findKey(val => val.username === 'Bob');
      */
-    public findKey(fn: (val: V, key: K, enmap: this) => boolean): K | undefined;
+    public findKey(fn: (val: V, key: string, enmap: this) => boolean): string | undefined;
     /**
      * Searches for the key of a single item where its specified property's value is identical to the given value
      * (`item[prop] === value`), or the given function returns a truthy value. In the latter case,
@@ -671,7 +664,7 @@ declare module 'enmap' {
      * @example
      * enmap.findKey('username', 'Bob');
      */
-    public findKey(prop: string, value: any): K | undefined;
+    public findKey(prop: string, value: any): string | undefined;
 
     /**
      * Searches for the existence of a single item where its specified property's value is identical to the given value
@@ -694,7 +687,7 @@ declare module 'enmap' {
      * @returns The number of removed entries
      */
     public sweep(
-      fn: (val: V, key: K, enmap: this) => boolean,
+      fn: (val: V, key: string, enmap: this) => boolean,
       thisArg?: any,
     ): number;
 
@@ -705,7 +698,7 @@ declare module 'enmap' {
      * @param thisArg Value to use as `this` when executing function
      */
     public filter(
-      fn: (val: V, key: K, enmap: this) => boolean,
+      fn: (val: V, key: string, enmap: this) => boolean,
       thisArg?: any,
     ): this;
 
@@ -716,7 +709,7 @@ declare module 'enmap' {
      * @param thisArg Value to use as `this` when executing function
      */
     public filterArray(
-      fn: (val: V, key: K, enmap: this) => boolean,
+      fn: (val: V, key: string, enmap: this) => boolean,
       thisArg?: any,
     ): V[];
 
@@ -729,7 +722,7 @@ declare module 'enmap' {
      * const [big, small] = collection.partition(guild => guild.memberCount > 250);
      */
     public partition(
-      fn: (val: V, key: K, enmap: this) => boolean,
+      fn: (val: V, key: string, enmap: this) => boolean,
       thisArg?: any,
     ): [Enmap, Enmap];
 
@@ -739,7 +732,7 @@ declare module 'enmap' {
      * @param fn Function that produces an element of the new array, taking three arguments
      * @param thisArg Value to use as `this` when executing function
      */
-    public map<R>(fn: (val: V, key: K, enmap: this) => R, thisArg?: any): R[];
+    public map<R>(fn: (val: V, key: string, enmap: this) => R, thisArg?: any): R[];
 
     /**
      * Identical to
@@ -748,7 +741,7 @@ declare module 'enmap' {
      * @param thisArg Value to use as `this` when executing function
      */
     public some(
-      fn: (val: V, key: K, enmap: this) => boolean,
+      fn: (val: V, key: string, enmap: this) => boolean,
       thisArg?: any,
     ): boolean;
 
@@ -759,7 +752,7 @@ declare module 'enmap' {
      * @param thisArg Value to use as `this` when executing function
      */
     public every(
-      fn: (val: V, key: K, enmap: this) => boolean,
+      fn: (val: V, key: string, enmap: this) => boolean,
       thisArg?: any,
     ): boolean;
 
@@ -770,7 +763,7 @@ declare module 'enmap' {
      * @param initialValue Starting value for the accumulator
      */
     public reduce(
-      fn: (acc: V, val: V, key: K, enmap: this) => V,
+      fn: (acc: V, val: V, key: string, enmap: this) => V,
       initialValue?: V,
     ): V;
 
@@ -781,7 +774,7 @@ declare module 'enmap' {
      * @param initialValue Starting value for the accumulator
      */
     public reduce<R>(
-      fn: (acc: R, val: V, key: K, enmap: this) => V,
+      fn: (acc: R, val: V, key: string, enmap: this) => V,
       initialValue: R,
     ): R;
 
@@ -790,7 +783,7 @@ declare module 'enmap' {
      * @example
      * const newColl = someColl.clone();
      */
-    public clone(): Enmap<K, V>;
+    public clone(): Enmap<V>;
 
     /**
      * Combines this Enmap with others into a new Enmap. None of the source Enmaps are modified.
@@ -798,7 +791,7 @@ declare module 'enmap' {
      * @example
      * const newColl = someColl.concat(someOtherColl, anotherColl, ohBoyAColl);
      */
-    public concat(...enmaps: Enmap<K, V>[]): Enmap<K, V>;
+    public concat(...enmaps: Enmap<V>[]): Enmap<V>;
 
     /**
      * Checks if this Enmap shares identical key-value pairings with another.
@@ -807,6 +800,6 @@ declare module 'enmap' {
      * @param enmap Enmap to compare with
      * @returns Whether the Enmaps have identical contents
      */
-    public equals(enmap: Enmap<K, V>): boolean;
+    public equals(enmap: Enmap<V>): boolean;
   }
 }

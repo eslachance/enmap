@@ -202,7 +202,6 @@ class Enmap extends Map {
    * enmap.set('ArraysToo', 'three', 2); // changes "tree" to "three" in array.
    * @returns {Enmap} The enmap.
    */
-  //@ts-ignore
   set(key, val, path = null) {
     if (isNil(key) || key.constructor.name !== 'String') {
       throw new Err(
@@ -212,7 +211,6 @@ class Enmap extends Map {
         'EnmapKeyTypeError',
       );
     }
-    key = key.toString();
     let data = this.get(key);
     const oldValue = super.has(key) ? this.#clone(data) : null;
     if (!isNil(path)) {
@@ -256,8 +254,13 @@ class Enmap extends Map {
    */
   update(key, valueOrFunction) {
     this.#readyCheck();
-    if (isNil(key)) {
-      throw new Err('Key not provided for update function', 'EnmapKeyError');
+    if (isNil(key) || key.constructor.name !== 'String') {
+      throw new Err(
+        `Enmap requires keys to be a string. Provided: ${
+          isNil(key) ? 'nil' : key.constructor.name
+        }`,
+        'EnmapKeyTypeError',
+      );
     }
     this.#check(key, ['Object']);
     this.#fetchCheck(key);
@@ -452,7 +455,6 @@ class Enmap extends Map {
   /**
    * Push to an array value in Enmap.
    * @param {string} key Required. The key of the array element to push to in Enmap.
-   * This value MUST be a string or number.
    * @param {*} val Required. The value to push to the array.
    * @param {string} path Optional. The path to the property to modify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
@@ -625,7 +627,6 @@ class Enmap extends Map {
   /**
    * Returns whether or not the key exists in the Enmap.
    * @param {string} key Required. The key of the element to add to The Enmap or array.
-   * This value MUST be a string or number.
    * @param {string} path Optional. The property to verify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @example
@@ -791,7 +792,6 @@ class Enmap extends Map {
    * values, not keys. Note that only one value is removed, no more. Arrays of objects must use a function to remove,
    * as full object matching is not supported.
    * @param {string} key Required. The key of the element to remove from in Enmap.
-   * This value MUST be a string or number.
    * @param {*|Function} val Required. The value to remove from the array or object. OR a function to match an object.
    * If using a function, the function provides the object value and must return a boolean that's true for the object you want to remove.
    * @param {string} path Optional. The name of the array property to remove from.
@@ -1111,7 +1111,7 @@ class Enmap extends Map {
    */
   #fetchCheck(key, force = false) {
     key = key.toString();
-    if (!['String', 'Number'].includes(key.constructor.name)) return;
+    if ('String' !== key.constructor.name) return;
     if (force) {
       this.fetch(key);
       return;
@@ -1559,7 +1559,6 @@ class Enmap extends Map {
    * This is a shortcut to loading the key, changing the value, and setting it back.
    * DEPRECATION WILL BE REMOVED IN ENMAP 6! Use set() instead!
    * @param {string} key Required. The key of the element to add to The Enmap or array.
-   * This value MUST be a string or number.
    * @param {string} path Required. The property to modify inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @param {*} val Required. The value to apply to the specified property.
@@ -1585,7 +1584,6 @@ class Enmap extends Map {
    * Push to an array element inside an Object or Array element in Enmap.
    * DEPRECATION WILL BE REMOVED IN ENMAP 6! Use push() instead!
    * @param {string} key Required. The key of the element.
-   * This value MUST be a string or number.
    * @param {string} path Required. The name of the array property to push to.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @param {*} val Required. The value push to the array property.
@@ -1661,7 +1659,6 @@ class Enmap extends Map {
    * Confusing? Sure is.
    * DEPRECATION WILL BE REMOVED IN ENMAP 6! Use remove() instead!
    * @param {string} key Required. The key of the element.
-   * This value MUST be a string or number.
    * @param {string} path Required. The name of the array property to remove from.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @param {*} val Required. The value to remove from the array property.
