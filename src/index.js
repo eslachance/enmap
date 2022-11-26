@@ -203,7 +203,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   set(key, val, path = null) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     let data = this.get(key);
     const oldValue = super.has(key) ? this.#clone(data) : null;
     if (!isNil(path)) {
@@ -246,7 +246,7 @@ class Enmap extends Map {
    * // More info: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax
    */
   update(key, valueOrFunction) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     this.#readyCheck();
     this.#check(key, ['Object']);
     this.#fetchCheck(key);
@@ -272,7 +272,7 @@ class Enmap extends Map {
    * @return {*} The value for this key.
    */
   get(key, path = null) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     this.#readyCheck();
     this.#fetchCheck(key);
     if (this.#autoEnsure !== this.#off && !this.has(key)) {
@@ -290,12 +290,12 @@ class Enmap extends Map {
    * Returns an observable object. Modifying this object or any of its properties/indexes/children
    * will automatically save those changes into enmap. This only works on
    * objects and arrays, not "basic" values like strings or integers.
-   * @param {*} key The key to retrieve from the enmap.
+   * @param {string} key The key to retrieve from the enmap.
    * @param {string} path Optional. The property to retrieve from the object or array.
    * @return {*} The value for this key.
    */
   observe(key, path = null) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     this.#check(key, ['Object', 'Array'], path);
     const data = this.get(key, path);
     const proxy = onChange(data, () => {
@@ -349,20 +349,20 @@ class Enmap extends Map {
 
   /**
    * Force fetch one or more key values from the enmap. If the database has changed, that new value is used.
-   * @param {string|Array<string>} keyOrKeys A single key or array of keys to force fetch from the enmap database.
+   * @param {string|Array<string>} keyOrArrayOfKeys A single key or array of keys to force fetch from the enmap database.
    * @return {Enmap|*} The Enmap, including the new fetched values, or the value in case the function argument is a single key.
    */
-  fetch(keyOrKeys) {
-    this.#checkKeyOrArrayOfKeys(keyOrKeys);
+  fetch(keyOrArrayOfKeys) {
+    this.#checkKeyOrArrayOfKeys(keyOrArrayOfKeys);
     this.#readyCheck();
-    if (isArray(keyOrKeys)) {
+    if (isArray(keyOrArrayOfKeys)) {
       const data = this.#db
         .prepare(
           `SELECT * FROM ${this.#name} WHERE key IN (${'?, '
-            .repeat(keyOrKeys.length)
+            .repeat(keyOrArrayOfKeys.length)
             .slice(0, -2)})`,
         )
-        .all(keyOrKeys);
+        .all(keyOrArrayOfKeys);
       for (const row of data) {
         super.set(row.key, this.#parseData(row.value, row.key));
       }
@@ -370,10 +370,10 @@ class Enmap extends Map {
     } else {
       const data = this.#db
         .prepare(`SELECT * FROM ${this.#name} WHERE key = ?;`)
-        .get(keyOrKeys);
+        .get(keyOrArrayOfKeys);
       if (!data) return null;
-      super.set(keyOrKeys, this.#parseData(data.value, keyOrKeys));
-      return this.#parseData(data.value, keyOrKeys);
+      super.set(keyOrArrayOfKeys, this.#parseData(data.value, keyOrArrayOfKeys));
+      return this.#parseData(data.value, keyOrArrayOfKeys);
     }
   }
 
@@ -457,7 +457,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   push(key, val, path = null, allowDupes = false) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     const data = this.get(key);
     this.#check(key, 'Array', path);
     if (!isNil(path)) {
@@ -494,7 +494,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   math(key, operation, operand, path = null) {
-    this.#checkKeyOrArrayOfKeys(keyOrArrayOfKeys);
+    this.#checkKey(keyOrArrayOfKeys);
     this.#check(key, 'Number', path);
     const data = this.get(key, path);
     return this.set(key, this.#mathop(data, operation, operand), path);
@@ -514,7 +514,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   inc(key, path = null) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     this.#check(key, 'Number', path);
     if (isNil(path)) {
       let val = this.get(key);
@@ -541,7 +541,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   dec(key, path = null) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     this.#check(key, 'Number', path);
     if (isNil(path)) {
       let val = this.get(key);
@@ -573,7 +573,7 @@ class Enmap extends Map {
    * @return {*} The value from the database for the key, or the default value provided for a new key.
    */
   ensure(key, defaultValue, path = null) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     this.#readyCheck();
     this.#fetchCheck(key);
     if (this.#autoEnsure !== this.#off) {
@@ -631,7 +631,7 @@ class Enmap extends Map {
    * @returns {boolean}
    */
   has(key, path = null) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     this.#readyCheck();
     this.#fetchCheck(key);
     if (!isNil(path)) {
@@ -652,7 +652,7 @@ class Enmap extends Map {
    * @return {boolean} Whether the array contains the value.
    */
   includes(key, val, path = null) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     this.#readyCheck();
     this.#fetchCheck(key);
     this.#check(key, ['Array', 'Object']);
@@ -687,7 +687,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   delete(key, path = null) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     this.#readyCheck();
     this.#fetchCheck(key);
     const oldValue = this.get(key);
@@ -800,7 +800,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   remove(key, val, path = null) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     this.#readyCheck();
     this.#fetchCheck(key);
     this.#check(key, ['Array', 'Object']);
@@ -1000,20 +1000,65 @@ class Enmap extends Map {
   }
 
   /** 
-   * INTERNAL METHOD. Checks if the key is valid.
-   * Will THROW AN ERROR if the key is nil, not a string or not an array of strings.
+   * INTERNAL METHOD. Checks if the key or array of keys is valid.
+   * Will THROW AN ERROR if the key is neither a string nor an array of strings.
    * @param {string|Array<string>} keys The key(s) to check.
    */
   #checkKeyOrArrayOfKeys(keys) {
-    if (!(typeof keys === 'string' || (Array.isArray(keys) && keys.every(e => typeof e === "string")))) {
+    if (Array.isArray(keys)) {
+      this.#checkArrayOfKeys(keys);
+    } else {
+      this.#checkKey(keys);
+    }
+  }
+
+  /** 
+   * INTERNAL METHOD. Checks if the key is a valid string.
+   * Will THROW AN ERROR if the key is not a string.
+   * @param {string} key The key to check.
+   */
+  #checkKey(key) {
+    if (typeof keys !== 'string') {
       throw new Err(
-        `Enmap requires a key to be a string or keys to be an array of strings. Provided: ${
+        `Enmap requires a key to be a string. Provided: ${
           isNil(keys) ? 'nil' : typeof keys 
-        }${Array.isArray(keys) ? ` and the array includes ${typeof keys.find((v) => typeof v !== "string")}` : ''}`,
+        }`,
         'EnmapKeyTypeError',
       );
-    }  
+    }
   }
+
+  /** 
+   * INTERNAL METHOD. Checks if the array of keys is valid.
+   * Will THROW AN ERROR if the key is not an array of strings.
+   * @param {Array<string>} keys The keys to check.
+   */
+  #checkArrayOfKeys(keys) {
+    if (!(Array.isArray(keys) && keys.every(e => typeof e === "string"))) {
+      throw new Err(
+        `Enmap requires an arrays of keys to be an array of strings. Provided: ${
+          isNil(keys) ? 'nil' : `An array that includes ${typeof keys.find((v) => typeof v !== "string")}`
+        }`,
+        'EnmapKeyTypeError',
+      );
+    }
+  }
+
+  /** 
+   * INTERNAL METHOD. Checks if the property is of valid type.
+   * Will THROW AN ERROR if the property is not a strings.
+   * @param {string} prop The property to check.
+   */
+  #checkProp(prop) {
+    if (typeof prop !== 'string') {
+      throw new Err(
+        `Enmap requires a property to be a string. Provided: ${
+          isNil(prop) ? 'nil' : typeof prop 
+        }`,
+        'EnmapKeyTypeError',
+      );
+    }
+  }  
 
   /**
    * INTERNAL METHOD to verify a property
@@ -1271,7 +1316,7 @@ class Enmap extends Map {
    * enmap.findAll('username', 'Bob');
    */
   findAll(prop, value) {
-    this.#checkKeyOrArrayOfKeys(prop);
+    this.#checkProp(prop);
     if (isNil(value)) throw new Error('Value must be specified.');
     const results = [];
     for (const item of this.values()) {
@@ -1292,7 +1337,7 @@ class Enmap extends Map {
    * should use the `get` method. See
    * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/get) for details.</warn>
    * @param {string|Function} propOrFn The property to test against, or the function to test with
-   * @param {*} [value] The expected value - only applicable and required if using a property for the first argument
+   * @param {*} [value] The expected value - only applicable and required if using a property for the first argument. Can't be nil.
    * @returns {*}
    * @example
    * enmap.find('username', 'Bob');
@@ -1300,17 +1345,20 @@ class Enmap extends Map {
    * enmap.find(val => val.username === 'Bob');
    */
   find(propOrFn, value) {
+    if (typeof propOrFn !== "function" && typeof propOrFn !== "string") throw new Err(
+      'Find requires either a property (string) and value, or a function. The passed argument was neither a string nor a function.',
+      'EnmapArgumentError',
+    );
+
+    if (isNil(value)) throw new Err(
+      'The value must be specified and cannot be nil.',
+      'EnmapArgumentError',
+    );
+    
     this.#readyCheck();
-    if (isNil(propOrFn) || (!isFunction(propOrFn) && isNil(value))) {
-      throw new Err(
-        'find requires either a prop and value, or a function. One of the provided arguments was null or undefined',
-        'EnmapArgumentError',
-      );
-    }
     const func = isFunction(propOrFn)
       ? propOrFn
-      : //@ts-ignore
-        (v) => value === _get(v, propOrFn);
+      : (v) => value === _get(v, propOrFn);
     for (const [key, val] of this) {
       if (func(val, key, this)) return val;
     }
@@ -1568,7 +1616,7 @@ class Enmap extends Map {
    * @deprecated Will be removed in Enmap 6!
    */
   setProp(key, path, val) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     process.emitWarning(
       'ENMAP DEPRECATION setProp() will be removed in the next major Enmap release (v6)! Please use set(key, value, path) instead.',
     );
@@ -1595,7 +1643,7 @@ class Enmap extends Map {
    * @deprecated Will be removed in Enmap 6!
    */
   pushIn(key, path, val, allowDupes = false) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     process.emitWarning(
       'ENMAP DEPRECATION pushIn() will be removed in the next major Enmap release (v6)! Please use push(key, value, path) instead.',
     );
@@ -1619,7 +1667,7 @@ class Enmap extends Map {
    * @deprecated Will be removed in Enmap 6!
    */
   getProp(key, path) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     process.emitWarning(
       'ENMAP DEPRECATION getProp() will be removed in the next major Enmap release (v6)! Please use get(key, path) instead.',
     );
@@ -1644,7 +1692,7 @@ class Enmap extends Map {
    * @deprecated Will be removed in Enmap 6! Use delete() instead!
    */
   deleteProp(key, path) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     process.emitWarning(
       'ENMAP DEPRECATION deleteProp() will be removed in the next major Enmap release (v6)! Please use delete(key, path) instead.',
     );
@@ -1672,7 +1720,7 @@ class Enmap extends Map {
    * @deprecated Will be removed in Enmap 6! Use remove() instead!
    */
   removeFrom(key, path, val) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     process.emitWarning(
       'ENMAP DEPRECATION removeFrom() will be removed in the next major Enmap release (v6)! Please use remove(key, value, path) instead.',
     );
@@ -1698,7 +1746,7 @@ class Enmap extends Map {
    * @deprecated Will be removed in Enmap 6! Use has() instead!
    */
   hasProp(key, path) {
-    this.#checkKeyOrArrayOfKeys(key);
+    this.#checkKey(key);
     process.emitWarning(
       'ENMAP DEPRECATION hasProp() will be removed in the next major Enmap release (v6)! Please use has(key, path) instead.',
     );
@@ -1730,7 +1778,7 @@ class Enmap extends Map {
    * @deprecated Will be removed in Enmap 6! Use has(key, path) instead!
    */
   exists(prop, value) {
-    this.#checkKeyOrArrayOfKeys(prop);
+    this.#checkProp(prop);
     process.emitWarning(
       'ENMAP DEPRECATION exists() will be removed in the next major Enmap release (v6)! Please use has(key, path) instead.',
     );

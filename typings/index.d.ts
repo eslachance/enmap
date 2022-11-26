@@ -559,11 +559,32 @@ declare module 'enmap' {
     private _init(pool: any): Promise<void>;
 
     /** 
-     * INTERNAL METHOD. Checks if the key is valid.
-     * Will THROW AN ERROR if the key is nil or not a string.
+     * INTERNAL METHOD. Checks if the key or array of keys is valid.
+     * Will THROW AN ERROR if the key is neither a string nor an array of strings.
      * @param {string|Array<string>} keys The key(s) to check.
-     **/
-    private _checkKeyOrArrayOfKeys(keys: string | Array<string>): void;
+     */
+     private _checkKeyOrArrayOfKeys(keys: string): void;
+
+    /** 
+     * INTERNAL METHOD. Checks if the key is a valid string.
+     * Will THROW AN ERROR if the key is not a string.
+     * @param {string} key The key to check.
+     */
+     private _checkKey(key: string): void;
+
+    /** 
+     * INTERNAL METHOD. Checks if the array of keys is valid.
+     * Will THROW AN ERROR if the key is not an array of strings.
+     * @param {Array<string>} keys The keys to check.
+     */
+    private _checkArrayOfKeys(keys: Array<string>) 
+
+    /** 
+     * INTERNAL METHOD. Checks if the property is of valid type.
+     * Will THROW AN ERROR if the property is not a strings.
+     * @param {string} prop The property to check.
+     */
+    private _checkProp(prop: string): void;
 
     /**
      * INTERNAL METHOD to verify the type of a key or property
