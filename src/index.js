@@ -1001,7 +1001,7 @@ class Enmap extends Map {
 
   /** 
    * INTERNAL METHOD. Checks if the key is valid.
-   * Will THROW AN ERROR if the key is nil or not a string.
+   * Will THROW AN ERROR if the key is nil, not a string or not an array of strings.
    * @param {string|Array<string>} keys The key(s) to check.
    */
   #checkKeyOrArrayOfKeys(keys) {
