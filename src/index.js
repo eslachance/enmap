@@ -1108,7 +1108,7 @@ class Enmap extends Map {
   }
 
   /**
-   * INTERNAL METHOD used to validate persistent enmap names (valid Windows filenames)
+   * INTERNAL METHOD. Validates persistent enmap names (valid Windows filenames)
    */
   #validateName() {
     this.#name = this.#name.replace(/[^a-z0-9]/gi, '_').toLowerCase();
