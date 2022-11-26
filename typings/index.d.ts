@@ -471,6 +471,8 @@ declare module 'enmap' {
 
     /**
      * Deletes everything from the enmap. If persistent, clears the database of all its data for this table.
+     * THIS ACTION WILL DELETE YOUR DATA AND CANNOT BE UNDONE.
+     * @returns {void}
      */
     public deleteAll(): void;
 
@@ -484,6 +486,7 @@ declare module 'enmap' {
 
     /**
      * Deletes everything from the enmap. If persistent, clears the database of all its data for this table.
+     * THIS ACTION WILL DELETE YOUR DATA AND CANNOT BE UNDONE.
      * @returns {void}
      */
     public clear(): void;

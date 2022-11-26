@@ -711,7 +711,7 @@ class Enmap extends Map {
       this.set(key, data);
     } else {
       super.delete(key);
-      if (typeof this.changedCB === 'function') {0
+      if (typeof this.changedCB === 'function') {
         this.changedCB(key, oldValue, null);
       }
       if (this.#polling) {
@@ -1007,9 +1007,9 @@ class Enmap extends Map {
   #checkKeyOrArrayOfKeys(keys) {
     if (!(typeof keys === 'string' || (Array.isArray(keys) && keys.every(e => typeof e === "string")))) {
       throw new Err(
-        `Enmap requires keys to be a string. Provided: ${
-          isNil(keys) ? 'nil' : keys.constructor.name
-        }`,
+        `Enmap requires a key to be a string or keys to be an array of strings. Provided: ${
+          isNil(keys) ? 'nil' : typeof keys 
+        }${Array.isArray(keys) ? ` and the array includes ${typeof keys.find((v) => typeof v !== "string")}` : ''}`,
         'EnmapKeyTypeError',
       );
     }  
