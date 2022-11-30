@@ -1018,10 +1018,10 @@ class Enmap extends Map {
    * @param {string} key The key to check.
    */
   #checkKey(key) {
-    if (typeof keys !== 'string') {
+    if (typeof key !== 'string') {
       throw new Err(
         `Enmap requires a key to be a string. Provided: ${
-          isNil(keys) ? 'nil' : typeof keys 
+          isNil(key) ? 'nil' : typeof key
         }`,
         'EnmapKeyTypeError',
       );
