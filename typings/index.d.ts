@@ -1,4 +1,4 @@
-import Database from "better-sqlite3";
+import Database from 'better-sqlite3';
 
 declare module 'enmap' {
   export interface EnmapOptions {
@@ -88,9 +88,7 @@ declare module 'enmap' {
    * A enhanced Map structure with additional utility methods.
    * Can be made persistent
    */
-  export default class Enmap<
-    V = any,
-  > extends AlmostMap<V> {
+  export default class Enmap<V = any> extends AlmostMap<V> {
     public readonly cloneLevel: 'none' | 'shallow' | 'deep';
     public readonly name: string;
     public readonly dataDir: string;
@@ -131,7 +129,7 @@ declare module 'enmap' {
      * underlying SQLite database. Use at your own risk, as errors here might cause loss of data or corruption!
      * @return {Database}
      */
-    public readonly db: Database
+    public readonly db: Database;
 
     /**
      * Generates an automatic numerical key for inserting a new value.
@@ -226,9 +224,11 @@ declare module 'enmap' {
      */
     public get(key: string): V | undefined;
     public get<P extends keyof V>(key: string, path: P): V[P] | undefined;
-    public get<P extends Path<V>>(key: string, path: P): PathValue<V, P> | undefined;
+    public get<P extends Path<V>>(
+      key: string,
+      path: P,
+    ): PathValue<V, P> | undefined;
     public get(key: string, path: string): unknown;
-
 
     /**
      * Returns an observable object. Modifying this object or any of its properties/indexes/children
@@ -238,7 +238,7 @@ declare module 'enmap' {
      * @param {string} path Optional. The property to retrieve from the object or array.
      * @return {*} The value for this key.
      */
-    public observe(key: string, path: string = null): V | undefined;
+    public observe(key: string, path?: string): V | undefined;
 
     /**
      * Fetches every key from the persistent enmap and loads them into the current enmap value.
@@ -277,7 +277,11 @@ declare module 'enmap' {
      * @param cb A callback function that will be called whenever data changes in the enmap.
      */
     public changed(
-      cb: (key: string, oldValue: V | undefined, newValue: V | undefined) => void,
+      cb: (
+        key: string,
+        oldValue: V | undefined,
+        newValue: V | undefined,
+      ) => void,
     ): void;
 
     /**
@@ -315,7 +319,12 @@ declare module 'enmap' {
      * enmap.push("arrayInObject", "five", "sub"); adds "five" at the end of the sub array
      * @returns The enmap.
      */
-    public push(key: string, val: any, path?: string, allowDupes?: boolean): this;
+    public push(
+      key: string,
+      val: any,
+      path?: string,
+      allowDupes?: boolean,
+    ): this;
 
     /**
      * Push to an array element inside an Object or Array element in Enmap.
@@ -326,7 +335,12 @@ declare module 'enmap' {
      * @param allowDupes Allow duplicate values in the array (default: false).
      * @returns The enmap.
      */
-    public pushIn(key: string, path: string, val: any, allowDupes?: boolean): this;
+    public pushIn(
+      key: string,
+      path: string,
+      val: any,
+      allowDupes?: boolean,
+    ): this;
 
     // AWESOME MATHEMATICAL METHODS
 
@@ -440,7 +454,7 @@ declare module 'enmap' {
      * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @return {boolean} Whether the array contains the value.
      */
-    public includes(key: string, val: V, path: string = null): boolean;
+    public includes(key: string, val: V, path?: string): boolean;
 
     /**
      * Returns whether or not the property exists within an object or array value in enmap.
@@ -544,10 +558,7 @@ declare module 'enmap' {
      *
      * @returns An array of initialized Enmaps.
      */
-    public static multi<V>(
-      names: string[],
-      options?: EnmapOptions,
-    ): Enmap<V>[];
+    public static multi<V>(names: string[], options?: EnmapOptions): Enmap<V>[];
 
     /* INTERNAL (Private) METHODS */
 
@@ -558,28 +569,28 @@ declare module 'enmap' {
      */
     private _init(pool: any): Promise<void>;
 
-    /** 
+    /**
      * INTERNAL METHOD. Checks if the key or array of keys is valid.
      * Will THROW AN ERROR if the key is neither a string nor an array of strings.
      * @param {string|Array<string>} keys The key(s) to check.
      */
-     private _checkKeyOrArrayOfKeys(keys: string): void;
+    private _checkKeyOrArrayOfKeys(keys: string): void;
 
-    /** 
+    /**
      * INTERNAL METHOD. Checks if the key is a valid string.
      * Will THROW AN ERROR if the key is not a string.
      * @param {string} key The key to check.
      */
-     private _checkKey(key: string): void;
+    private _checkKey(key: string): void;
 
-    /** 
+    /**
      * INTERNAL METHOD. Checks if the array of keys is valid.
      * Will THROW AN ERROR if the key is not an array of strings.
      * @param {Array<string>} keys The keys to check.
      */
-    private _checkArrayOfKeys(keys: Array<string>) 
+    private _checkArrayOfKeys(keys: Array<string>);
 
-    /** 
+    /**
      * INTERNAL METHOD. Checks if the property is of valid type.
      * Will THROW AN ERROR if the property is not a strings.
      * @param {string} prop The property to check.
@@ -703,7 +714,9 @@ declare module 'enmap' {
      * @example
      * enmap.find(val => val.username === 'Bob');
      */
-    public find(fn: (val: V, key: string, enmap: this) => boolean): V | undefined;
+    public find(
+      fn: (val: V, key: string, enmap: this) => boolean,
+    ): V | undefined;
 
     /**
      * Searches for a single item where its specified property's value is identical to the given value
@@ -725,7 +738,9 @@ declare module 'enmap' {
      * @example
      * enmap.findKey(val => val.username === 'Bob');
      */
-    public findKey(fn: (val: V, key: string, enmap: this) => boolean): string | undefined;
+    public findKey(
+      fn: (val: V, key: string, enmap: this) => boolean,
+    ): string | undefined;
     /**
      * Searches for the key of a single item where its specified property's value is identical to the given value
      * (`item[prop] === value`), or the given function returns a truthy value. In the latter case,
@@ -802,7 +817,10 @@ declare module 'enmap' {
      * @param fn Function that produces an element of the new array, taking three arguments
      * @param thisArg Value to use as `this` when executing function
      */
-    public map<R>(fn: (val: V, key: string, enmap: this) => R, thisArg?: any): R[];
+    public map<R>(
+      fn: (val: V, key: string, enmap: this) => R,
+      thisArg?: any,
+    ): R[];
 
     /**
      * Identical to

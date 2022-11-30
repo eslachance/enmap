@@ -494,7 +494,7 @@ class Enmap extends Map {
    * @returns {Enmap} The enmap.
    */
   math(key, operation, operand, path = null) {
-    this.#checkKey(keyOrArrayOfKeys);
+    this.#checkKey(key);
     this.#check(key, 'Number', path);
     const data = this.get(key, path);
     return this.set(key, this.#mathop(data, operation, operand), path);
@@ -1068,7 +1068,6 @@ class Enmap extends Map {
    * @param {string} path Optional. The dotProp path to the property in the object enmap.
    */
   #check(key, type, path = null) {
-    this.#checkKeyOrArrayOfKeys(key);
     if (!this.has(key))
       throw new Err(
         `The key "${key}" does not exist in the enmap "${this.#name}"`,
