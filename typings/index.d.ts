@@ -1,5 +1,5 @@
 declare module 'enmap' {
-  export interface EnmapOptions {
+  export interface EnmapOptions<V, SV> {
     name?: string;
     fetchAll?: boolean;
     autoFetch?: boolean;
@@ -11,6 +11,8 @@ declare module 'enmap' {
     wal?: boolean;
     verbose?: (query: string) => void;
     autoEnsure?: unknown;
+    serializer?: (value: V, key: string) => SV;
+    deserializer?: (value: SV, key: string) => V;
   }
 
   type MathOps =
@@ -89,6 +91,7 @@ declare module 'enmap' {
   export default class Enmap<
     K extends string | number = string | number,
     V = any,
+    SV = unknown,
   > extends AlmostMap<K, V> {
     public readonly cloneLevel: 'none' | 'shallow' | 'deep';
     public readonly name: string;
@@ -154,8 +157,8 @@ declare module 'enmap' {
      * const myEnmap = new Enmap({name: "testing", fetchAll: false, autoFetch: true});
      */
     constructor(
-      iterable?: Iterable<[K, V]> | string | EnmapOptions,
-      options?: EnmapOptions,
+      iterable?: Iterable<[K, V]> | string | EnmapOptions<V, SV>,
+      options?: EnmapOptions<V, SV>,
     );
 
     /**
@@ -505,9 +508,9 @@ declare module 'enmap' {
      *
      * @returns An array of initialized Enmaps.
      */
-    public static multi<K extends string | number, V>(
+    public static multi<K extends string | number, V, SV>(
       names: string[],
-      options?: EnmapOptions,
+      options?: EnmapOptions<V, SV>,
     ): Enmap<K, V>[];
 
     /* INTERNAL (Private) METHODS */
