@@ -1,5 +1,3 @@
-import Database from 'better-sqlite3';
-
 declare module 'enmap' {
   export interface EnmapOptions<V, SV> {
     name?: string;
@@ -113,7 +111,6 @@ declare module 'enmap' {
       newValue: V | undefined,
     ) => void;
 
-    private db: any;
     private pool: any;
     private ready: () => void;
 
@@ -134,7 +131,7 @@ declare module 'enmap' {
      * underlying SQLite database. Use at your own risk, as errors here might cause loss of data or corruption!
      * @return {Database}
      */
-    public readonly db: Database;
+    public readonly db: any;
 
     /**
      * Generates an automatic numerical key for inserting a new value.
