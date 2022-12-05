@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 
 declare module 'enmap' {
-  export interface EnmapOptions {
+  export interface EnmapOptions<V, SV> {
     name?: string;
     fetchAll?: boolean;
     autoFetch?: boolean;
@@ -13,6 +13,8 @@ declare module 'enmap' {
     wal?: boolean;
     verbose?: (query: string) => void;
     autoEnsure?: unknown;
+    serializer?: (value: V, key: string) => SV;
+    deserializer?: (value: SV, key: string) => V;
   }
 
   type MathOps =
@@ -88,7 +90,10 @@ declare module 'enmap' {
    * A enhanced Map structure with additional utility methods.
    * Can be made persistent
    */
-  export default class Enmap<V = any> extends AlmostMap<V> {
+  export default class Enmap<
+    V = any,
+    SV = unknown,
+  > extends AlmostMap<V> {
     public readonly cloneLevel: 'none' | 'shallow' | 'deep';
     public readonly name: string;
     public readonly dataDir: string;
@@ -160,8 +165,8 @@ declare module 'enmap' {
      * const myEnmap = new Enmap({name: "testing", fetchAll: false, autoFetch: true});
      */
     constructor(
-      iterable?: Iterable<[string, V]> | string | EnmapOptions,
-      options?: EnmapOptions,
+      iterable?: Iterable<[string, V]> | string | EnmapOptions<V, SV>,
+      options?: EnmapOptions<V, SV>,
     );
 
     /**
@@ -558,7 +563,10 @@ declare module 'enmap' {
      *
      * @returns An array of initialized Enmaps.
      */
-    public static multi<V>(names: string[], options?: EnmapOptions): Enmap<V>[];
+    public static multi<V, SV>(
+      names: string[],
+      options?: EnmapOptions<V, SV>,
+    ): Enmap<V>[];
 
     /* INTERNAL (Private) METHODS */
 
