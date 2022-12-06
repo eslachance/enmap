@@ -884,7 +884,7 @@ declare module 'enmap' {
      * @example
      * const newColl = someColl.concat(someOtherColl, anotherColl, ohBoyAColl);
      */
-    public concat(...enmaps: Enmap<V>[]): Enmap<V>;
+    public concat(...enmaps: Enmap<V, SV>[]): Enmap<V, SV>;
 
     /**
      * Checks if this Enmap shares identical key-value pairings with another.
