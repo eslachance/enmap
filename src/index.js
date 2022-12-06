@@ -1034,10 +1034,10 @@ class Enmap extends Map {
    * @param {Array<string>} keys The keys to check.
    */
   #checkArrayOfKeys(keys) {
-    if (!(Array.isArray(keys) && keys.every(e => typeof e === "string"))) {
+    if (!(Array.isArray(keys) && keys.every(e => typeof e === 'string'))) {
       throw new Err(
         `Enmap requires an arrays of keys to be an array of strings. Provided: ${
-          isNil(keys) ? 'nil' : `An array that includes ${typeof keys.find((v) => typeof v !== "string")}`
+          isNil(keys) ? 'nil' : `An array that includes ${typeof keys.find((v) => typeof v !== 'string')}`
         }`,
         'EnmapKeyTypeError',
       );
@@ -1344,7 +1344,7 @@ class Enmap extends Map {
    * enmap.find(val => val.username === 'Bob');
    */
   find(propOrFn, value) {
-    if (typeof propOrFn !== "function" && typeof propOrFn !== "string") throw new Err(
+    if (typeof propOrFn !== 'function' && typeof propOrFn !== 'string') throw new Err(
       'Find requires either a property (string) and value, or a function. The passed argument was neither a string nor a function.',
       'EnmapArgumentError',
     );
