@@ -876,7 +876,7 @@ declare module 'enmap' {
      * @example
      * const newColl = someColl.clone();
      */
-    public clone(): Enmap<V>;
+    public clone(): Enmap<V, SV>;
 
     /**
      * Combines this Enmap with others into a new Enmap. None of the source Enmaps are modified.
