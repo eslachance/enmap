@@ -13,13 +13,13 @@ Can be made persistent
         * [.count](#enmap-count-number) ⇒ <code>number</code>
         * [.indexes](#enmap-indexes-array-less-than-string-greater-than) ⇒ <code>Array.&lt;string&gt;</code>
         * [.db](#enmap-db-database) ⇒ <code>Database</code>
-        * [.autonum](#enmap-autonum-string) ⇒ <code>string</code>
+        * [.autonum](#enmap-autonum-number) ⇒ <code>number</code>
         * [.set(key, val, path)](#enmap-set-key-val-path-enmap) ⇒ [<code>Enmap</code>]
         * [.update(key, valueOrFunction)](#enmap-update-key-valueorfunction)
         * [.get(key, path)](#enmap-get-key-path) ⇒ <code>\*</code>
         * [.observe(key, path)](#enmap-observe-key-path) ⇒ <code>\*</code>
         * [.fetchEverything()](#enmap-fetcheverything-enmap) ⇒ [<code>Enmap</code>]
-        * [.fetch(keyOrArrayOfKeys)](#enmap-fetch-keyorarrayofkeys-enmap-enmap-or) ⇒ [<code>Enmap</code>](#enmap-map) \| <code>\*</code>
+        * [.fetch(keyOrKeys)](#enmap-fetch-keyorkeys-enmap-enmap-or) ⇒ [<code>Enmap</code>](#enmap-map) \| <code>\*</code>
         * [.evict(keyOrArrayOfKeys)](#enmap-evict-keyorarrayofkeys-enmap) ⇒ [<code>Enmap</code>]
         * [.changed(cb)](#enmap-changed-cb)
         * [.close()](#enmap-close-enmap) ⇒ [<code>Enmap</code>]
@@ -38,7 +38,7 @@ Can be made persistent
         * [.export()](#enmap-export-string) ⇒ <code>string</code>
         * [.import(data, overwrite, clear)](#enmap-import-data-overwrite-clear-enmap) ⇒ [<code>Enmap</code>]
         * [.array()](#enmap-array-array) ⇒ <code>Array</code>
-        * [.keyArray()](#enmap-keyarray-array-less-than-string-greater-than) ⇒ <code>Array.&lt;string&gt;</code>
+        * [.keyArray()](#enmap-keyarray-array-less-than-string-or-number-greater-than) ⇒ <code>Array.&lt;(string\|number)&gt;</code>
         * [.random([count])](#enmap-random-count-or-array-less-than-greater-than) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
         * [.randomKey([count])](#enmap-randomkey-count-or-array-less-than-greater-than) ⇒ <code>\*</code> \| <code>Array.&lt;\*&gt;</code>
         * [.findAll(prop, value)](#enmap-findall-prop-value-array) ⇒ <code>Array</code>
@@ -127,14 +127,14 @@ underlying SQLite database. Use at your own risk, as errors here might cause los
 **Kind**: instance property of [<code>Enmap</code>](#enmap-map)  
 <a name="Enmap+autonum"></a>
 
-### enmap.autonum ⇒ <code>string</code>
+### enmap.autonum ⇒ <code>number</code>
 Generates an automatic numerical key for inserting a new value.
 This is a "weak" method, it ensures the value isn't duplicated, but does not
 guarantee it's sequential (if a value is deleted, another can take its place).
 Useful for logging, actions, items, etc - anything that doesn't already have a unique ID.
 
 **Kind**: instance property of [<code>Enmap</code>](#enmap-map)  
-**Returns**: <code>string</code> - The generated key number.  
+**Returns**: <code>number</code> - The generated key number.  
 **Example**  
 ```js
 enmap.set(enmap.autonum, "This is a new value");
@@ -230,7 +230,7 @@ objects and arrays, not "basic" values like strings or integers.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> |  | The key to retrieve from the enmap. |
+| key | <code>\*</code> |  | The key to retrieve from the enmap. |
 | path | <code>string</code> | <code>null</code> | Optional. The property to retrieve from the object or array. |
 
 <a name="Enmap+fetchEverything"></a>
@@ -242,7 +242,7 @@ Fetches every key from the persistent enmap and loads them into the current enma
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap containing all values.  
 <a name="Enmap+fetch"></a>
 
-### enmap.fetch(keyOrArrayOfKeys) ⇒ [<code>Enmap</code>](#enmap-map) \| <code>\*</code>
+### enmap.fetch(keyOrKeys) ⇒ [<code>Enmap</code>](#enmap-map) \| <code>\*</code>
 Force fetch one or more key values from the enmap. If the database has changed, that new value is used.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
@@ -250,7 +250,7 @@ Force fetch one or more key values from the enmap. If the database has changed, 
 
 | Param | Type | Description |
 | --- | --- | --- |
-| keyOrArrayOfKeys | <code>string</code> \| <code>Array.&lt;string&gt;</code> | A single key or array of keys to force fetch from the enmap database. |
+| keyOrKeys | <code>string</code> \| <code>number</code> \| <code>Array.&lt;(string\|number)&gt;</code> | A single key or array of keys to force fetch from the enmap database. |
 
 <a name="Enmap+evict"></a>
 
@@ -262,7 +262,7 @@ Removes a key or keys from the cache - useful when disabling autoFetch.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| keyOrArrayOfKeys | <code>string</code> \| <code>Array.&lt;string&gt;</code> | A single key or array of keys to remove from the cache. |
+| keyOrArrayOfKeys | <code>string</code> \| <code>number</code> \| <code>Array.&lt;(string\|number)&gt;</code> | A single key or array of keys to remove from the cache. |
 
 <a name="Enmap+changed"></a>
 
@@ -301,7 +301,7 @@ Push to an array value in Enmap.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> |  | Required. The key of the array element to push to in Enmap. |
+| key | <code>string</code> |  | Required. The key of the array element to push to in Enmap. This value MUST be a string or number. |
 | val | <code>\*</code> |  | Required. The value to push to the array. |
 | path | <code>string</code> | <code>null</code> | Optional. The path to the property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | allowDupes | <code>boolean</code> | <code>false</code> | Optional. Allow duplicate values in the array (default: false). |
@@ -420,7 +420,7 @@ Returns whether or not the key exists in the Enmap.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> |  | Required. The key of the element to add to The Enmap or array. |
+| key | <code>string</code> |  | Required. The key of the element to add to The Enmap or array. This value MUST be a string or number. |
 | path | <code>string</code> | <code>null</code> | Optional. The property to verify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 **Example**  
@@ -491,7 +491,7 @@ as full object matching is not supported.
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> |  | Required. The key of the element to remove from in Enmap. |
+| key | <code>string</code> |  | Required. The key of the element to remove from in Enmap. This value MUST be a string or number. |
 | val | <code>\*</code> \| <code>function</code> |  | Required. The value to remove from the array or object. OR a function to match an object. If using a function, the function provides the object value and must return a boolean that's true for the object you want to remove. |
 | path | <code>string</code> | <code>null</code> | Optional. The name of the array property to remove from. Can be a path with dot notation, such as "prop1.subprop2.subprop3". If not presents, removes directly from the value. |
 
@@ -531,12 +531,18 @@ and must be from a version that's equivalent or lower than where you're importin
 
 ### enmap.array() ⇒ <code>Array</code>
 Creates an ordered array of the values of this Enmap.
+The array will only be reconstructed if an item is added to or removed from the Enmap,
+or if you change the length of the array itself. If you don't want this caching behaviour,
+use `Array.from(enmap.values())` instead.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 <a name="Enmap+keyArray"></a>
 
-### enmap.keyArray() ⇒ <code>Array.&lt;string&gt;</code>
+### enmap.keyArray() ⇒ <code>Array.&lt;(string\|number)&gt;</code>
 Creates an ordered array of the keys of this Enmap
+The array will only be reconstructed if an item is added to or removed from the Enmap,
+or if you change the length of the array itself. If you don't want this caching behaviour,
+use `Array.from(enmap.keys())` instead.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 <a name="Enmap+random"></a>
@@ -597,7 +603,7 @@ should use the `get` method. See
 | Param | Type | Description |
 | --- | --- | --- |
 | propOrFn | <code>string</code> \| <code>function</code> | The property to test against, or the function to test with |
-| [value] | <code>\*</code> | The expected value - only applicable and required if using a property for the first argument. Can't be nil. |
+| [value] | <code>\*</code> | The expected value - only applicable and required if using a property for the first argument |
 
 **Example**  
 ```js
@@ -797,7 +803,7 @@ DEPRECATION WILL BE REMOVED IN ENMAP 6! Use set() instead!
 
 | Param | Type | Description |
 | --- | --- | --- |
-| key | <code>string</code> | Required. The key of the element to add to The Enmap or array. |
+| key | <code>string</code> | Required. The key of the element to add to The Enmap or array. This value MUST be a string or number. |
 | path | <code>string</code> | Required. The property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | val | <code>\*</code> | Required. The value to apply to the specified property. |
 
@@ -814,7 +820,7 @@ DEPRECATION WILL BE REMOVED IN ENMAP 6! Use push() instead!
 
 | Param | Type | Default | Description |
 | --- | --- | --- | --- |
-| key | <code>string</code> |  | Required. The key of the element. |
+| key | <code>string</code> |  | Required. The key of the element. This value MUST be a string or number. |
 | path | <code>string</code> |  | Required. The name of the array property to push to. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | val | <code>\*</code> |  | Required. The value push to the array property. |
 | allowDupes | <code>boolean</code> | <code>false</code> | Allow duplicate values in the array (default: false). |
@@ -864,7 +870,7 @@ DEPRECATION WILL BE REMOVED IN ENMAP 6! Use remove() instead!
 
 | Param | Type | Description |
 | --- | --- | --- |
-| key | <code>string</code> | Required. The key of the element. |
+| key | <code>string</code> | Required. The key of the element. This value MUST be a string or number. |
 | path | <code>string</code> | Required. The name of the array property to remove from. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 | val | <code>\*</code> | Required. The value to remove from the array property. |
 
