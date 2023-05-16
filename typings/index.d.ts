@@ -784,7 +784,7 @@ declare module 'enmap' {
      * @param initialValue Starting value for the accumulator
      */
     public reduce<R>(
-      fn: (acc: R, val: V, key: K, enmap: this) => V,
+      fn: (acc: R, val: V, key: K, enmap: this) => R,
       initialValue: R,
     ): R;
 
