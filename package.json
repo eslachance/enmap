@@ -1,6 +1,6 @@
 {
   "name": "enmap",
-  "version": "5.9.6",
+  "version": "5.9.7",
   "description": "A simple database wrapper to make sqlite database interactions much easier for beginners, with additional array helper methods.",
   "main": "src/index.js",
   "scripts": {
