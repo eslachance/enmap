@@ -34,7 +34,7 @@
   "dependencies": {
     "better-sqlite3": "^8.4.0",
     "lodash": "^4.17.21",
-    "on-change": "^4.0.2",
+    "on-change": "^3.0.2",
     "serialize-javascript": "^6.0.1"
   },
   "devDependencies": {
