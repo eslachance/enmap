@@ -59,7 +59,7 @@ class Enmap extends Map {
    * @param {Iterable|string|void} iterable If iterable data, only valid in non-persistent enmaps.
    * If this parameter is a string, it is assumed to be the Enmap's name, which is a shorthand for adding a name in the options
    * and making the enmap persistent.
-   * @param {Object} [options] Additional options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details.
+   * @param {Object} [options] Additional options for the enmap. See https://enmap.evie.dev/usage#enmap-options for details.
    * @param {string} [options.name] The name of the enmap. Represents its table name in sqlite. If present, the enmap is persistent.
    * If no name is given, the enmap is memory-only and is not saved in the database. As a shorthand, you may use a string for the name
    * instead of the options (see example).
@@ -69,7 +69,7 @@ class Enmap extends Map {
    * (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes!
    * *Note*: Will not automatically create the folder if set manually, so make sure it exists.
    * @param {string} [options.cloneLevel] Defaults to deep. Determines how objects and arrays are treated when inserting and retrieving from the database.
-   * See https://enmap.evie.codes/usage#enmap-options for more details on this option.
+   * See https://enmap.evie.dev/usage#enmap-options for more details on this option.
    * @param {boolean} [options.polling] defaults to `false`. Determines whether Enmap will attempt to retrieve changes from the database on a regular interval.
    * This means that if another Enmap in another process modifies a value, this change will be reflected in ALL enmaps using the polling feature.
    * @param {number} [options.pollingInterval] defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database.

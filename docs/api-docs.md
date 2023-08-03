@@ -71,23 +71,23 @@ Can be made persistent
 Initializes a new Enmap, with options.
 
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| iterable | <code>Iterable</code> \| <code>string</code> \| <code>void</code> |  | If iterable data, only valid in non-persistent enmaps. If this parameter is a string, it is assumed to be the Enmap's name, which is a shorthand for adding a name in the options and making the enmap persistent. |
-| [options] | <code>Object</code> |  | Additional options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details. |
-| [options.name] | <code>string</code> |  | The name of the enmap. Represents its table name in sqlite. If present, the enmap is persistent. If no name is given, the enmap is memory-only and is not saved in the database. As a shorthand, you may use a string for the name instead of the options (see example). |
-| [options.fetchAll] | <code>boolean</code> |  | Defaults to `true`. When enabled, will automatically fetch any key that's requested using get, or other retrieval methods. This is a "synchronous" operation, which means it doesn't need any of this promise or callback use. |
-| [options.dataDir] | <code>string</code> |  | Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes! *Note*: Will not automatically create the folder if set manually, so make sure it exists. |
-| [options.cloneLevel] | <code>string</code> |  | Defaults to deep. Determines how objects and arrays are treated when inserting and retrieving from the database. See https://enmap.evie.codes/usage#enmap-options for more details on this option. |
-| [options.polling] | <code>boolean</code> |  | defaults to `false`. Determines whether Enmap will attempt to retrieve changes from the database on a regular interval. This means that if another Enmap in another process modifies a value, this change will be reflected in ALL enmaps using the polling feature. |
-| [options.pollingInterval] | <code>number</code> |  | defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database. The shorter the interval, the more CPU is used, so it's best not to lower this. Polling takes about 350-500ms if no data is found, and time will grow with more changes fetched. In my tests, 15 rows took a little more than 1 second, every second. |
-| [options.ensureProps] | <code>boolean</code> |  | defaults to `true`. If enabled and the value in the enmap is an object, using ensure() will also ensure that every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information. |
-| [options.autoEnsure] | <code>\*</code> |  | default is disabled. When provided a value, essentially runs ensure(key, autoEnsure) automatically so you don't have to. This is especially useful on get(), but will also apply on set(), and any array and object methods that interact with the database. |
-| [options.autoFetch] | <code>boolean</code> |  | defaults to `true`. When enabled, attempting to get() a key or do any operation on existing keys (such as array push, etc) will automatically fetch the current key value from the database. Keys that are automatically fetched remain in memory and are not cleared. |
-| [options.serializer] | <code>function</code> |  | Optional. If a function is provided, it will execute on the data when it is written to the database. This is generally used to convert the value into a format that can be saved in the database, such as converting a complete class instance to just its ID. This function may return the value to be saved, or a promise that resolves to that value (in other words, can be an async function). |
-| [options.deserializer] | <code>function</code> |  | Optional. If a function is provided, it will execute on the data when it is read from the database. This is generally used to convert the value from a stored ID into a more complex object. This function may return a value, or a promise that resolves to that value (in other words, can be an async function). |
-| [options.wal] | <code>boolean</code> | <code>false</code> | Check out Write-Ahead Logging: https://www.sqlite.org/wal.html |
-| [options.verbose] | <code>function</code> | <code>(query) &#x3D;&gt; null</code> | A function to call with the direct SQL statement being ran by Enmap internally |
+| Param                     | Type                                                              | Default                              | Description                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------------------------- | ----------------------------------------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| iterable                  | <code>Iterable</code> \| <code>string</code> \| <code>void</code> |                                      | If iterable data, only valid in non-persistent enmaps. If this parameter is a string, it is assumed to be the Enmap's name, which is a shorthand for adding a name in the options and making the enmap persistent.                                                                                                                                                                                  |
+| [options]                 | <code>Object</code>                                               |                                      | Additional options for the enmap. See https://enmap.evie.dev/usage#enmap-options for details.                                                                                                                                                                                                                                                                                                       |
+| [options.name]            | <code>string</code>                                               |                                      | The name of the enmap. Represents its table name in sqlite. If present, the enmap is persistent. If no name is given, the enmap is memory-only and is not saved in the database. As a shorthand, you may use a string for the name instead of the options (see example).                                                                                                                            |
+| [options.fetchAll]        | <code>boolean</code>                                              |                                      | Defaults to `true`. When enabled, will automatically fetch any key that's requested using get, or other retrieval methods. This is a "synchronous" operation, which means it doesn't need any of this promise or callback use.                                                                                                                                                                      |
+| [options.dataDir]         | <code>string</code>                                               |                                      | Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes! *Note*: Will not automatically create the folder if set manually, so make sure it exists.                                                                                                              |
+| [options.cloneLevel]      | <code>string</code>                                               |                                      | Defaults to deep. Determines how objects and arrays are treated when inserting and retrieving from the database. See https://enmap.evie.dev/usage#enmap-options for more details on this option.                                                                                                                                                                                                    |
+| [options.polling]         | <code>boolean</code>                                              |                                      | defaults to `false`. Determines whether Enmap will attempt to retrieve changes from the database on a regular interval. This means that if another Enmap in another process modifies a value, this change will be reflected in ALL enmaps using the polling feature.                                                                                                                                |
+| [options.pollingInterval] | <code>number</code>                                               |                                      | defaults to `1000`, polling every second. Delay in milliseconds to poll new data from the database. The shorter the interval, the more CPU is used, so it's best not to lower this. Polling takes about 350-500ms if no data is found, and time will grow with more changes fetched. In my tests, 15 rows took a little more than 1 second, every second.                                           |
+| [options.ensureProps]     | <code>boolean</code>                                              |                                      | defaults to `true`. If enabled and the value in the enmap is an object, using ensure() will also ensure that every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information.                                                                                                                                                |
+| [options.autoEnsure]      | <code>\*</code>                                                   |                                      | default is disabled. When provided a value, essentially runs ensure(key, autoEnsure) automatically so you don't have to. This is especially useful on get(), but will also apply on set(), and any array and object methods that interact with the database.                                                                                                                                        |
+| [options.autoFetch]       | <code>boolean</code>                                              |                                      | defaults to `true`. When enabled, attempting to get() a key or do any operation on existing keys (such as array push, etc) will automatically fetch the current key value from the database. Keys that are automatically fetched remain in memory and are not cleared.                                                                                                                              |
+| [options.serializer]      | <code>function</code>                                             |                                      | Optional. If a function is provided, it will execute on the data when it is written to the database. This is generally used to convert the value into a format that can be saved in the database, such as converting a complete class instance to just its ID. This function may return the value to be saved, or a promise that resolves to that value (in other words, can be an async function). |
+| [options.deserializer]    | <code>function</code>                                             |                                      | Optional. If a function is provided, it will execute on the data when it is read from the database. This is generally used to convert the value from a stored ID into a more complex object. This function may return a value, or a promise that resolves to that value (in other words, can be an async function).                                                                                 |
+| [options.wal]             | <code>boolean</code>                                              | <code>false</code>                   | Check out Write-Ahead Logging: https://www.sqlite.org/wal.html                                                                                                                                                                                                                                                                                                                                      |
+| [options.verbose]         | <code>function</code>                                             | <code>(query) &#x3D;&gt; null</code> | A function to call with the direct SQL statement being ran by Enmap internally                                                                                                                                                                                                                                                                                                                      |
 
 **Example**  
 ```js
@@ -147,11 +147,11 @@ Sets a value in Enmap.
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| key | <code>string</code> |  | Required. The key of the element to add to The Enmap. |
-| val | <code>\*</code> |  | Required. The value of the element to add to The Enmap. If the Enmap is persistent this value MUST be stringifiable as JSON. |
-| path | <code>string</code> | <code>null</code> | Optional. The path to the property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| Param | Type                | Default           | Description                                                                                                                                       |
+| ----- | ------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| key   | <code>string</code> |                   | Required. The key of the element to add to The Enmap.                                                                                             |
+| val   | <code>\*</code>     |                   | Required. The value of the element to add to The Enmap. If the Enmap is persistent this value MUST be stringifiable as JSON.                      |
+| path  | <code>string</code> | <code>null</code> | Optional. The path to the property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 **Example**  
 ```js
@@ -175,10 +175,10 @@ This is very useful if you have many different values to update and don't want t
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> | The key of the object to update. |
-| valueOrFunction | <code>\*</code> | Either an object to merge with the existing value, or a function that provides the existing object and expects a new object as a return value. In the case of a straight value, the merge is recursive and will add any missing level. If using a function, it is your responsibility to merge the objects together correctly. |
+| Param           | Type                | Description                                                                                                                                                                                                                                                                                                                    |
+| --------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| key             | <code>string</code> | The key of the object to update.                                                                                                                                                                                                                                                                                               |
+| valueOrFunction | <code>\*</code>     | Either an object to merge with the existing value, or a function that provides the existing object and expects a new object as a return value. In the case of a straight value, the merge is recursive and will add any missing level. If using a function, it is your responsibility to merge the objects together correctly. |
 
 **Example**  
 ```js
@@ -206,10 +206,10 @@ Retrieves a key from the enmap.
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>\*</code> - The value for this key.  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| key | <code>string</code> |  | The key to retrieve from the enmap. |
-| path | <code>string</code> | <code>null</code> | Optional. The property to retrieve from the object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| Param | Type                | Default           | Description                                                                                                                     |
+| ----- | ------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| key   | <code>string</code> |                   | The key to retrieve from the enmap.                                                                                             |
+| path  | <code>string</code> | <code>null</code> | Optional. The property to retrieve from the object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 **Example**  
 ```js
@@ -228,10 +228,10 @@ objects and arrays, not "basic" values like strings or integers.
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>\*</code> - The value for this key.  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| key | <code>\*</code> |  | The key to retrieve from the enmap. |
-| path | <code>string</code> | <code>null</code> | Optional. The property to retrieve from the object or array. |
+| Param | Type                | Default           | Description                                                  |
+| ----- | ------------------- | ----------------- | ------------------------------------------------------------ |
+| key   | <code>\*</code>     |                   | The key to retrieve from the enmap.                          |
+| path  | <code>string</code> | <code>null</code> | Optional. The property to retrieve from the object or array. |
 
 <a name="Enmap+fetchEverything"></a>
 
@@ -248,8 +248,8 @@ Force fetch one or more key values from the enmap. If the database has changed, 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) \| <code>\*</code> - The Enmap, including the new fetched values, or the value in case the function argument is a single key.  
 
-| Param | Type | Description |
-| --- | --- | --- |
+| Param     | Type                                                                                      | Description                                                           |
+| --------- | ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
 | keyOrKeys | <code>string</code> \| <code>number</code> \| <code>Array.&lt;(string\|number)&gt;</code> | A single key or array of keys to force fetch from the enmap database. |
 
 <a name="Enmap+evict"></a>
@@ -260,8 +260,8 @@ Removes a key or keys from the cache - useful when disabling autoFetch.
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap minus the evicted keys.  
 
-| Param | Type | Description |
-| --- | --- | --- |
+| Param            | Type                                                                                      | Description                                             |
+| ---------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------- |
 | keyOrArrayOfKeys | <code>string</code> \| <code>number</code> \| <code>Array.&lt;(string\|number)&gt;</code> | A single key or array of keys to remove from the cache. |
 
 <a name="Enmap+changed"></a>
@@ -272,9 +272,9 @@ Can be used to detect if another part of your code changed a value in enmap and 
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| cb | <code>function</code> | A callback function that will be called whenever data changes in the enmap. |
+| Param | Type                  | Description                                                                 |
+| ----- | --------------------- | --------------------------------------------------------------------------- |
+| cb    | <code>function</code> | A callback function that will be called whenever data changes in the enmap. |
 
 **Example**  
 ```js
@@ -299,12 +299,12 @@ Push to an array value in Enmap.
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| key | <code>string</code> |  | Required. The key of the array element to push to in Enmap. This value MUST be a string or number. |
-| val | <code>\*</code> |  | Required. The value to push to the array. |
-| path | <code>string</code> | <code>null</code> | Optional. The path to the property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
-| allowDupes | <code>boolean</code> | <code>false</code> | Optional. Allow duplicate values in the array (default: false). |
+| Param      | Type                 | Default            | Description                                                                                                                                       |
+| ---------- | -------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| key        | <code>string</code>  |                    | Required. The key of the array element to push to in Enmap. This value MUST be a string or number.                                                |
+| val        | <code>\*</code>      |                    | Required. The value to push to the array.                                                                                                         |
+| path       | <code>string</code>  | <code>null</code>  | Optional. The path to the property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| allowDupes | <code>boolean</code> | <code>false</code> | Optional. Allow duplicate values in the array (default: false).                                                                                   |
 
 **Example**  
 ```js
@@ -323,12 +323,12 @@ Executes a mathematical operation on a value and saves it in the enmap.
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| key | <code>string</code> |  | The enmap key on which to execute the math operation. |
-| operation | <code>string</code> |  | Which mathematical operation to execute. Supports most math ops: =, -, *, /, %, ^, and english spelling of those operations. |
-| operand | <code>number</code> |  | The right operand of the operation. |
-| path | <code>string</code> | <code>null</code> | Optional. The property path to execute the operation on, if the value is an object or array. |
+| Param     | Type                | Default           | Description                                                                                                                  |
+| --------- | ------------------- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| key       | <code>string</code> |                   | The enmap key on which to execute the math operation.                                                                        |
+| operation | <code>string</code> |                   | Which mathematical operation to execute. Supports most math ops: =, -, *, /, %, ^, and english spelling of those operations. |
+| operand   | <code>number</code> |                   | The right operand of the operation.                                                                                          |
+| path      | <code>string</code> | <code>null</code> | Optional. The property path to execute the operation on, if the value is an object or array.                                 |
 
 **Example**  
 ```js
@@ -349,10 +349,10 @@ Increments a key's value or property by 1. Value must be a number, or a path to 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| key | <code>string</code> |  | The enmap key where the value to increment is stored. |
-| path | <code>string</code> | <code>null</code> | Optional. The property path to increment, if the value is an object or array. |
+| Param | Type                | Default           | Description                                                                   |
+| ----- | ------------------- | ----------------- | ----------------------------------------------------------------------------- |
+| key   | <code>string</code> |                   | The enmap key where the value to increment is stored.                         |
+| path  | <code>string</code> | <code>null</code> | Optional. The property path to increment, if the value is an object or array. |
 
 **Example**  
 ```js
@@ -371,10 +371,10 @@ Decrements a key's value or property by 1. Value must be a number, or a path to 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| key | <code>string</code> |  | The enmap key where the value to decrement is stored. |
-| path | <code>string</code> | <code>null</code> | Optional. The property path to decrement, if the value is an object or array. |
+| Param | Type                | Default           | Description                                                                   |
+| ----- | ------------------- | ----------------- | ----------------------------------------------------------------------------- |
+| key   | <code>string</code> |                   | The enmap key where the value to decrement is stored.                         |
+| path  | <code>string</code> | <code>null</code> | Optional. The property path to decrement, if the value is an object or array. |
 
 **Example**  
 ```js
@@ -394,11 +394,11 @@ This is a shortcut to "if enmap doesn't have key, set it, then get it" which is 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>\*</code> - The value from the database for the key, or the default value provided for a new key.  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| key | <code>string</code> |  | Required. The key you want to make sure exists. |
-| defaultValue | <code>\*</code> |  | Required. The value you want to save in the database and return as default. |
-| path | <code>string</code> | <code>null</code> | Optional. If presents, ensures both the key exists as an object, and the full path exists. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| Param        | Type                | Default           | Description                                                                                                                                                   |
+| ------------ | ------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| key          | <code>string</code> |                   | Required. The key you want to make sure exists.                                                                                                               |
+| defaultValue | <code>\*</code>     |                   | Required. The value you want to save in the database and return as default.                                                                                   |
+| path         | <code>string</code> | <code>null</code> | Optional. If presents, ensures both the key exists as an object, and the full path exists. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 **Example**  
 ```js
@@ -418,10 +418,10 @@ Returns whether or not the key exists in the Enmap.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| key | <code>string</code> |  | Required. The key of the element to add to The Enmap or array. This value MUST be a string or number. |
-| path | <code>string</code> | <code>null</code> | Optional. The property to verify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| Param | Type                | Default           | Description                                                                                                                           |
+| ----- | ------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| key   | <code>string</code> |                   | Required. The key of the element to add to The Enmap or array. This value MUST be a string or number.                                 |
+| path  | <code>string</code> | <code>null</code> | Optional. The property to verify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 **Example**  
 ```js
@@ -440,11 +440,11 @@ Performs Array.includes() on a certain enmap value. Works similar to
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>boolean</code> - Whether the array contains the value.  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| key | <code>string</code> |  | Required. The key of the array to check the value of. |
-| val | <code>string</code> \| <code>number</code> |  | Required. The value to check whether it's in the array. |
-| path | <code>string</code> | <code>null</code> | Optional. The property to access the array inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| Param | Type                                       | Default           | Description                                                                                                                                     |
+| ----- | ------------------------------------------ | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| key   | <code>string</code>                        |                   | Required. The key of the array to check the value of.                                                                                           |
+| val   | <code>string</code> \| <code>number</code> |                   | Required. The value to check whether it's in the array.                                                                                         |
+| path  | <code>string</code>                        | <code>null</code> | Optional. The property to access the array inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 <a name="Enmap+delete"></a>
 
@@ -454,10 +454,10 @@ Deletes a key in the Enmap.
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| key | <code>string</code> |  | Required. The key of the element to delete from The Enmap. |
-| path | <code>string</code> | <code>null</code> | Optional. The name of the property to remove from the object. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| Param | Type                | Default           | Description                                                                                                                      |
+| ----- | ------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| key   | <code>string</code> |                   | Required. The key of the element to delete from The Enmap.                                                                       |
+| path  | <code>string</code> | <code>null</code> | Optional. The name of the property to remove from the object. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 <a name="Enmap+deleteAll"></a>
 
@@ -489,11 +489,11 @@ as full object matching is not supported.
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| key | <code>string</code> |  | Required. The key of the element to remove from in Enmap. This value MUST be a string or number. |
-| val | <code>\*</code> \| <code>function</code> |  | Required. The value to remove from the array or object. OR a function to match an object. If using a function, the function provides the object value and must return a boolean that's true for the object you want to remove. |
-| path | <code>string</code> | <code>null</code> | Optional. The name of the array property to remove from. Can be a path with dot notation, such as "prop1.subprop2.subprop3". If not presents, removes directly from the value. |
+| Param | Type                                     | Default           | Description                                                                                                                                                                                                                    |
+| ----- | ---------------------------------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| key   | <code>string</code>                      |                   | Required. The key of the element to remove from in Enmap. This value MUST be a string or number.                                                                                                                               |
+| val   | <code>\*</code> \| <code>function</code> |                   | Required. The value to remove from the array or object. OR a function to match an object. If using a function, the function provides the object value and must return a boolean that's true for the object you want to remove. |
+| path  | <code>string</code>                      | <code>null</code> | Optional. The name of the array property to remove from. Can be a path with dot notation, such as "prop1.subprop2.subprop3". If not presents, removes directly from the value.                                                 |
 
 **Example**  
 ```js
@@ -521,11 +521,11 @@ and must be from a version that's equivalent or lower than where you're importin
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap with the new data.  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| data | <code>string</code> |  | The data to import to Enmap. Must contain all the required fields provided by export() |
-| overwrite | <code>boolean</code> | <code>true</code> | Defaults to `true`. Whether to overwrite existing key/value data with incoming imported data |
-| clear | <code>boolean</code> | <code>false</code> | Defaults to `false`. Whether to clear the enmap of all data before importing (**__WARNING__**: Any existing data will be lost! This cannot be undone.) |
+| Param     | Type                 | Default            | Description                                                                                                                                            |
+| --------- | -------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| data      | <code>string</code>  |                    | The data to import to Enmap. Must contain all the required fields provided by export()                                                                 |
+| overwrite | <code>boolean</code> | <code>true</code>  | Defaults to `true`. Whether to overwrite existing key/value data with incoming imported data                                                           |
+| clear     | <code>boolean</code> | <code>false</code> | Defaults to `false`. Whether to clear the enmap of all data before importing (**__WARNING__**: Any existing data will be lost! This cannot be undone.) |
 
 <a name="Enmap+array"></a>
 
@@ -554,8 +554,8 @@ Obtains random value(s) from this Enmap. This relies on [array](#Enmap+array).
 **Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single value if `count` is undefined,
 or an array of values of `count` length  
 
-| Param | Type | Description |
-| --- | --- | --- |
+| Param   | Type                | Description                         |
+| ------- | ------------------- | ----------------------------------- |
 | [count] | <code>number</code> | Number of values to obtain randomly |
 
 <a name="Enmap+randomKey"></a>
@@ -567,8 +567,8 @@ Obtains random key(s) from this Enmap. This relies on [keyArray](#Enmap+keyArray
 **Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single key if `count` is undefined,
 or an array of keys of `count` length  
 
-| Param | Type | Description |
-| --- | --- | --- |
+| Param   | Type                | Description                       |
+| ------- | ------------------- | --------------------------------- |
 | [count] | <code>number</code> | Number of keys to obtain randomly |
 
 <a name="Enmap+findAll"></a>
@@ -579,10 +579,10 @@ Searches for all items where their specified property's value is identical to th
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| prop | <code>string</code> | The property to test against |
-| value | <code>\*</code> | The expected value |
+| Param | Type                | Description                  |
+| ----- | ------------------- | ---------------------------- |
+| prop  | <code>string</code> | The property to test against |
+| value | <code>\*</code>     | The expected value           |
 
 **Example**  
 ```js
@@ -600,10 +600,10 @@ should use the `get` method. See
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| propOrFn | <code>string</code> \| <code>function</code> | The property to test against, or the function to test with |
-| [value] | <code>\*</code> | The expected value - only applicable and required if using a property for the first argument |
+| Param    | Type                                         | Description                                                                                  |
+| -------- | -------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| propOrFn | <code>string</code> \| <code>function</code> | The property to test against, or the function to test with                                   |
+| [value]  | <code>\*</code>                              | The expected value - only applicable and required if using a property for the first argument |
 
 **Example**  
 ```js
@@ -622,10 +622,10 @@ Searches for the key of a single item where its specified property's value is id
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| propOrFn | <code>string</code> \| <code>function</code> | The property to test against, or the function to test with |
-| [value] | <code>\*</code> | The expected value - only applicable and required if using a property for the first argument |
+| Param    | Type                                         | Description                                                                                  |
+| -------- | -------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| propOrFn | <code>string</code> \| <code>function</code> | The property to test against, or the function to test with                                   |
+| [value]  | <code>\*</code>                              | The expected value - only applicable and required if using a property for the first argument |
 
 **Example**  
 ```js
@@ -643,10 +643,10 @@ Removes entries that satisfy the provided filter function.
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>number</code> - The number of removed entries  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| fn | <code>function</code> | Function used to test (should return a boolean) |
-| [thisArg] | <code>Object</code> | Value to use as `this` when executing function |
+| Param     | Type                  | Description                                     |
+| --------- | --------------------- | ----------------------------------------------- |
+| fn        | <code>function</code> | Function used to test (should return a boolean) |
+| [thisArg] | <code>Object</code>   | Value to use as `this` when executing function  |
 
 <a name="Enmap+filter"></a>
 
@@ -657,10 +657,10 @@ but returns a Enmap instead of an Array.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| fn | <code>function</code> | Function used to test (should return a boolean) |
-| [thisArg] | <code>Object</code> | Value to use as `this` when executing function |
+| Param     | Type                  | Description                                     |
+| --------- | --------------------- | ----------------------------------------------- |
+| fn        | <code>function</code> | Function used to test (should return a boolean) |
+| [thisArg] | <code>Object</code>   | Value to use as `this` when executing function  |
 
 <a name="Enmap+filterArray"></a>
 
@@ -670,10 +670,10 @@ Identical to
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| fn | <code>function</code> | Function used to test (should return a boolean) |
-| [thisArg] | <code>Object</code> | Value to use as `this` when executing function |
+| Param     | Type                  | Description                                     |
+| --------- | --------------------- | ----------------------------------------------- |
+| fn        | <code>function</code> | Function used to test (should return a boolean) |
+| [thisArg] | <code>Object</code>   | Value to use as `this` when executing function  |
 
 <a name="Enmap+map"></a>
 
@@ -683,10 +683,10 @@ Identical to
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| fn | <code>function</code> | Function that produces an element of the new array, taking three arguments |
-| [thisArg] | <code>\*</code> | Value to use as `this` when executing function |
+| Param     | Type                  | Description                                                                |
+| --------- | --------------------- | -------------------------------------------------------------------------- |
+| fn        | <code>function</code> | Function that produces an element of the new array, taking three arguments |
+| [thisArg] | <code>\*</code>       | Value to use as `this` when executing function                             |
 
 <a name="Enmap+some"></a>
 
@@ -696,10 +696,10 @@ Identical to
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| fn | <code>function</code> | Function used to test (should return a boolean) |
-| [thisArg] | <code>Object</code> | Value to use as `this` when executing function |
+| Param     | Type                  | Description                                     |
+| --------- | --------------------- | ----------------------------------------------- |
+| fn        | <code>function</code> | Function used to test (should return a boolean) |
+| [thisArg] | <code>Object</code>   | Value to use as `this` when executing function  |
 
 <a name="Enmap+every"></a>
 
@@ -709,10 +709,10 @@ Identical to
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| fn | <code>function</code> | Function used to test (should return a boolean) |
-| [thisArg] | <code>Object</code> | Value to use as `this` when executing function |
+| Param     | Type                  | Description                                     |
+| --------- | --------------------- | ----------------------------------------------- |
+| fn        | <code>function</code> | Function used to test (should return a boolean) |
+| [thisArg] | <code>Object</code>   | Value to use as `this` when executing function  |
 
 <a name="Enmap+reduce"></a>
 
@@ -722,10 +722,10 @@ Identical to
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| fn | <code>function</code> | Function used to reduce, taking four arguments; `accumulator`, `currentValue`, `currentKey`, and `enmap` |
-| [initialValue] | <code>\*</code> | Starting value for the accumulator |
+| Param          | Type                  | Description                                                                                              |
+| -------------- | --------------------- | -------------------------------------------------------------------------------------------------------- |
+| fn             | <code>function</code> | Function used to reduce, taking four arguments; `accumulator`, `currentValue`, `currentKey`, and `enmap` |
+| [initialValue] | <code>\*</code>       | Starting value for the accumulator                                                                       |
 
 <a name="Enmap+clone"></a>
 
@@ -744,8 +744,8 @@ Combines this Enmap with others into a new Enmap. None of the source Enmaps are 
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
-| Param | Type | Description |
-| --- | --- | --- |
+| Param     | Type                             | Description     |
+| --------- | -------------------------------- | --------------- |
 | ...enmaps | [<code>Enmap</code>](#enmap-map) | Enmaps to merge |
 
 **Example**  
@@ -763,10 +763,10 @@ DEPRECATION WILL BE REMOVED IN ENMAP 6!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| fn | <code>function</code> | Function used to test (should return a boolean) |
-| [thisArg] | <code>\*</code> | Value to use as `this` when executing function |
+| Param     | Type                  | Description                                     |
+| --------- | --------------------- | ----------------------------------------------- |
+| fn        | <code>function</code> | Function used to test (should return a boolean) |
+| [thisArg] | <code>\*</code>       | Value to use as `this` when executing function  |
 
 **Example**  
 ```js
@@ -785,8 +785,8 @@ DEPRECATION WILL BE REMOVED IN ENMAP 6!
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>boolean</code> - Whether the Enmaps have identical contents  
 
-| Param | Type | Description |
-| --- | --- | --- |
+| Param | Type                             | Description           |
+| ----- | -------------------------------- | --------------------- |
 | enmap | [<code>Enmap</code>](#enmap-map) | Enmap to compare with |
 
 <a name="Enmap+setProp"></a>
@@ -801,11 +801,11 @@ DEPRECATION WILL BE REMOVED IN ENMAP 6! Use set() instead!
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> | Required. The key of the element to add to The Enmap or array. This value MUST be a string or number. |
-| path | <code>string</code> | Required. The property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
-| val | <code>\*</code> | Required. The value to apply to the specified property. |
+| Param | Type                | Description                                                                                                                           |
+| ----- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| key   | <code>string</code> | Required. The key of the element to add to The Enmap or array. This value MUST be a string or number.                                 |
+| path  | <code>string</code> | Required. The property to modify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| val   | <code>\*</code>     | Required. The value to apply to the specified property.                                                                               |
 
 <a name="Enmap+pushIn"></a>
 
@@ -818,12 +818,12 @@ DEPRECATION WILL BE REMOVED IN ENMAP 6! Use push() instead!
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
 
-| Param | Type | Default | Description |
-| --- | --- | --- | --- |
-| key | <code>string</code> |  | Required. The key of the element. This value MUST be a string or number. |
-| path | <code>string</code> |  | Required. The name of the array property to push to. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
-| val | <code>\*</code> |  | Required. The value push to the array property. |
-| allowDupes | <code>boolean</code> | <code>false</code> | Allow duplicate values in the array (default: false). |
+| Param      | Type                 | Default            | Description                                                                                                             |
+| ---------- | -------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------- |
+| key        | <code>string</code>  |                    | Required. The key of the element. This value MUST be a string or number.                                                |
+| path       | <code>string</code>  |                    | Required. The name of the array property to push to. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| val        | <code>\*</code>      |                    | Required. The value push to the array property.                                                                         |
+| allowDupes | <code>boolean</code> | <code>false</code> | Allow duplicate values in the array (default: false).                                                                   |
 
 <a name="Enmap+getProp"></a>
 
@@ -836,10 +836,10 @@ DEPRECATION WILL BE REMOVED IN ENMAP 6! Use get() instead!
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>\*</code> - The value of the property obtained.  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> | Required. The key of the element to get from The Enmap. |
-| path | <code>string</code> | Required. The property to retrieve from the object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| Param | Type                | Description                                                                                                                     |
+| ----- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| key   | <code>string</code> | Required. The key of the element to get from The Enmap.                                                                         |
+| path  | <code>string</code> | Required. The property to retrieve from the object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 <a name="Enmap+deleteProp"></a>
 
@@ -851,10 +851,10 @@ DEPRECATION WILL BE REMOVED IN ENMAP 6! Use delete() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> | Required. The key of the element to delete the property from in Enmap. |
-| path | <code>string</code> | Required. The name of the property to remove from the object. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| Param | Type                | Description                                                                                                                      |
+| ----- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| key   | <code>string</code> | Required. The key of the element to delete the property from in Enmap.                                                           |
+| path  | <code>string</code> | Required. The name of the property to remove from the object. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 <a name="Enmap+removeFrom"></a>
 
@@ -868,11 +868,11 @@ DEPRECATION WILL BE REMOVED IN ENMAP 6! Use remove() instead!
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> | Required. The key of the element. This value MUST be a string or number. |
-| path | <code>string</code> | Required. The name of the array property to remove from. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
-| val | <code>\*</code> | Required. The value to remove from the array property. |
+| Param | Type                | Description                                                                                                                 |
+| ----- | ------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| key   | <code>string</code> | Required. The key of the element. This value MUST be a string or number.                                                    |
+| path  | <code>string</code> | Required. The name of the array property to remove from. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| val   | <code>\*</code>     | Required. The value to remove from the array property.                                                                      |
 
 <a name="Enmap+hasProp"></a>
 
@@ -885,10 +885,10 @@ DEPRECATION WILL BE REMOVED IN ENMAP 6! Use has() instead!
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>boolean</code> - Whether the property exists.  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| key | <code>string</code> | Required. The key of the element to check in the Enmap or array. |
-| path | <code>\*</code> | Required. The property to verify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
+| Param | Type                | Description                                                                                                                           |
+| ----- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| key   | <code>string</code> | Required. The key of the element to check in the Enmap or array.                                                                      |
+| path  | <code>\*</code>     | Required. The property to verify inside the value object or array. Can be a path with dot notation, such as "prop1.subprop2.subprop3" |
 
 <a name="Enmap+exists"></a>
 
@@ -903,10 +903,10 @@ DEPRECATION WILL BE REMOVED IN ENMAP 6! Use has("key", "path") instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| prop | <code>string</code> | The property to test against |
-| value | <code>\*</code> | The expected value |
+| Param | Type                | Description                  |
+| ----- | ------------------- | ---------------------------- |
+| prop  | <code>string</code> | The property to test against |
+| value | <code>\*</code>     | The expected value           |
 
 **Example**  
 ```js
@@ -922,10 +922,10 @@ Initialize multiple Enmaps easily.
 **Kind**: static method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>Object</code> - An array of initialized Enmaps.  
 
-| Param | Type | Description |
-| --- | --- | --- |
-| names | <code>Array.&lt;string&gt;</code> | Array of strings. Each array entry will create a separate enmap with that name. |
-| options | <code>Object</code> | Options object to pass to each enmap, excluding the name.. |
+| Param   | Type                              | Description                                                                     |
+| ------- | --------------------------------- | ------------------------------------------------------------------------------- |
+| names   | <code>Array.&lt;string&gt;</code> | Array of strings. Each array entry will create a separate enmap with that name. |
+| options | <code>Object</code>               | Options object to pass to each enmap, excluding the name..                      |
 
 **Example**  
 ```js
