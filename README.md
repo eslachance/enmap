@@ -29,6 +29,7 @@ export default {
     // shananigans to ensure db is initiated only once
     if(!env.__db) {
       env.__db = new BriteLite("exampledb", env.DB);
+      await env.__db.ready;
     }
 
     const mydb = env.__db;

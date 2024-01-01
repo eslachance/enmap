@@ -1,7 +1,7 @@
 {
   "name": "britelite",
   "version": "1.0.6",
-  "description": "Enmap for CloudFlare: A simple database wrapper to make D1 database interactions easier for beginners, with additional array helper methods.",
+  "description": "BriteLite is Enmap for CloudFlare: A simple database wrapper to make D1 database interactions easier for beginners, with additional array helper methods.",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
@@ -33,6 +33,7 @@
   "author": "Evelyne Lachance <eslachance@gmail.com> (https://evie.codes/)",
   "license": "Apache-2.0",
   "dependencies": {
+    "deferrals": "^1.0.5",
     "lodash-es": "^4.17.21",
     "on-change": "^3.0.2"
   },
