@@ -1,7 +1,7 @@
 {
-  "name": "enmap",
+  "name": "britelite",
   "version": "5.9.8",
-  "description": "A simple database wrapper to make sqlite database interactions much easier for beginners, with additional array helper methods.",
+  "description": "Enmap for CloudFlare: A simple database wrapper to make D1 database interactions easier for beginners, with additional array helper methods.",
   "main": "src/index.js",
   "scripts": {
     "test": "jest",
@@ -19,7 +19,7 @@
     "sqlite",
     "sql",
     "sqlite3",
-    "better-sqlite3",
+    "d1",
     "db",
     "database",
     "caching",
