@@ -33,9 +33,8 @@
   "author": "Evelyne Lachance <eslachance@gmail.com> (https://evie.codes/)",
   "license": "Apache-2.0",
   "dependencies": {
-    "lodash": "^4.17.21",
-    "on-change": "^3.0.2",
-    "serialize-javascript": "^6.0.1"
+    "lodash-es": "^4.17.21",
+    "on-change": "^3.0.2"
   },
   "devDependencies": {
     "eslint": "^8.41.0",

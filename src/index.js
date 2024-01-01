@@ -12,7 +12,7 @@ import {
   clone,
   cloneDeep,
 } from 'lodash-es';
-import serialize  from 'serialize-javascript';
+import serialize  from '../vendor/serialize-javascript';
 import onChange  from 'on-change';
 
 // Custom error codes with stack support.
