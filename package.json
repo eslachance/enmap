@@ -1,6 +1,6 @@
 {
   "name": "britelite",
-  "version": "5.9.8",
+  "version": "1.0.0",
   "description": "Enmap for CloudFlare: A simple database wrapper to make D1 database interactions easier for beginners, with additional array helper methods.",
   "main": "src/index.js",
   "scripts": {
