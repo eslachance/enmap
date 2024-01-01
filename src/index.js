@@ -1372,7 +1372,7 @@ class Enmap extends Map {
   }
 }
 
-module.exports = Enmap;
+export default Enmap;
 
 /**
  * @external forEach
