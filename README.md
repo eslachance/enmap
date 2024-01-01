@@ -1,4 +1,4 @@
-# Enmap - Enhanced Maps
+# Enmap - Enhanced Maps : Cloudlare Edition
 
 <div align="center">
   <p>
