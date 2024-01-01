@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Enmap for CloudFlare: A simple database wrapper to make D1 database interactions easier for beginners, with additional array helper methods.",
   "main": "src/index.js",
+  "type": "module",
   "scripts": {
     "test": "jest",
     "docs": "node ./docs/build.js"

@@ -22,7 +22,7 @@ npm install britelite
 ```
 
 ```js
-const BriteLite = require("britelite");
+import BriteLite from 'britelite';
 
 export default {
   async fetch(request, env) {
@@ -41,7 +41,7 @@ export default {
 }
 ```
 
-Ffor more examples, see [Enmap Basic Usage](https://enmap.evie.dev/usage/basic/)
+For more examples, see [Enmap Basic Usage](https://enmap.evie.dev/usage/basic/)
 
 ## Documentation
 

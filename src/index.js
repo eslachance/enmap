@@ -1,8 +1,8 @@
 // Lodash should probably be a core lib but hey, it's useful!
-const {
-  get: _get,
-  set: _set,
-  has: _has,
+import {
+  get as _get,
+  set as _set,
+  has as _has,
   isNil,
   isFunction,
   isArray,
@@ -11,15 +11,15 @@ const {
   merge,
   clone,
   cloneDeep,
-} = require('lodash');
-const serialize = require('serialize-javascript');
-const onChange = require('on-change');
+} from 'lodash-es';
+import serialize  from 'serialize-javascript';
+import onChange  from 'on-change';
 
 // Custom error codes with stack support.
-const Err = require('./error.js');
+import Err from './error.js';
 
 // Package.json
-const pkgdata = require('../package.json');
+// const pkgdata = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));
 
 const instances = [];
 
@@ -747,7 +747,7 @@ class Enmap extends Map {
     return serialize(
       {
         name: this.#name,
-        version: pkgdata.version,
+        version: '1.0.0',
         exportDate: Date.now(),
         keys: this.map((value, key) => ({ key, value })),
       },
