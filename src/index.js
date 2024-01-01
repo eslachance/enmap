@@ -21,12 +21,6 @@ import Err from './error.js';
 // Package.json
 // const pkgdata = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));
 
-const instances = [];
-
-process.on('exit', () => {
-  for (const instance of instances) instance.close();
-});
-
 /**
  * A enhanced Map structure with additional utility methods.
  * Can be made persistent
@@ -108,7 +102,6 @@ class Enmap extends Map {
     // Initialize this property, to prepare for a possible destroy() call.
     // This is completely ignored in all situations except destroying the enmap.
     this.#isDestroyed = false;
-    instances.push(this);
     this.#init(this.#db);
   }
 
@@ -379,7 +372,6 @@ class Enmap extends Map {
    */
   close() {
     this.#readyCheck();
-    instances.splice(instances.indexOf(this), 1);
     this.#db.close();
     return this;
   }
