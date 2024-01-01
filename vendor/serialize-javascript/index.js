@@ -7,7 +7,7 @@ See the accompanying LICENSE file for terms.
 'use strict';
 
 // Generate an internal UID to make the regexp pattern harder to guess.
-var UID                 = crypto.randomUUID();
+var UID                 = '%@#$5thiswouldbe@#TL@#randomifitwere@#%$@#%possible';
 var PLACE_HOLDER_REGEXP = new RegExp('(\\\\)?"@__(F|R|D|M|S|A|U|I|B|L)-' + UID + '-(\\d+)__@"', 'g');
 
 var IS_NATIVE_CODE_REGEXP = /\{\s*\[native code\]\s*\}/g;
