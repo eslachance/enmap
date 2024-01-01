@@ -77,7 +77,7 @@ class Enmap extends Map {
    *
    */
   constructor(options) {
-    if(!options.db) {
+    if (!options.db) {
       throw new Error('options.db not provided, cannot load D1 database!');
     }
     super();
