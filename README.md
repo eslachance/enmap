@@ -27,17 +27,20 @@ import BriteLite from 'britelite';
 export default {
   async fetch(request, env) {
     // shananigans to ensure db is initiated only once
-    if(!env.__db) {
-      env.__db = new BriteLite("exampledb", env.DB);
-      await env.__db.ready;
+		let db = env.__db;
+		if(!env.__db) {
+      db = new BriteLite({
+				name: 'karaoke',
+				db: env.DB,
+			});
+			await db.ready;
+			env.__db = db;
     }
-
-    const mydb = env.__db;
     
-    env.example.set('boolean', true);
-    env.example.set('integer', 42);
-    env.example.set('someFloat', 73.2345871);
-    env.example.set("Test2", "test2");
+    await db.set('boolean', true);
+    await db.set('integer', 42);
+    await db.set('someFloat', 73.2345871);
+    await db.set("Test2", "test2");
   }
 }
 ```
@@ -50,6 +53,8 @@ For more examples, see [Enmap Basic Usage](https://enmap.evie.dev/usage/basic/)
 * [Basic Setup](https://enmap.evie.dev/usage)
 * [API Reference](https://enmap.evie.dev/api)
 * [Examples](https://enmap.evie.dev/complete-examples)
+
+> Please note that some Enmap features are not available with BriteLite. Documentation is upcoming.
 
 ## Support
 
