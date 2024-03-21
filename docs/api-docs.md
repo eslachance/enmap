@@ -1,7 +1,8 @@
 <a name="Enmap"></a>
 
 ## Enmap ⇐ <code>Map</code>
-A enhanced Map structure with additional utility methods.Can be made persistent
+A enhanced Map structure with additional utility methods.
+Can be made persistent
 
 **Kind**: global class  
 **Extends**: <code>Map</code>  
@@ -90,7 +91,18 @@ Initializes a new Enmap, with options.
 
 **Example**  
 ```js
-const Enmap = require("enmap");// Non-persistent enmap:const inMemory = new Enmap();// Named, Persistent enmap with string optionconst myEnmap = new Enmap("testing");// Enmap that does not fetch everything, but does so on per-query basis:const myEnmap = new Enmap({name: "testing", fetchAll: false});// Enmap that automatically assigns a default object when getting or setting anything.const autoEnmap = new Enmap({name: "settings", autoEnsure: { setting1: false, message: "default message"}})
+const Enmap = require("enmap");
+// Non-persistent enmap:
+const inMemory = new Enmap();
+
+// Named, Persistent enmap with string option
+const myEnmap = new Enmap("testing");
+
+// Enmap that does not fetch everything, but does so on per-query basis:
+const myEnmap = new Enmap({name: "testing", fetchAll: false});
+
+// Enmap that automatically assigns a default object when getting or setting anything.
+const autoEnmap = new Enmap({name: "settings", autoEnsure: { setting1: false, message: "default message"}})
 ```
 <a name="Enmap+count"></a>
 
@@ -109,13 +121,17 @@ Retrieves all the indexes (keys) in the database for this enmap, even if they ar
 <a name="Enmap+db"></a>
 
 ### enmap.db ⇒ <code>Database</code>
-Get the better-sqlite3 database object. Useful if you want to directly query or interact with theunderlying SQLite database. Use at your own risk, as errors here might cause loss of data or corruption!
+Get the better-sqlite3 database object. Useful if you want to directly query or interact with the
+underlying SQLite database. Use at your own risk, as errors here might cause loss of data or corruption!
 
 **Kind**: instance property of [<code>Enmap</code>](#enmap-map)  
 <a name="Enmap+autonum"></a>
 
 ### enmap.autonum ⇒ <code>number</code>
-Generates an automatic numerical key for inserting a new value.This is a "weak" method, it ensures the value isn't duplicated, but does notguarantee it's sequential (if a value is deleted, another can take its place).Useful for logging, actions, items, etc - anything that doesn't already have a unique ID.
+Generates an automatic numerical key for inserting a new value.
+This is a "weak" method, it ensures the value isn't duplicated, but does not
+guarantee it's sequential (if a value is deleted, another can take its place).
+Useful for logging, actions, items, etc - anything that doesn't already have a unique ID.
 
 **Kind**: instance property of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>number</code> - The generated key number.  
@@ -139,12 +155,23 @@ Sets a value in Enmap.
 
 **Example**  
 ```js
-// Direct Value Examplesenmap.set('simplevalue', 'this is a string');enmap.set('isEnmapGreat', true);enmap.set('TheAnswer', 42);enmap.set('IhazObjects', { color: 'black', action: 'paint', desire: true });enmap.set('ArraysToo', [1, "two", "tree", "foor"])// Settings Propertiesenmap.set('IhazObjects', 'blue', 'color'); //modified previous objectenmap.set('ArraysToo', 'three', 2); // changes "tree" to "three" in array.
+// Direct Value Examples
+enmap.set('simplevalue', 'this is a string');
+enmap.set('isEnmapGreat', true);
+enmap.set('TheAnswer', 42);
+enmap.set('IhazObjects', { color: 'black', action: 'paint', desire: true });
+enmap.set('ArraysToo', [1, "two", "tree", "foor"])
+
+// Settings Properties
+enmap.set('IhazObjects', 'blue', 'color'); //modified previous object
+enmap.set('ArraysToo', 'three', 2); // changes "tree" to "three" in array.
 ```
 <a name="Enmap+update"></a>
 
 ### enmap.update(key, valueOrFunction)
-Update an existing object value in Enmap by merging new keys. **This only works on objects**, any other value will throw an error.Heavily inspired by setState from React's class components.This is very useful if you have many different values to update and don't want to have more than one .set(key, value, prop) lines.
+Update an existing object value in Enmap by merging new keys. **This only works on objects**, any other value will throw an error.
+Heavily inspired by setState from React's class components.
+This is very useful if you have many different values to update and don't want to have more than one .set(key, value, prop) lines.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
@@ -155,7 +182,21 @@ Update an existing object value in Enmap by merging new keys. **This only works 
 
 **Example**  
 ```js
-// Define an object we're going to updateenmap.set("obj", { a: 1, b: 2, c: 3 });// Direct mergeenmap.update("obj", { d: 4, e: 5 });// obj is now { a: 1, b: 2, c: 3, d: 4, e: 5 }// Functional updateenmap.update("obj", (previous) => ({  ...obj,  f: 6,  g: 7}));// this example takes heavy advantage of the spread operators.// More info: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax
+// Define an object we're going to update
+enmap.set("obj", { a: 1, b: 2, c: 3 });
+
+// Direct merge
+enmap.update("obj", { d: 4, e: 5 });
+// obj is now { a: 1, b: 2, c: 3, d: 4, e: 5 }
+
+// Functional update
+enmap.update("obj", (previous) => ({
+  ...obj,
+  f: 6,
+  g: 7
+}));
+// this example takes heavy advantage of the spread operators.
+// More info: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax
 ```
 <a name="Enmap+get"></a>
 
@@ -172,12 +213,17 @@ Retrieves a key from the enmap.
 
 **Example**  
 ```js
-const myKeyValue = enmap.get("myKey");console.log(myKeyValue);const someSubValue = enmap.get("anObjectKey", "someprop.someOtherSubProp");
+const myKeyValue = enmap.get("myKey");
+console.log(myKeyValue);
+
+const someSubValue = enmap.get("anObjectKey", "someprop.someOtherSubProp");
 ```
 <a name="Enmap+observe"></a>
 
 ### enmap.observe(key, path) ⇒ <code>\*</code>
-Returns an observable object. Modifying this object or any of its properties/indexes/childrenwill automatically save those changes into enmap. This only works onobjects and arrays, not "basic" values like strings or integers.
+Returns an observable object. Modifying this object or any of its properties/indexes/children
+will automatically save those changes into enmap. This only works on
+objects and arrays, not "basic" values like strings or integers.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>\*</code> - The value for this key.  
@@ -221,7 +267,8 @@ Removes a key or keys from the cache - useful when disabling autoFetch.
 <a name="Enmap+changed"></a>
 
 ### enmap.changed(cb)
-Function called whenever data changes within Enmap after the initial load.Can be used to detect if another part of your code changed a value in enmap and react on it.
+Function called whenever data changes within Enmap after the initial load.
+Can be used to detect if another part of your code changed a value in enmap and react on it.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
@@ -231,12 +278,16 @@ Function called whenever data changes within Enmap after the initial load.Can b
 
 **Example**  
 ```js
-enmap.changed((keyName, oldValue, newValue) => {  console.log(`Value of ${keyName} has changed from: \n${oldValue}\nto\n${newValue}`);});
+enmap.changed((keyName, oldValue, newValue) => {
+  console.log(`Value of ${keyName} has changed from: \n${oldValue}\nto\n${newValue}`);
+});
 ```
 <a name="Enmap+close"></a>
 
 ### enmap.close() ⇒ [<code>Enmap</code>](#enmap-map)
-Shuts down the database. USING THIS MAKES THE ENMAP UNUSABLE. You shouldonly use this method if you are closing your entire application.This is already done by Enmap automatically on shutdown unless you disabled it.
+Shuts down the database. USING THIS MAKES THE ENMAP UNUSABLE. You should
+only use this method if you are closing your entire application.
+This is already done by Enmap automatically on shutdown unless you disabled it.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
@@ -257,7 +308,12 @@ Push to an array value in Enmap.
 
 **Example**  
 ```js
-// Assumingenmap.set("simpleArray", [1, 2, 3, 4]);enmap.set("arrayInObject", {sub: [1, 2, 3, 4]});enmap.push("simpleArray", 5); // adds 5 at the end of the arrayenmap.push("arrayInObject", "five", "sub"); // adds "five" at the end of the sub array
+// Assuming
+enmap.set("simpleArray", [1, 2, 3, 4]);
+enmap.set("arrayInObject", {sub: [1, 2, 3, 4]});
+
+enmap.push("simpleArray", 5); // adds 5 at the end of the array
+enmap.push("arrayInObject", "five", "sub"); // adds "five" at the end of the sub array
 ```
 <a name="Enmap+math"></a>
 
@@ -276,7 +332,14 @@ Executes a mathematical operation on a value and saves it in the enmap.
 
 **Example**  
 ```js
-// Assumingpoints.set("number", 42);points.set("numberInObject", {sub: { anInt: 5 }});points.math("number", "/", 2); // 21points.math("number", "add", 5); // 26points.math("number", "modulo", 3); // 2points.math("numberInObject", "+", 10, "sub.anInt");
+// Assuming
+points.set("number", 42);
+points.set("numberInObject", {sub: { anInt: 5 }});
+
+points.math("number", "/", 2); // 21
+points.math("number", "add", 5); // 26
+points.math("number", "modulo", 3); // 2
+points.math("numberInObject", "+", 10, "sub.anInt");
 ```
 <a name="Enmap+inc"></a>
 
@@ -293,7 +356,12 @@ Increments a key's value or property by 1. Value must be a number, or a path to 
 
 **Example**  
 ```js
-// Assumingpoints.set("number", 42);points.set("numberInObject", {sub: { anInt: 5 }});points.inc("number"); // 43points.inc("numberInObject", "sub.anInt"); // {sub: { anInt: 6 }}
+// Assuming
+points.set("number", 42);
+points.set("numberInObject", {sub: { anInt: 5 }});
+
+points.inc("number"); // 43
+points.inc("numberInObject", "sub.anInt"); // {sub: { anInt: 6 }}
 ```
 <a name="Enmap+dec"></a>
 
@@ -310,12 +378,18 @@ Decrements a key's value or property by 1. Value must be a number, or a path to 
 
 **Example**  
 ```js
-// Assumingpoints.set("number", 42);points.set("numberInObject", {sub: { anInt: 5 }});points.dec("number"); // 41points.dec("numberInObject", "sub.anInt"); // {sub: { anInt: 4 }}
+// Assuming
+points.set("number", 42);
+points.set("numberInObject", {sub: { anInt: 5 }});
+
+points.dec("number"); // 41
+points.dec("numberInObject", "sub.anInt"); // {sub: { anInt: 4 }}
 ```
 <a name="Enmap+ensure"></a>
 
 ### enmap.ensure(key, defaultValue, path) ⇒ <code>\*</code>
-Returns the key's value, or the default given, ensuring that the data is there.This is a shortcut to "if enmap doesn't have key, set it, then get it" which is a very common pattern.
+Returns the key's value, or the default given, ensuring that the data is there.
+This is a shortcut to "if enmap doesn't have key, set it, then get it" which is a very common pattern.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>\*</code> - The value from the database for the key, or the default value provided for a new key.  
@@ -328,7 +402,14 @@ Returns the key's value, or the default given, ensuring that the data is there.
 
 **Example**  
 ```js
-// Simply ensure the data exists (for using property methods):enmap.ensure("mykey", {some: "value", here: "as an example"});enmap.has("mykey"); // always returns trueenmap.get("mykey", "here") // returns "as an example";// Get the default value back in a variable:const settings = mySettings.ensure("1234567890", defaultSettings);console.log(settings) // enmap's value for "1234567890" if it exists, otherwise the defaultSettings value.
+// Simply ensure the data exists (for using property methods):
+enmap.ensure("mykey", {some: "value", here: "as an example"});
+enmap.has("mykey"); // always returns true
+enmap.get("mykey", "here") // returns "as an example";
+
+// Get the default value back in a variable:
+const settings = mySettings.ensure("1234567890", defaultSettings);
+console.log(settings) // enmap's value for "1234567890" if it exists, otherwise the defaultSettings value.
 ```
 <a name="Enmap+has"></a>
 
@@ -344,12 +425,17 @@ Returns whether or not the key exists in the Enmap.
 
 **Example**  
 ```js
-if(enmap.has("myKey")) {  // key is there}if(!enmap.has("myOtherKey", "oneProp.otherProp.SubProp")) return false;
+if(enmap.has("myKey")) {
+  // key is there
+}
+
+if(!enmap.has("myOtherKey", "oneProp.otherProp.SubProp")) return false;
 ```
 <a name="Enmap+includes"></a>
 
 ### enmap.includes(key, val, path) ⇒ <code>boolean</code>
-Performs Array.includes() on a certain enmap value. Works similar to[Array.includes()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes).
+Performs Array.includes() on a certain enmap value. Works similar to
+[Array.includes()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes).
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>boolean</code> - Whether the array contains the value.  
@@ -388,13 +474,17 @@ Deletes everything from the enmap. If persistent, clears the database of all its
 <a name="Enmap+destroy"></a>
 
 ### enmap.destroy() ⇒ <code>null</code>
-Completely destroys the entire enmap. This deletes the database tables entirely.It will not affect other enmap data in the same database, however.THIS ACTION WILL DESTROY YOUR DATA AND CANNOT BE UNDONE.
+Completely destroys the entire enmap. This deletes the database tables entirely.
+It will not affect other enmap data in the same database, however.
+THIS ACTION WILL DESTROY YOUR DATA AND CANNOT BE UNDONE.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 <a name="Enmap+remove"></a>
 
 ### enmap.remove(key, val, path) ⇒ [<code>Enmap</code>](#enmap-map)
-Remove a value in an Array or Object element in Enmap. Note that this only works forvalues, not keys. Note that only one value is removed, no more. Arrays of objects must use a function to remove,as full object matching is not supported.
+Remove a value in an Array or Object element in Enmap. Note that this only works for
+values, not keys. Note that only one value is removed, no more. Arrays of objects must use a function to remove,
+as full object matching is not supported.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
@@ -407,19 +497,26 @@ Remove a value in an Array or Object element in Enmap. Note that this only works
 
 **Example**  
 ```js
-// Assumingenmap.set('array', [1, 2, 3])enmap.set('objectarray', [{ a: 1, b: 2, c: 3 }, { d: 4, e: 5, f: 6 }])enmap.remove('array', 1); // value is now [2, 3]enmap.remove('objectarray', (value) => value.e === 5); // value is now [{ a: 1, b: 2, c: 3 }]
+// Assuming
+enmap.set('array', [1, 2, 3])
+enmap.set('objectarray', [{ a: 1, b: 2, c: 3 }, { d: 4, e: 5, f: 6 }])
+
+enmap.remove('array', 1); // value is now [2, 3]
+enmap.remove('objectarray', (value) => value.e === 5); // value is now [{ a: 1, b: 2, c: 3 }]
 ```
 <a name="Enmap+export"></a>
 
 ### enmap.export() ⇒ <code>string</code>
-Exports the enmap data to stringified JSON format.**__WARNING__**: Does not work on memory enmaps containing complex data!
+Exports the enmap data to stringified JSON format.
+**__WARNING__**: Does not work on memory enmaps containing complex data!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>string</code> - The enmap data in a stringified JSON format.  
 <a name="Enmap+import"></a>
 
 ### enmap.import(data, overwrite, clear) ⇒ [<code>Enmap</code>](#enmap-map)
-Import an existing json export from enmap from a string. This data must have been exported from enmap,and must be from a version that's equivalent or lower than where you're importing it.
+Import an existing json export from enmap from a string. This data must have been exported from enmap,
+and must be from a version that's equivalent or lower than where you're importing it.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap with the new data.  
@@ -433,13 +530,19 @@ Import an existing json export from enmap from a string. This data must have bee
 <a name="Enmap+array"></a>
 
 ### enmap.array() ⇒ <code>Array</code>
-Creates an ordered array of the values of this Enmap.The array will only be reconstructed if an item is added to or removed from the Enmap,or if you change the length of the array itself. If you don't want this caching behaviour,use `Array.from(enmap.values())` instead.
+Creates an ordered array of the values of this Enmap.
+The array will only be reconstructed if an item is added to or removed from the Enmap,
+or if you change the length of the array itself. If you don't want this caching behaviour,
+use `Array.from(enmap.values())` instead.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 <a name="Enmap+keyArray"></a>
 
 ### enmap.keyArray() ⇒ <code>Array.&lt;(string\|number)&gt;</code>
-Creates an ordered array of the keys of this EnmapThe array will only be reconstructed if an item is added to or removed from the Enmap,or if you change the length of the array itself. If you don't want this caching behaviour,use `Array.from(enmap.keys())` instead.
+Creates an ordered array of the keys of this Enmap
+The array will only be reconstructed if an item is added to or removed from the Enmap,
+or if you change the length of the array itself. If you don't want this caching behaviour,
+use `Array.from(enmap.keys())` instead.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 <a name="Enmap+random"></a>
@@ -448,7 +551,8 @@ Creates an ordered array of the keys of this EnmapThe array will only be recons
 Obtains random value(s) from this Enmap. This relies on [array](#Enmap+array).
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
-**Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single value if `count` is undefined,or an array of values of `count` length  
+**Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single value if `count` is undefined,
+or an array of values of `count` length  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -460,7 +564,8 @@ Obtains random value(s) from this Enmap. This relies on [array](#Enmap+array).
 Obtains random key(s) from this Enmap. This relies on [keyArray](#Enmap+keyArray)
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
-**Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single key if `count` is undefined,or an array of keys of `count` length  
+**Returns**: <code>\*</code> \| <code>Array.&lt;\*&gt;</code> - The single key if `count` is undefined,
+or an array of keys of `count` length  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -469,7 +574,8 @@ Obtains random key(s) from this Enmap. This relies on [keyArray](#Enmap+keyArray
 <a name="Enmap+findAll"></a>
 
 ### enmap.findAll(prop, value) ⇒ <code>Array</code>
-Searches for all items where their specified property's value is identical to the given value(`item[prop] === value`).
+Searches for all items where their specified property's value is identical to the given value
+(`item[prop] === value`).
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
@@ -485,7 +591,12 @@ enmap.findAll('username', 'Bob');
 <a name="Enmap+find"></a>
 
 ### enmap.find(propOrFn, [value]) ⇒ <code>\*</code>
-Searches for a single item where its specified property's value is identical to the given value(`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is identical to[Array.find()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find).<warn>All Enmap used in Discord.js are mapped using their `id` property, and if you want to find by id youshould use the `get` method. See[MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/get) for details.</warn>
+Searches for a single item where its specified property's value is identical to the given value
+(`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is identical to
+[Array.find()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find).
+<warn>All Enmap used in Discord.js are mapped using their `id` property, and if you want to find by id you
+should use the `get` method. See
+[MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/get) for details.</warn>
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
@@ -505,7 +616,9 @@ enmap.find(val => val.username === 'Bob');
 <a name="Enmap+findKey"></a>
 
 ### enmap.findKey(propOrFn, [value]) ⇒ <code>string</code> \| <code>number</code>
-Searches for the key of a single item where its specified property's value is identical to the given value(`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is identical to[Array.findIndex()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex).
+Searches for the key of a single item where its specified property's value is identical to the given value
+(`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is identical to
+[Array.findIndex()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex).
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
@@ -538,7 +651,9 @@ Removes entries that satisfy the provided filter function.
 <a name="Enmap+filter"></a>
 
 ### enmap.filter(fn, [thisArg]) ⇒ [<code>Enmap</code>](#enmap-map)
-Identical to[Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter),but returns a Enmap instead of an Array.
+Identical to
+[Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter),
+but returns a Enmap instead of an Array.
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
@@ -550,7 +665,8 @@ Identical to[Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaS
 <a name="Enmap+filterArray"></a>
 
 ### enmap.filterArray(fn, [thisArg]) ⇒ <code>Array</code>
-Identical to[Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter).
+Identical to
+[Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter).
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
@@ -562,7 +678,8 @@ Identical to[Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaS
 <a name="Enmap+map"></a>
 
 ### enmap.map(fn, [thisArg]) ⇒ <code>Array</code>
-Identical to[Array.map()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map).
+Identical to
+[Array.map()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map).
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
@@ -574,7 +691,8 @@ Identical to[Array.map()](https://developer.mozilla.org/en-US/docs/Web/JavaScri
 <a name="Enmap+some"></a>
 
 ### enmap.some(fn, [thisArg]) ⇒ <code>boolean</code>
-Identical to[Array.some()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/some).
+Identical to
+[Array.some()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/some).
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
@@ -586,7 +704,8 @@ Identical to[Array.some()](https://developer.mozilla.org/en-US/docs/Web/JavaScr
 <a name="Enmap+every"></a>
 
 ### enmap.every(fn, [thisArg]) ⇒ <code>boolean</code>
-Identical to[Array.every()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every).
+Identical to
+[Array.every()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every).
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
@@ -598,7 +717,8 @@ Identical to[Array.every()](https://developer.mozilla.org/en-US/docs/Web/JavaSc
 <a name="Enmap+reduce"></a>
 
 ### enmap.reduce(fn, [initialValue]) ⇒ <code>\*</code>
-Identical to[Array.reduce()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce).
+Identical to
+[Array.reduce()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce).
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
@@ -637,7 +757,9 @@ const newColl = someColl.concat(someOtherColl, anotherColl, ohBoyAColl);
 ### ~~enmap.partition(fn, [thisArg]) ⇒ [<code>Array.&lt;Enmap&gt;</code>](#Enmap)~~
 ***Deprecated***
 
-Partitions the enmap into two enmaps where the first enmapcontains the items that passed and the second contains the items that failed.DEPRECATION WILL BE REMOVED IN ENMAP 6!
+Partitions the enmap into two enmaps where the first enmap
+contains the items that passed and the second contains the items that failed.
+DEPRECATION WILL BE REMOVED IN ENMAP 6!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
@@ -655,7 +777,10 @@ const [big, small] = enmap.partition(guild => guild.memberCount > 250);
 ### ~~enmap.equals(enmap) ⇒ <code>boolean</code>~~
 ***Deprecated***
 
-Checks if this Enmap shares identical key-value pairings with another.This is different to checking for equality using equal-signs, becausethe Enmaps may be different objects, but contain the same data.DEPRECATION WILL BE REMOVED IN ENMAP 6!
+Checks if this Enmap shares identical key-value pairings with another.
+This is different to checking for equality using equal-signs, because
+the Enmaps may be different objects, but contain the same data.
+DEPRECATION WILL BE REMOVED IN ENMAP 6!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>boolean</code> - Whether the Enmaps have identical contents  
@@ -669,7 +794,9 @@ Checks if this Enmap shares identical key-value pairings with another.This is d
 ### ~~enmap.setProp(key, path, val) ⇒ [<code>Enmap</code>](#enmap-map)~~
 ***Deprecated***
 
-Modify the property of a value inside the enmap, if the value is an object or array.This is a shortcut to loading the key, changing the value, and setting it back.DEPRECATION WILL BE REMOVED IN ENMAP 6! Use set() instead!
+Modify the property of a value inside the enmap, if the value is an object or array.
+This is a shortcut to loading the key, changing the value, and setting it back.
+DEPRECATION WILL BE REMOVED IN ENMAP 6! Use set() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
@@ -685,7 +812,8 @@ Modify the property of a value inside the enmap, if the value is an object or ar
 ### ~~enmap.pushIn(key, path, val, allowDupes) ⇒ [<code>Enmap</code>](#enmap-map)~~
 ***Deprecated***
 
-Push to an array element inside an Object or Array element in Enmap.DEPRECATION WILL BE REMOVED IN ENMAP 6! Use push() instead!
+Push to an array element inside an Object or Array element in Enmap.
+DEPRECATION WILL BE REMOVED IN ENMAP 6! Use push() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
@@ -702,7 +830,8 @@ Push to an array element inside an Object or Array element in Enmap.DEPRECATION
 ### ~~enmap.getProp(key, path) ⇒ <code>\*</code>~~
 ***Deprecated***
 
-Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.DEPRECATION WILL BE REMOVED IN ENMAP 6! Use get() instead!
+Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
+DEPRECATION WILL BE REMOVED IN ENMAP 6! Use get() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>\*</code> - The value of the property obtained.  
@@ -717,7 +846,8 @@ Returns the specific property within a stored value. If the key does not exist o
 ### ~~enmap.deleteProp(key, path)~~
 ***Deprecated***
 
-Delete a property from an object or array value in Enmap.DEPRECATION WILL BE REMOVED IN ENMAP 6! Use delete() instead!
+Delete a property from an object or array value in Enmap.
+DEPRECATION WILL BE REMOVED IN ENMAP 6! Use delete() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
@@ -731,7 +861,9 @@ Delete a property from an object or array value in Enmap.DEPRECATION WILL BE RE
 ### ~~enmap.removeFrom(key, path, val) ⇒ [<code>Enmap</code>](#enmap-map)~~
 ***Deprecated***
 
-Remove a value from an Array or Object property inside an Array or Object element in Enmap.Confusing? Sure is.DEPRECATION WILL BE REMOVED IN ENMAP 6! Use remove() instead!
+Remove a value from an Array or Object property inside an Array or Object element in Enmap.
+Confusing? Sure is.
+DEPRECATION WILL BE REMOVED IN ENMAP 6! Use remove() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: [<code>Enmap</code>](#enmap-map) - The enmap.  
@@ -747,7 +879,8 @@ Remove a value from an Array or Object property inside an Array or Object elemen
 ### ~~enmap.hasProp(key, path) ⇒ <code>boolean</code>~~
 ***Deprecated***
 
-Returns whether or not the property exists within an object or array value in enmap.DEPRECATION WILL BE REMOVED IN ENMAP 6! Use has() instead!
+Returns whether or not the property exists within an object or array value in enmap.
+DEPRECATION WILL BE REMOVED IN ENMAP 6! Use has() instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 **Returns**: <code>boolean</code> - Whether the property exists.  
@@ -762,7 +895,11 @@ Returns whether or not the property exists within an object or array value in en
 ### ~~enmap.exists(prop, value) ⇒ <code>boolean</code>~~
 ***Deprecated***
 
-Searches for the existence of a single item where its specified property's value is identical to the given value(`item[prop] === value`).<warn>Do not use this to check for an item by its ID. Instead, use `enmap.has(id)`. See[MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/has) for details.</warn>DEPRECATION WILL BE REMOVED IN ENMAP 6! Use has("key", "path") instead!
+Searches for the existence of a single item where its specified property's value is identical to the given value
+(`item[prop] === value`).
+<warn>Do not use this to check for an item by its ID. Instead, use `enmap.has(id)`. See
+[MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/has) for details.</warn>
+DEPRECATION WILL BE REMOVED IN ENMAP 6! Use has("key", "path") instead!
 
 **Kind**: instance method of [<code>Enmap</code>](#enmap-map)  
 
@@ -773,7 +910,9 @@ Searches for the existence of a single item where its specified property's value
 
 **Example**  
 ```js
-if (enmap.exists('username', 'Bob')) { console.log('user here!');}
+if (enmap.exists('username', 'Bob')) {
+ console.log('user here!');
+}
 ```
 <a name="Enmap.multi"></a>
 
@@ -790,5 +929,11 @@ Initialize multiple Enmaps easily.
 
 **Example**  
 ```js
-// Using local variables.const Enmap = require('enmap');const { settings, tags, blacklist } = Enmap.multi(['settings', 'tags', 'blacklist']);// Attaching to an existing object (for instance some API's client)const Enmap = require("enmap");Object.assign(client, Enmap.multi(["settings", "tags", "blacklist"]));
+// Using local variables.
+const Enmap = require('enmap');
+const { settings, tags, blacklist } = Enmap.multi(['settings', 'tags', 'blacklist']);
+
+// Attaching to an existing object (for instance some API's client)
+const Enmap = require("enmap");
+Object.assign(client, Enmap.multi(["settings", "tags", "blacklist"]));
 ```
