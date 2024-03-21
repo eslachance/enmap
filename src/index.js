@@ -811,6 +811,18 @@ class Enmap extends Map {
     this.#fetchCheck(key);
     this.#check(key, ['Array', 'Object']);
     const data = this.get(key, path);
+    if (!Array.isArray(data)) {
+      if (path)
+        throw new Err(
+          `The property "${path}" in key "${key}" is an Array in the enmap "${this.#name}" (key was of type "${data?.constructor.name ?? typeof data}")`,
+          'EnmapTypeError',
+        );
+      else
+        throw new Err(
+          `The value for key "${key}" is not an Array in the enmap "${this.#name}" (value was of type "${data?.constructor.name ?? typeof data}")`,
+          'EnmapTypeError',
+        );
+    }
     const criteria = isFunction(val) ? val : (value) => val === value;
     const index = data.findIndex(criteria);
     if (index > -1) {
