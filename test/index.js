@@ -1,11 +1,11 @@
 /* global describe, test, beforeEach, afterEach, expect */
-const Enmap = require('../');
+import Enmap from '../';
 
 describe('Standard Enmaps', () => {
   let enmap;
 
   describe('Basic Enmap', () => {
-    enmap = new Enmap('::memory::');
+    enmap = new Enmap({ inMemory : true });
     test('inserts primitive values', () => {
       expect(enmap.set('simplevalue', 'this is a string')).not.toBe(null);
       expect(enmap.set('boolean', true)).not.toBe(null);
@@ -13,6 +13,7 @@ describe('Standard Enmaps', () => {
       expect(enmap.set('null', null)).not.toBe(null);
     });
     test('remembers primitive values', () => {
+      expect(enmap.length).toBe(4);
       expect(enmap.get('simplevalue')).toBe('this is a string');
       expect(enmap.get('boolean')).toBe(true);
       expect(enmap.get('integer')).toBe(42);
@@ -26,14 +27,18 @@ describe('Standard Enmaps', () => {
       enmap.dec('integer');
       expect(enmap.get('integer')).toBe(47);
     });
+    test('can see if a value exists', () => {
+      expect(enmap.has('simplevalue')).toBe(true);
+      expect(enmap.has('nonexistent')).toBe(false);
+    });
     test('can be cleared', () => {
       enmap.clear();
-      expect(enmap.size).toBe(0);
+      expect(enmap.length).toBe(0);
     });
   });
 
   describe('Advanced Data Types', () => {
-    enmap = new Enmap('::memory::');
+    enmap = new Enmap({ inMemory : true });
 
     test('supports arrays', () => {
       expect(enmap.set('array', [1, 2, 3])).not.toBe(null);
@@ -88,13 +93,11 @@ describe('Standard Enmaps', () => {
         date: new Date('Thu, 28 Apr 2016 22:02:17 GMT'),
         map: new Map([['hello', 'world']]),
         set: new Set([123, 456]),
-        fn: function echo(arg) { return arg; },
         re: /([^\s]+)/g,
         // eslint-disable-next-line no-undef
         big: BigInt(10),
       });
       expect(enmap.get('serialized', 'undef')).toBeUndefined();
-      expect(enmap.get('serialized', 'fn')('test')).toBe('test');
       expect(enmap.get('serialized', 'map').get('hello')).toBe('world');
     });
   });
@@ -103,11 +106,12 @@ describe('Standard Enmaps', () => {
 describe('Advanced Data Type Methods', () => {
   let enmap;
   beforeEach(() => {
-    enmap = new Enmap('::memory::');
+    enmap = new Enmap({ inMemory : true });
     enmap.set('obj1', {
       prop: 'prop',
       foo: 'bar',
       sub: { value: 'subvalue' },
+      arr: [1, 2, 3],
     });
     enmap.set('obj2', {
       prop: 'prop',
@@ -117,76 +121,66 @@ describe('Advanced Data Type Methods', () => {
     enmap.set('arr1', ['one', 'two', 3, 4]);
   });
 
-  test('can findAll using both properties and path', () => {
-    expect(enmap.findAll('prop', 'prop').length).toBe(2);
-    expect(enmap.findAll('sub.value', 'subvalue').length).toBe(2);
+  test('can filter using both properties and path', () => {
+    expect(enmap.filter('prop', 'prop').length).toBe(2);
+    expect(enmap.filter('subvalue', 'sub.value').length).toBe(2);
+    expect(enmap.filter(value => value?.foo?.includes('pha')).length).toBe(1);
   });
 
   test('can find using both properties and path', () => {
-    // expect(enmap.find('prop', 'prop')).toEqual({
-    //   prop: 'prop',
-    //   foo: 'bar',
-    //   sub: { value: 'subvalue' }
-    // });
-    expect(enmap.find('sub.value', 'subvalue')).toEqual({
+    expect(enmap.find('subvalue', 'sub.value')).toEqual({
       prop: 'prop',
       foo: 'bar',
       sub: { value: 'subvalue' },
+      arr: [1, 2, 3],
     });
+  });
+
+  test('can check if value includes', () => {
+    expect(enmap.includes('arr1', 'one')).toBe(true);
+    expect(enmap.includes('arr1', 3)).toBe(true);
+    expect(enmap.includes('arr1', 'three')).toBe(false);
+    expect(enmap.includes('obj1', 2, 'arr')).toBe(true);
+  });
+
+  test('can iterate over truthy/falsey predicates', () => {
+    enmap.delete('arr1');
+    enmap.set('obj3', { prop: 'prop' });
+    expect(enmap.some('prop', 'prop')).toBe(true);
+    expect(enmap.some('notprop', 'prop')).toBe(false);
+    expect(enmap.every('prop', 'prop')).toBe(true);
+    expect(enmap.every('notprop', 'prop')).toBe(false);
+    expect(enmap.some(value => value?.prop === 'prop')).toBe(true);
+    expect(enmap.some(value => value?.prop === 'notprop')).toBe(false);
+    expect(enmap.every(value => value?.prop === 'prop')).toBe(true);
+    expect(enmap.every(value => value?.prop === 'notprop')).toBe(false);
+  });
+
+  test('can map over values', () => {
+    enmap.delete('arr1');
+    const mapped = enmap.map(value => value.prop);
+    expect(mapped).toEqual(['prop', 'prop']);
+    const manualMapped = enmap.map('prop');
+    expect(manualMapped).toEqual(['prop', 'prop']);
+    expect(enmap.map('sub.value')).toEqual(['subvalue', 'subvalue']);
+  });
+
+  test('can reduce over values', () => {
+    const reduced = enmap.reduce((acc, value) => value.prop ? acc + value.prop : acc, '');
+    expect(reduced).toBe('propprop');
   });
 });
 
 describe('Basic Enmap Options', () => {
   let enmap;
-  let baseObj;
-  beforeEach(() => {
-    baseObj = {
-      prop1: false,
-      prop2: 'thing',
-      prop3: [1, 2, 3],
-      obj: { thing: 'amajig' },
-    };
-  });
 
   afterEach(() => {
     enmap.clear();
     enmap = null;
   });
 
-  test('supports direct passing by reference (cloneLevel none)', () => {
-    enmap = new Enmap({ name: '::memory::', cloneLevel: 'none' });
-    enmap.set('foo', baseObj);
-    enmap.set('foo', 'other', 'prop2');
-    enmap.push('foo', 4, 'prop3');
-    // by reference modifies object properties at any level.
-    expect(baseObj.prop2).toBe('other');
-    expect(baseObj.prop3.length).toBe(4);
-  });
-
-  test('supports shallow clones', () => {
-    enmap = new Enmap({ name: '::memory::', cloneLevel: 'shallow' });
-    enmap.set('foo', baseObj);
-    enmap.set('foo', 'other', 'prop2');
-    enmap.push('foo', 4, 'prop3');
-    // shallow clones do not allow base props to change in referenced object
-    expect(baseObj.prop2).toBe('thing');
-    // shallow clones still allow subprops to be modified, though.
-    expect(baseObj.prop3.length).toBe(4);
-  });
-
-  test('supports deep clones', () => {
-    enmap = new Enmap({ name: '::memory::', cloneLevel: 'deep' });
-    enmap.set('foo', baseObj);
-    enmap.set('foo', 'other', 'prop2');
-    enmap.push('foo', 4, 'prop3');
-    // deep clones do not allow base props to change in referenced object
-    expect(baseObj.prop2).toBe('thing');
-    // deep clones do not allow sub props to be changed, either.
-    expect(baseObj.prop3.length).toBe(3);
-  });
-
   test('supports deep ensure() merge', () => {
-    enmap = new Enmap({ name: '::memory::', ensureProps: true });
+    enmap = new Enmap({ inMemory : true, ensureProps: true });
     const defaultValue = {
       foo: 'bar',
       bar: { foo: 1 },
@@ -207,13 +201,14 @@ describe('Enmap Advanced Options', () => {
     e: { a: 'a', b: 'b', c: 'c' },
   };
   afterEach(() => {
-    enmap.close();
+    enmap.clear();
     enmap = null;
   });
+
   test('supports autoEnsure', () => {
-    enmap = new Enmap({ name: '::memory::', autoEnsure: defaultData });
+    enmap = new Enmap({ inMemory: true, autoEnsure: defaultData });
     expect(enmap.get('test')).toEqual(defaultData);
-    expect(enmap.size).toBe(1);
+    expect(enmap.length).toBe(1);
     enmap.set('test', 'a', 'a');
     expect(enmap.get('test')).toEqual({
       ...defaultData,
@@ -228,12 +223,12 @@ describe('Enmap Advanced Options', () => {
 
   test('supports serializers', () => {
     enmap = new Enmap({
-      name: '::memory::',
-      serializer: (data, key) => ({
+      inMemory: true,
+      serializer: (data) => ({
         ...data,
         a: 'modified',
       }),
-      deserializer: (data, key) => ({
+      deserializer: (data) => ({
         ...data,
         a: 1,
       }),
@@ -243,6 +238,6 @@ describe('Enmap Advanced Options', () => {
     const data = enmap.db
       .prepare(`SELECT * FROM 'MemoryEnmap' WHERE key = ?;`)
       .get('test');
-    expect(data.value).toBe('{"a":"modified","b":2,"c":3,"d":[1,2,3,4],"e":{"a":"a","b":"b","c":"c"}}');
+    expect(data.value).toBe('{"t":0,"v":{"a":{"t":1,"v":"modified"},"b":{"t":2,"v":2},"c":{"t":2,"v":3},"d":{"t":4,"v":[{"t":2,"v":1},{"t":2,"v":2},{"t":2,"v":3},{"t":2,"v":4}]},"e":{"t":0,"v":{"a":{"t":1,"v":"a"},"b":{"t":1,"v":"b"},"c":{"t":1,"v":"c"}}}}}');
   });
 });
