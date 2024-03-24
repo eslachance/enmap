@@ -3,8 +3,9 @@
   "version": "6.0.0-alpha-0.0.1",
   "description": "A simple database wrapper to make sqlite database interactions much easier for beginners, with additional array helper methods.",
   "main": "src/index.js",
+  "type": "module",
   "scripts": {
-    "test": "jest",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "docs": "node ./docs/build.js"
   },
   "repository": {
@@ -32,10 +33,11 @@
   "author": "Evelyne Lachance <eslachance@gmail.com> (https://evie.codes/)",
   "license": "Apache-2.0",
   "dependencies": {
+    "better-serialize": "^1.0.0",
     "better-sqlite3": "^9.4.3",
     "lodash": "^4.17.21",
-    "on-change": "^3.0.2",
-    "serialize-javascript": "^6.0.2"
+    "lodash-es": "^4.17.21",
+    "on-change": "^5.0.1"
   },
   "devDependencies": {
     "eslint": "^8.41.0",
