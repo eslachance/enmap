@@ -95,4 +95,6 @@ These were already planned, and indicated as deprecated for a while now, but the
 - In all loop methods like `every`, `some`, `map` and `filter`, the **value** now comes first, and **key** second. This matches array methods closer.
 - Methods will no longer return the enmap upon executing an action. It's always felt weird to me that some methods returned the enmap and others returned data.
 - The `destroy` method is removed, since it doesn't make much sense to delete all the db tables. You can still delete all your stuff with `clear()` though.
-- 
+- `wal` and `verbose` options have been removed from options, I honestly prefer the default to `journal_mode=WAL`. If you don't like it, run
+  `enmap.db.pragma('journal_mode=DELETE')` (you can run direct DB calls to sqlite3 this way). For verbose, pass it as `options.sqliteOptions`, like, 
+  `new Enmap({ name: 'blah', sqliteOptions: { verbose: true }})`.
