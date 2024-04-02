@@ -20,6 +20,11 @@ const pkgdata = JSON.parse(readFileSync('./package.json', 'utf8'));
 
 const NAME_REGEX = /^([\w-]+)$/;
 
+/**
+ * A simple, synchronous, fast key/value storage build around better-sqlite3.
+ * Contains extra utility methods for managing arrays and objects.
+ * @class Enmap
+ */
 class Enmap {
   #name;
   #db;
@@ -30,6 +35,35 @@ class Enmap {
   #deserializer;
   #changedCB
 
+    /**
+   * Initializes a new Enmap, with options.
+   * @param {Object} [options] Additional options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details.
+   * @param {string} [options.name] The name of the enmap. Represents its table name in sqlite. If present, the enmap is persistent.
+   * @param {string} [options.dataDir] Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative
+   * (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes!
+   * *Note*: Will not automatically create the folder if set manually, so make sure it exists.
+   * @param {boolean} [options.ensureProps] defaults to `true`. If enabled and the value in the enmap is an object, using ensure() will also ensure that
+   * every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information.
+   * @param {*} [options.autoEnsure] default is disabled. When provided a value, essentially runs ensure(key, autoEnsure) automatically so you don't have to.
+   * This is especially useful on get(), but will also apply on set(), and any array and object methods that interact with the database.
+   * @param {Function} [options.serializer] Optional. If a function is provided, it will execute on the data when it is written to the database.
+   * This is generally used to convert the value into a format that can be saved in the database, such as converting a complete class instance to just its ID.
+   * This function may return the value to be saved, or a promise that resolves to that value (in other words, can be an async function).
+   * @param {Function} [options.deserializer] Optional. If a function is provided, it will execute on the data when it is read from the database.
+   * This is generally used to convert the value from a stored ID into a more complex object.
+   * This function may return a value, or a promise that resolves to that value (in other words, can be an async function).
+   * @example
+   * const Enmap = require("enmap");
+
+   * // Named, Persistent enmap
+   * const myEnmap = new Enmap({ name: "testing" });
+   * 
+   * // Memory-only enmap
+   * const memoryEnmap = new Enmap({ inMemory: true });
+   *
+   * // Enmap that automatically assigns a default object when getting or setting anything.
+   * const autoEnmap = new Enmap({name: "settings", autoEnsure: { setting1: false, message: "default message"}})
+   */
   constructor(options) {
     this.#inMemory = options.inMemory ?? false;
     if (options.name === '::memory::') {
@@ -60,7 +94,79 @@ class Enmap {
     this.#init();
   }
 
-/**
+  
+  /**
+   * Sets a value in Enmap.
+   * @param {string} key Required. The key of the element to add to The Enmap.
+   * @param {*} value Required. The value of the element to add to The Enmap.
+   * If the Enmap is persistent this value MUST be stringifiable as JSON.
+   * @param {string} path Optional. The path to the property to modify inside the value object or array.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @example
+   * // Direct Value Examples
+   * enmap.set('simplevalue', 'this is a string');
+   * enmap.set('isEnmapGreat', true);
+   * enmap.set('TheAnswer', 42);
+   * enmap.set('IhazObjects', { color: 'black', action: 'paint', desire: true });
+   * enmap.set('ArraysToo', [1, "two", "tree", "foor"])
+   *
+   * // Settings Properties
+   * enmap.set('IhazObjects', 'blue', 'color'); //modified previous object
+   * enmap.set('ArraysToo', 'three', 2); // changes "tree" to "three" in array.
+   */
+  set(key, value, path) {
+    this.#keycheck(key);
+    let data = this.get(key);
+    const oldValue = cloneDeep(data);
+    if (!isNil(path)) {
+      if (isNil(data)) data = {};
+      _set(data, path, value);
+    } else {
+      data = value;
+    }
+    if (isFunction(this.#changedCB)) this.#changedCB( key, oldValue, data);
+    this.#set(key, data);
+  }
+
+  /**
+   * Update an existing object value in Enmap by merging new keys. **This only works on objects**, any other value will throw an error.
+   * Heavily inspired by setState from React's class components.
+   * This is very useful if you have many different values to update and don't want to have more than one .set(key, value, prop) lines.
+   * @param {string} key The key of the object to update.
+   * @param {*} valueOrFunction Either an object to merge with the existing value, or a function that provides the existing object
+   * and expects a new object as a return value. In the case of a straight value, the merge is recursive and will add any missing level.
+   * If using a function, it is your responsibility to merge the objects together correctly.
+   * @example
+   * // Define an object we're going to update
+   * enmap.set("obj", { a: 1, b: 2, c: 3 });
+   *
+   * // Direct merge
+   * enmap.update("obj", { d: 4, e: 5 });
+   * // obj is now { a: 1, b: 2, c: 3, d: 4, e: 5 }
+   *
+   * // Functional update
+   * enmap.update("obj", (previous) => ({
+   *   ...obj,
+   *   f: 6,
+   *   g: 7
+   * }));
+   * // this example takes heavy advantage of the spread operators.
+   * // More info: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax
+   * @returns {*} The modified (merged) value.
+   */
+  update(key, valueOrFunction) {
+    this.#keycheck(key);
+    this.#check(key, ['Object']);
+    const data = this.get(key);
+    const fn = isFunction(valueOrFunction)
+      ? valueOrFunction
+      : () => merge(data, valueOrFunction);
+    const merged = fn(data);
+    this.#set(key, merged);
+    return merged;
+  }
+
+  /**
    * Retrieves a key from the enmap.
    * @param {string} key The key to retrieve from the enmap.
    * @param {string} path Optional. The property to retrieve from the object or array.
@@ -90,6 +196,211 @@ class Enmap {
     return parsed;
   }
 
+  /**
+   * Returns an observable object. Modifying this object or any of its properties/indexes/children
+   * will automatically save those changes into enmap. This only works on
+   * objects and arrays, not "basic" values like strings or integers.
+   * @param {*} key The key to retrieve from the enmap.
+   * @param {string} path Optional. The property to retrieve from the object or array.
+   * @return {*} The value for this key.
+   */
+  observe(key, path) {
+    this.#check(key, ['Object', 'Array'], path);
+    const data = this.get(key, path);
+    const proxy = onChange(data, () => {
+      this.set(key, proxy, path);
+    });
+    return proxy;
+  }
+
+  /**
+   * Get the number of key/value pairs saved in the enmap.
+   * @type {number}
+   * @readonly
+   * @returns {number} The number of elements in the enmap.
+  */
+  get length() {
+    const data = this.#db
+      .prepare(`SELECT count(*) FROM '${this.#name}';`)
+      .get();
+    return data['count(*)'];
+  }
+
+  /**
+   * Get all the keys of the enmap as an array.
+   * @type {Array<string>}
+   * @readonly
+   * @returns {Array<string>} An array of all the keys in the enmap.
+  */
+  get keys() {
+    const stmt = this.#db.prepare(`SELECT key FROM ${this.#name}`);
+    const indexes = [];
+    for (const row of stmt.iterate()) {
+      indexes.push(row.key);
+    }
+    return indexes;
+  }
+
+  /**
+   * Get all the values of the enmap as an array.
+   * @type {Array<*>}
+   * @readonly
+   * @returns {Array<*>} An array of all the values in the enmap.
+  */
+  get values() {
+    const stmt = this.#db.prepare(`SELECT value FROM ${this.#name}`);
+    const values = [];
+    for (const row of stmt.iterate()) {
+      values.push(this.#parse(row.value));
+    }
+    return values;
+  }
+
+  /**
+   * Get all entries of the enmap as an array, with each item containing the key and value.
+   * @type {Array<Array<*,*>>}
+   * @readonly
+   * @returns {Array<Array<*,*>>} An array of arrays, with each sub-array containing two items, the key and the value.
+  */
+  get entries() {
+    const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
+    const entries = [];
+    for (const row of stmt.iterate()) {
+      entries.push([row.key, this.#parse(row.value)]);
+    }
+    return entries;
+  }
+
+  /**
+   * Get the better-sqlite3 database object. Useful if you want to directly query or interact with the
+   * underlying SQLite database. Use at your own risk, as errors here might cause loss of data or corruption!
+   * @return {Database}
+   */
+  get db() {
+    return this.#db;
+  }
+
+  /**
+   * Generates an automatic numerical key for inserting a new value.
+   * This is a "weak" method, it ensures the value isn't duplicated, but does not
+   * guarantee it's sequential (if a value is deleted, another can take its place).
+   * Useful for logging, actions, items, etc - anything that doesn't already have a unique ID.
+   * @type {number}
+   * @readonly
+   * @example
+   * enmap.set(enmap.autonum, "This is a new value");
+   * @return {number} The generated key number.
+   */
+  get autonum() {
+    let { lastnum } = this.#db
+      .prepare("SELECT lastnum FROM 'internal::autonum' WHERE enmap = ?")
+      .get(this.#name);
+    lastnum++;
+    this.#db
+      .prepare(
+        "INSERT OR REPLACE INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)",
+      )
+      .run(this.#name, lastnum);
+    return lastnum.toString();
+  }
+
+    /**
+   * Push to an array value in Enmap.
+   * @param {string} key Required. The key of the array element to push to in Enmap.
+   * This value MUST be a string or number.
+   * @param {*} value Required. The value to push to the array.
+   * @param {string} path Optional. The path to the property to modify inside the value object or array.
+   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * @param {boolean} allowDupes Optional. Allow duplicate values in the array (default: false).
+   * @example
+   * // Assuming
+   * enmap.set("simpleArray", [1, 2, 3, 4]);
+   * enmap.set("arrayInObject", {sub: [1, 2, 3, 4]});
+   *
+   * enmap.push("simpleArray", 5); // adds 5 at the end of the array
+   * enmap.push("arrayInObject", "five", "sub"); // adds "five" at the end of the sub array
+   */
+    push(key, value, path, allowDupes = false) {
+      this.#keycheck(key);
+      this.#check(key, ['Array', 'Object']);
+      const data = this.get(key, path);
+      if (!isArray(data)) throw new Err('Key does not point to an array', 'EnmapPathError');
+      if (!allowDupes && data.includes(value)) return;
+      data.push(value);
+      this.set(key, data);
+    }
+
+  // AWESOME MATHEMATICAL METHODS
+
+  /**
+   * Executes a mathematical operation on a value and saves it in the enmap.
+   * @param {string} key The enmap key on which to execute the math operation.
+   * @param {string} operation Which mathematical operation to execute. Supports most
+   * math ops: =, -, *, /, %, ^, and english spelling of those operations.
+   * @param {number} operand The right operand of the operation.
+   * @param {string} path Optional. The property path to execute the operation on, if the value is an object or array.
+   * @example
+   * // Assuming
+   * points.set("number", 42);
+   * points.set("numberInObject", {sub: { anInt: 5 }});
+   *
+   * points.math("number", "/", 2); // 21
+   * points.math("number", "add", 5); // 26
+   * points.math("number", "modulo", 3); // 2
+   * points.math("numberInObject", "+", 10, "sub.anInt");
+   * @returns {number} The updated value after the operation
+   */
+  math(key, operation, operand) {
+    this.#keycheck(key);
+    this.#check(key, ['Number']);
+    const data = this.get(key);
+    const updatedValue = this.#math(data, operation, operand)
+    this.set(key, updatedValue);
+    return updatedValue;
+  }
+
+  
+
+  /**
+   * Increments a key's value or property by 1. Value must be a number, or a path to a number.
+   * @param {string} key The enmap key where the value to increment is stored.
+   * @param {string} path Optional. The property path to increment, if the value is an object or array.
+   * @example
+   * // Assuming
+   * points.set("number", 42);
+   * points.set("numberInObject", {sub: { anInt: 5 }});
+   *
+   * points.inc("number"); // 43
+   * points.inc("numberInObject", "sub.anInt"); // {sub: { anInt: 6 }}
+   * @returns {number} The udpated value after incrementing.
+   */
+  inc(key) {
+    this.#keycheck(key);
+    this.#check(key, ['Number']);
+    const data = this.get(key);
+    this.set(key, data + 1);
+    return data + 1;
+  }
+
+  /**
+   * Decrements a key's value or property by 1. Value must be a number, or a path to a number.
+   * @param {string} key The enmap key where the value to decrement is stored.
+   * @param {string} path Optional. The property path to decrement, if the value is an object or array.
+   * @example
+   * // Assuming
+   * points.set("number", 42);
+   * points.set("numberInObject", {sub: { anInt: 5 }});
+   *
+   * points.dec("number"); // 41
+   * points.dec("numberInObject", "sub.anInt"); // {sub: { anInt: 4 }}
+   * @returns {Enmap} The enmap.
+   */
+  dec(key) {
+    this.#keycheck(key);
+    const data = this.get(key);
+    this.set(key, data - 1);
+    return data - 1;
+  }
 
   /**
    * Returns the key's value, or the default given, ensuring that the data is there.
@@ -148,53 +459,6 @@ class Enmap {
   }
 
   /**
-   * Obtains random value(s) from this Enmap. This relies on {@link Enmap#array}.
-   * @param {number} [count] Number of values to obtain randomly
-   * @returns {*|Array<*>} The single value if `count` is undefined,
-   * or an array of values of `count` length
-   */
-  random(count = 1) {
-    const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name} ORDER BY RANDOM() LIMIT ?`).bind(count);
-    const results = [];
-    for (const row of stmt.iterate()) {
-      results.push([row.key, this.#parse(row.value)]);
-    }
-    return results;
-  }
-
-  /**
-   * Obtains random key(s) from this Enmap. This relies on {@link Enmap#keyArray}
-   * @param {number} [count] Number of keys to obtain randomly
-   * @returns {*|Array<*>} The single key if `count` is undefined,
-   * or an array of keys of `count` length
-   */
-  randomKey(count = 1) {
-    const stmt = this.#db.prepare(`SELECT key FROM ${this.#name} ORDER BY RANDOM() LIMIT ?`).bind(count);
-    const results = [];
-    for (const row of stmt.iterate()) {
-      results.push(row.key);
-    }
-    return results;
-  }
-
-  /**
-   * Returns an observable object. Modifying this object or any of its properties/indexes/children
-   * will automatically save those changes into enmap. This only works on
-   * objects and arrays, not "basic" values like strings or integers.
-   * @param {*} key The key to retrieve from the enmap.
-   * @param {string} path Optional. The property to retrieve from the object or array.
-   * @return {*} The value for this key.
-   */
-  observe(key, path) {
-    this.#check(key, ['Object', 'Array'], path);
-    const data = this.get(key, path);
-    const proxy = onChange(data, () => {
-      this.set(key, proxy, path);
-    });
-    return proxy;
-  }
-
-  /**
    * Returns whether or not the key exists in the Enmap.
    * @param {string} key Required. The key of the element to add to The Enmap or array.
    * This value MUST be a string or number.
@@ -215,130 +479,20 @@ class Enmap {
   }
 
   /**
-   * Sets a value in Enmap.
-   * @param {string} key Required. The key of the element to add to The Enmap.
-   * @param {*} value Required. The value of the element to add to The Enmap.
-   * If the Enmap is persistent this value MUST be stringifiable as JSON.
-   * @param {string} path Optional. The path to the property to modify inside the value object or array.
+   * Performs Array.includes() on a certain enmap value. Works similar to
+   * [Array.includes()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes).
+   * @param {string} key Required. The key of the array to check the value of.
+   * @param {string|number} value Required. The value to check whether it's in the array.
+   * @param {string} path Optional. The property to access the array inside the value object or array.
    * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
-   * @example
-   * // Direct Value Examples
-   * enmap.set('simplevalue', 'this is a string');
-   * enmap.set('isEnmapGreat', true);
-   * enmap.set('TheAnswer', 42);
-   * enmap.set('IhazObjects', { color: 'black', action: 'paint', desire: true });
-   * enmap.set('ArraysToo', [1, "two", "tree", "foor"])
-   *
-   * // Settings Properties
-   * enmap.set('IhazObjects', 'blue', 'color'); //modified previous object
-   * enmap.set('ArraysToo', 'three', 2); // changes "tree" to "three" in array.
-   */
-  set(key, value, path) {
+   * @return {boolean} Whether the array contains the value.
+  */
+  includes(key, value, path) {
     this.#keycheck(key);
-    let data = this.get(key);
-    const oldValue = cloneDeep(data);
-    if (!isNil(path)) {
-      if (isNil(data)) data = {};
-      _set(data, path, value);
-    } else {
-      data = value;
-    }
-    if (isFunction(this.#changedCB)) this.#changedCB( key, oldValue, data);
-    this.#set(key, data);
-  }
-
-  /*
-   * Internal method used to insert or update a key in the database without circular calls to ensure() or others. 
-   * @param {string} key Key to update in database
-   * @param {*} value value to save in database
-   * Path is not supported in this method as it writes the whole key.
-   */
-  #set(key, value) {
-    let serialized;
-    try {
-      serialized = stringify(this.#serializer(value, key));
-    } catch (e) {
-      serialized = stringify(this.#serializer(onChange.target(value), key));
-    }
-    this.#db.prepare(`INSERT OR REPLACE INTO ${this.#name} (key, value) VALUES (?, ?)`).run(key, serialized);
-  }
-
-    /*
-   * Internal Method. Parses JSON data.
-   * Reserved for future use (logical checking)
-   * @param {*} value The data to check/parse
-   * @returns {*} An object or the original data.
-   */
-  #parse(value) {
-    return this.#deserializer(parse(value));
-  }
-
-  /**
-   * Increments a key's value or property by 1. Value must be a number, or a path to a number.
-   * @param {string} key The enmap key where the value to increment is stored.
-   * @param {string} path Optional. The property path to increment, if the value is an object or array.
-   * @example
-   * // Assuming
-   * points.set("number", 42);
-   * points.set("numberInObject", {sub: { anInt: 5 }});
-   *
-   * points.inc("number"); // 43
-   * points.inc("numberInObject", "sub.anInt"); // {sub: { anInt: 6 }}
-   * @returns {number} The udpated value after incrementing.
-   */
-  inc(key) {
-    this.#keycheck(key);
-    this.#check(key, ['Number']);
-    const data = this.get(key);
-    this.set(key, data + 1);
-    return data + 1;
-  }
-
-/**
-   * Decrements a key's value or property by 1. Value must be a number, or a path to a number.
-   * @param {string} key The enmap key where the value to decrement is stored.
-   * @param {string} path Optional. The property path to decrement, if the value is an object or array.
-   * @example
-   * // Assuming
-   * points.set("number", 42);
-   * points.set("numberInObject", {sub: { anInt: 5 }});
-   *
-   * points.dec("number"); // 41
-   * points.dec("numberInObject", "sub.anInt"); // {sub: { anInt: 4 }}
-   * @returns {Enmap} The enmap.
-   */
-  dec(key) {
-    this.#keycheck(key);
-    const data = this.get(key);
-    this.set(key, data - 1);
-    return data - 1;
-  }
-
-  /**
-   * Executes a mathematical operation on a value and saves it in the enmap.
-   * @param {string} key The enmap key on which to execute the math operation.
-   * @param {string} operation Which mathematical operation to execute. Supports most
-   * math ops: =, -, *, /, %, ^, and english spelling of those operations.
-   * @param {number} operand The right operand of the operation.
-   * @param {string} path Optional. The property path to execute the operation on, if the value is an object or array.
-   * @example
-   * // Assuming
-   * points.set("number", 42);
-   * points.set("numberInObject", {sub: { anInt: 5 }});
-   *
-   * points.math("number", "/", 2); // 21
-   * points.math("number", "add", 5); // 26
-   * points.math("number", "modulo", 3); // 2
-   * points.math("numberInObject", "+", 10, "sub.anInt");
-   * @returns {number} The updated value after the operation
-   */
-  math(key, operation, operand) {
-    this.#keycheck(key);
-    this.#check(key, ['Number']);
-    const data = this.get(key);
-    const updatedValue = this.#math(data, operation, operand)
-    this.set(key, updatedValue);
-    return updatedValue;
+    this.#check(key, ['Array'], path);
+    const data = this.get(key, path);
+    if (!isArray(data)) throw new Err('Key does not point to an array', 'EnmapPathError');
+    return data.includes(value);
   }
 
   /**
@@ -360,69 +514,11 @@ class Enmap {
   }
 
   /**
-   * Update an existing object value in Enmap by merging new keys. **This only works on objects**, any other value will throw an error.
-   * Heavily inspired by setState from React's class components.
-   * This is very useful if you have many different values to update and don't want to have more than one .set(key, value, prop) lines.
-   * @param {string} key The key of the object to update.
-   * @param {*} valueOrFunction Either an object to merge with the existing value, or a function that provides the existing object
-   * and expects a new object as a return value. In the case of a straight value, the merge is recursive and will add any missing level.
-   * If using a function, it is your responsibility to merge the objects together correctly.
-   * @example
-   * // Define an object we're going to update
-   * enmap.set("obj", { a: 1, b: 2, c: 3 });
-   *
-   * // Direct merge
-   * enmap.update("obj", { d: 4, e: 5 });
-   * // obj is now { a: 1, b: 2, c: 3, d: 4, e: 5 }
-   *
-   * // Functional update
-   * enmap.update("obj", (previous) => ({
-   *   ...obj,
-   *   f: 6,
-   *   g: 7
-   * }));
-   * // this example takes heavy advantage of the spread operators.
-   * // More info: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax
-   * @returns {*} The modified (merged) value.
+   * Deletes everything from the enmap.
+   * @returns {void}
    */
-  update(key, valueOrFunction) {
-    this.#keycheck(key);
-    this.#check(key, ['Object']);
-    const data = this.get(key);
-    const fn = isFunction(valueOrFunction)
-      ? valueOrFunction
-      : () => merge(data, valueOrFunction);
-    const merged = fn(data);
-    this.#set(key, merged);
-    return merged;
-  }
-
-  /* ARRAY METHODS */
-
-  /**
-   * Push to an array value in Enmap.
-   * @param {string} key Required. The key of the array element to push to in Enmap.
-   * This value MUST be a string or number.
-   * @param {*} value Required. The value to push to the array.
-   * @param {string} path Optional. The path to the property to modify inside the value object or array.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
-   * @param {boolean} allowDupes Optional. Allow duplicate values in the array (default: false).
-   * @example
-   * // Assuming
-   * enmap.set("simpleArray", [1, 2, 3, 4]);
-   * enmap.set("arrayInObject", {sub: [1, 2, 3, 4]});
-   *
-   * enmap.push("simpleArray", 5); // adds 5 at the end of the array
-   * enmap.push("arrayInObject", "five", "sub"); // adds "five" at the end of the sub array
-   */
-  push(key, value, path, allowDupes = false) {
-    this.#keycheck(key);
-    this.#check(key, ['Array', 'Object']);
-    const data = this.get(key, path);
-    if (!isArray(data)) throw new Err('Key does not point to an array', 'EnmapPathError');
-    if (!allowDupes && data.includes(value)) return;
-    data.push(value);
-    this.set(key, data);
+  clear () {
+    this.#db.prepare(`DELETE FROM ${this.#name}`).run();
   }
 
   /**
@@ -454,6 +550,118 @@ class Enmap {
       data.splice(index, 1);
     }
     this.set(key, data, path);
+  }
+
+  /**
+   * Exports the enmap data to stringified JSON format.
+   * **__WARNING__**: Does not work on memory enmaps containing complex data!
+   * @returns {string} The enmap data in a stringified JSON format.
+   */
+  export() {
+    const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
+    const entries = [];
+    for (const row of stmt.iterate()) {
+      entries.push(row);
+    }
+    return stringify({
+      name: this.#name,
+      exportDate: Date.now(),
+      version: pkgdata.version,
+      keys: entries,
+    })
+  }
+
+    /**
+   * Import an existing json export from enmap from a string. This data must have been exported from enmap,
+   * and must be from a version that's equivalent or lower than where you're importing it.
+   * @param {string} data The data to import to Enmap. Must contain all the required fields provided by export()
+   * @param {boolean} overwrite Defaults to `true`. Whether to overwrite existing key/value data with incoming imported data
+   * @param {boolean} clear Defaults to `false`. Whether to clear the enmap of all data before importing
+   * (**__WARNING__**: Any existing data will be lost! This cannot be undone.)
+   */
+  import(data, overwrite = true, clear = false) {
+    if (typeof data === 'string') {
+      data = parse(data);
+    }
+    if (data.name !== this.#name) {
+      throw new Err('Data is not for this enmap', 'EnmapDataError');
+    }
+    if (isNil(data))
+    throw new Err(
+      `No data provided for import() in "${this.#name}"`,
+      'EnmapImportError',
+    );
+
+    const majorVersion = parseInt(pkgdata.version.split('.')[0]);
+    if (majorVersion < 6) {
+      throw new Err('Importing data from enmap v5 or lower is not supported', 'EnmapDataError');
+    }
+
+    if (clear) this.deleteAll();
+    for (const entry of data.keys) {
+      const { key, value } = entry;
+      if (!overwrite && this.has(key)) continue;
+      this.#set(key, this.#parse(value));
+    }
+  }
+
+  /**
+   * Initialize multiple Enmaps easily.
+   * @param {Array<string>} names Array of strings. Each array entry will create a separate enmap with that name.
+   * @param {Object} options Options object to pass to each enmap, excluding the name..
+   * @example
+   * // Using local variables.
+   * const Enmap = require('enmap');
+   * const { settings, tags, blacklist } = Enmap.multi(['settings', 'tags', 'blacklist']);
+   *
+   * // Attaching to an existing object (for instance some API's client)
+   * const Enmap = require("enmap");
+   * Object.assign(client, Enmap.multi(["settings", "tags", "blacklist"]));
+   *
+   * @returns {Object} An array of initialized Enmaps.
+   */
+  static multi(names, options) {
+    if (!names.length || names.length < 1) {
+      throw new Err(
+        '"names" argument must be an array of string names.',
+        'EnmapTypeError',
+      );
+    }
+    const enmaps = {};
+    for (const name of names) {
+      enmaps[name] = new Enmap({ ...options, name });
+    }
+    return enmaps;
+  }
+
+  /**
+   * Obtains random value(s) from this Enmap. This relies on {@link Enmap#array}.
+   * @param {number} [count] Number of values to obtain randomly
+   * @returns {*|Array<*>} The single value if `count` is undefined,
+   * or an array of values of `count` length
+   */
+  random(count = 1) {
+    const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name} ORDER BY RANDOM() LIMIT ?`).bind(count);
+    const results = [];
+    for (const row of stmt.iterate()) {
+      results.push([row.key, this.#parse(row.value)]);
+    }
+    return results;
+  }
+
+  /**
+   * Obtains random key(s) from this Enmap. This relies on {@link Enmap#keyArray}
+   * @param {number} [count] Number of keys to obtain randomly
+   * @returns {*|Array<*>} The single key if `count` is undefined,
+   * or an array of keys of `count` length
+   */
+  randomKey(count = 1) {
+    const stmt = this.#db.prepare(`SELECT key FROM ${this.#name} ORDER BY RANDOM() LIMIT ?`).bind(count);
+    const results = [];
+    for (const row of stmt.iterate()) {
+      results.push(row.key);
+    }
+    return results;
   }
 
   /**
@@ -514,7 +722,7 @@ class Enmap {
    * Similar to
    * [Array.map()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map).
    * Returns an array of the results of applying the callback to all elements.
-   * @param {Function | string} propOrFn A function that produces an element of the new Array, or a path to the property to map.
+   * @param {Function | string} pathOrFn A function that produces an element of the new Array, or a path to the property to map.
    * @returns {Array}
    */
   map(pathOrFn) {
@@ -531,7 +739,7 @@ class Enmap {
     return results;
   }
 
-/**
+  /**
    * Searches for a single item where its specified property's value is identical to the given value
    * (`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is similar to
    * [Array.find()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find).
@@ -660,81 +868,6 @@ class Enmap {
   }
 
   /**
-   * Performs Array.includes() on a certain enmap value. Works similar to
-   * [Array.includes()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes).
-   * @param {string} key Required. The key of the array to check the value of.
-   * @param {string|number} value Required. The value to check whether it's in the array.
-   * @param {string} path Optional. The property to access the array inside the value object or array.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
-   * @return {boolean} Whether the array contains the value.
-  */
-  includes(key, value, path) {
-    this.#keycheck(key);
-    this.#check(key, ['Array'], path);
-    const data = this.get(key, path);
-    if (!isArray(data)) throw new Err('Key does not point to an array', 'EnmapPathError');
-    return data.includes(value);
-  }
-
-  /**
-   * Get the number of key/value pairs saved in the enmap.
-   * @type {number}
-   * @readonly
-   * @returns {number} The number of elements in the enmap.
-  */
-  get length() {
-    const data = this.#db
-      .prepare(`SELECT count(*) FROM '${this.#name}';`)
-      .get();
-    return data['count(*)'];
-  }
-
-  /**
-   * Get all the keys of the enmap as an array.
-   * @type {Array<string>}
-   * @readonly
-   * @returns {Array<string>} An array of all the keys in the enmap.
-  */
-  get keys() {
-    const stmt = this.#db.prepare(`SELECT key FROM ${this.#name}`);
-    const indexes = [];
-    for (const row of stmt.iterate()) {
-      indexes.push(row.key);
-    }
-    return indexes;
-  }
-
-  /**
-   * Get all the values of the enmap as an array.
-   * @type {Array<*>}
-   * @readonly
-   * @returns {Array<*>} An array of all the values in the enmap.
-  */
-  get values() {
-    const stmt = this.#db.prepare(`SELECT value FROM ${this.#name}`);
-    const values = [];
-    for (const row of stmt.iterate()) {
-      values.push(this.#parse(row.value));
-    }
-    return values;
-  }
-
-  /**
-   * Get all entries of the enmap as an array, with each item containing the key and value.
-   * @type {Array<Array<*,*>>}
-   * @readonly
-   * @returns {Array<Array<*,*>>} An array of arrays, with each sub-array containing two items, the key and the value.
-  */
-  get entries() {
-    const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
-    const entries = [];
-    for (const row of stmt.iterate()) {
-      entries.push([row.key, this.#parse(row.value)]);
-    }
-    return entries;
-  }
-
-  /**
    * Function called whenever data changes within Enmap after the initial load.
    * Can be used to detect if another part of your code changed a value in enmap and react on it.
    * @example
@@ -747,94 +880,32 @@ class Enmap {
     this.#changedCB = cb;
   }
 
-    /**
-   * Generates an automatic numerical key for inserting a new value.
-   * This is a "weak" method, it ensures the value isn't duplicated, but does not
-   * guarantee it's sequential (if a value is deleted, another can take its place).
-   * Useful for logging, actions, items, etc - anything that doesn't already have a unique ID.
-   * @type {number}
-   * @readonly
-   * @example
-   * enmap.set(enmap.autonum, "This is a new value");
-   * @return {number} The generated key number.
+  // INTERNAL METHODS
+
+  /*
+   * Internal method used to insert or update a key in the database without circular calls to ensure() or others. 
+   * @param {string} key Key to update in database
+   * @param {*} value value to save in database
+   * Path is not supported in this method as it writes the whole key.
    */
-  autonum() {
-    let { lastnum } = this.#db
-      .prepare("SELECT lastnum FROM 'internal::autonum' WHERE enmap = ?")
-      .get(this.#name);
-    lastnum++;
-    this.#db
-      .prepare(
-        "INSERT OR REPLACE INTO 'internal::autonum' (enmap, lastnum) VALUES (?, ?)",
-      )
-      .run(this.#name, lastnum);
-    return lastnum.toString();
+  #set(key, value) {
+    let serialized;
+    try {
+      serialized = stringify(this.#serializer(value, key));
+    } catch (e) {
+      serialized = stringify(this.#serializer(onChange.target(value), key));
+    }
+    this.#db.prepare(`INSERT OR REPLACE INTO ${this.#name} (key, value) VALUES (?, ?)`).run(key, serialized);
   }
 
-
-  get db() {
-    return this.#db;
-  }
-
-  /**
-   * Deletes everything from the enmap.
-   * @returns {void}
+    /*
+   * Internal Method. Parses JSON data.
+   * Reserved for future use (logical checking)
+   * @param {*} value The data to check/parse
+   * @returns {*} An object or the original data.
    */
-  clear () {
-    this.#db.prepare(`DELETE FROM ${this.#name}`).run();
-  }
-
-  /**
-   * Exports the enmap data to stringified JSON format.
-   * **__WARNING__**: Does not work on memory enmaps containing complex data!
-   * @returns {string} The enmap data in a stringified JSON format.
-   */
-  export() {
-    const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
-    const entries = [];
-    for (const row of stmt.iterate()) {
-      entries.push(row);
-    }
-    return stringify({
-      name: this.#name,
-      exportDate: Date.now(),
-      version: pkgdata.version,
-      keys: entries,
-    })
-  }
-
-    /**
-   * Import an existing json export from enmap from a string. This data must have been exported from enmap,
-   * and must be from a version that's equivalent or lower than where you're importing it.
-   * @param {string} data The data to import to Enmap. Must contain all the required fields provided by export()
-   * @param {boolean} overwrite Defaults to `true`. Whether to overwrite existing key/value data with incoming imported data
-   * @param {boolean} clear Defaults to `false`. Whether to clear the enmap of all data before importing
-   * (**__WARNING__**: Any existing data will be lost! This cannot be undone.)
-   */
-  import(data, overwrite = true, clear = false) {
-    if (typeof data === 'string') {
-      data = parse(data);
-    }
-    if (data.name !== this.#name) {
-      throw new Err('Data is not for this enmap', 'EnmapDataError');
-    }
-    if (isNil(data))
-    throw new Err(
-      `No data provided for import() in "${this.#name}"`,
-      'EnmapImportError',
-    );
-
-    const majorVersion = parseInt(pkgdata.version.split('.')[0]);
-    if (majorVersion < 6) {
-      throw new Err('Importing data from enmap v5 or lower is not supported', 'EnmapDataError');
-    }
-
-    if (clear) this.deleteAll();
-    for (const entry of data.keys) {
-      const { key, value } = entry;
-      if (!overwrite && this.has(key)) continue;
-      this.#set(key, this.#parse(value));
-    }
+  #parse(value) {
+    return this.#deserializer(parse(value));
   }
 
   /* INTERNAL METHOD */
@@ -877,6 +948,11 @@ class Enmap {
         )
         .run();
     }
+
+    process.on('exit', () => {
+      this.#db.close();
+    });
+
   }
 
     /*
@@ -969,35 +1045,6 @@ class Enmap {
         return Math.floor(Math.random() * Math.floor(opand));
     }
     return null;
-  }
-
-  /**
-   * Initialize multiple Enmaps easily.
-   * @param {Array<string>} names Array of strings. Each array entry will create a separate enmap with that name.
-   * @param {Object} options Options object to pass to each enmap, excluding the name..
-   * @example
-   * // Using local variables.
-   * const Enmap = require('enmap');
-   * const { settings, tags, blacklist } = Enmap.multi(['settings', 'tags', 'blacklist']);
-   *
-   * // Attaching to an existing object (for instance some API's client)
-   * const Enmap = require("enmap");
-   * Object.assign(client, Enmap.multi(["settings", "tags", "blacklist"]));
-   *
-   * @returns {Object} An array of initialized Enmaps.
-   */
-  static multi(names, options) {
-    if (!names.length || names.length < 1) {
-      throw new Err(
-        '"names" argument must be an array of string names.',
-        'EnmapTypeError',
-      );
-    }
-    const enmaps = {};
-    for (const name of names) {
-      enmaps[name] = new Enmap({ ...options, name });
-    }
-    return enmaps;
   }
 }
 
