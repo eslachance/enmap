@@ -93,3 +93,6 @@ These were already planned, and indicated as deprecated for a while now, but the
 
 - The use of `'::memory::` as a name is removed, you can use `inMemory: true` instead. That means `new Enmap('::memory::')` is now `new Enmap({ inMemory: true })`.
 - In all loop methods like `every`, `some`, `map` and `filter`, the **value** now comes first, and **key** second. This matches array methods closer.
+- Methods will no longer return the enmap upon executing an action. It's always felt weird to me that some methods returned the enmap and others returned data.
+- The `destroy` method is removed, since it doesn't make much sense to delete all the db tables. You can still delete all your stuff with `clear()` though.
+- 

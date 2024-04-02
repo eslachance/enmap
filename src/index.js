@@ -1,6 +1,3 @@
-import { existsSync, readFileSync, mkdirSync } from 'fs';
-import { resolve, sep } from 'path';
-
 import {
   get as _get,
   set as _set,
@@ -11,12 +8,20 @@ import {
   cloneDeep,
   merge,
 } from 'lodash-es';
-import Database from 'better-sqlite3/lib/database';
+import { stringify, parse } from 'better-serialize';
 import onChange  from 'on-change';
 
-import { stringify, parse } from 'better-serialize';
+// Custom error codes with stack support.
 import Err from './error.js';
+
+// Native imports
+import { existsSync, readFileSync, mkdirSync } from 'fs';
+import { resolve, sep } from 'path';
+
+// Package.json
 const pkgdata = JSON.parse(readFileSync('./package.json', 'utf8'));
+
+import Database from 'better-sqlite3/lib/database';
 
 const NAME_REGEX = /^([\w-]+)$/;
 
@@ -93,7 +98,6 @@ class Enmap {
 
     this.#init();
   }
-
   
   /**
    * Sets a value in Enmap.
@@ -597,7 +601,7 @@ class Enmap {
       throw new Err('Importing data from enmap v5 or lower is not supported', 'EnmapDataError');
     }
 
-    if (clear) this.deleteAll();
+    if (clear) this.clear();
     for (const entry of data.keys) {
       const { key, value } = entry;
       if (!overwrite && this.has(key)) continue;
@@ -764,6 +768,7 @@ class Enmap {
     }
     return null;
   }
+// TODO: RE-ADD findIndex
 
 /**
    * Searches for the key of a single item where its specified property's value is identical to the given value
@@ -879,6 +884,8 @@ class Enmap {
   changed(cb) {
     this.#changedCB = cb;
   }
+
+  // TODO: RE-ADD forEach (ugh). (partition, merge?)
 
   // INTERNAL METHODS
 
