@@ -184,7 +184,7 @@ declare module 'enmap' {
      * @param val Required. The value of the element to add to The Enmap.
      * If the Enmap is persistent this value MUST be stringifiable as JSON.
      * @param path The path to the property to modify inside the value object or array.
-     * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @example
      * // Settings Properties
      * enmap.set('IhazObjects', 'color', 'blue'); //modified previous object
@@ -211,7 +211,7 @@ declare module 'enmap' {
      * Retrieves a key from the enmap. If fetchAll is false, returns a promise.
      * @param key The key to retrieve from the enmap.
      * @param path Optional. The property to retrieve from the object or array.
-     * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @example
      * const myKeyValue = enmap.get("myKey");
      * console.log(myKeyValue);
@@ -278,7 +278,7 @@ declare module 'enmap' {
      * @param key Required. The key of the element to add to The Enmap or array.
      * This value MUST be a string or number.
      * @param path Required. The property to modify inside the value object or array.
-     * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @param val Required. The value to apply to the specified property.
      * @returns The enmap.
      */
@@ -290,7 +290,7 @@ declare module 'enmap' {
      * This value MUST be a string or number.
      * @param val Required. The value to push to the array.
      * @param path Optional. The path to the property to modify inside the value object or array.
-     * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @param allowDupes Optional. Allow duplicate values in the array (default: false).
      * @example
      * // Assuming
@@ -308,7 +308,7 @@ declare module 'enmap' {
      * @param key Required. The key of the element.
      * This value MUST be a string or number.
      * @param path Required. The name of the array property to push to.
-     * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @param val Required. The value push to the array property.
      * @param allowDupes Allow duplicate values in the array (default: false).
      * @returns The enmap.
@@ -377,7 +377,7 @@ declare module 'enmap' {
      * Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
      * @param key Required. The key of the element to get from The Enmap.
      * @param path Required. The property to retrieve from the object or array.
-     * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @return The value of the property obtained.
      */
     public getProp(key: K, path: string): any;
@@ -388,7 +388,7 @@ declare module 'enmap' {
      * @param key Required. The key you want to make sure exists.
      * @param defaultValue Required. The value you want to save in the database and return as default.
      * @param path Optional. If presents, ensures both the key exists as an object, and the full path exists.
-     * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @example
      * // Simply ensure the data exists (for using property methods):
      * enmap.ensure("mykey", {some: "value", here: "as an example"});
@@ -409,7 +409,7 @@ declare module 'enmap' {
      * @param key Required. The key of the element to add to The Enmap or array.
      * This value MUST be a string or number.
      * @param path Optional. The property to verify inside the value object or array.
-     * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @example
      * if(enmap.has("myKey")) {
      *   // key is there
@@ -423,7 +423,7 @@ declare module 'enmap' {
      * Returns whether or not the property exists within an object or array value in enmap.
      * @param key Required. The key of the element to check in the Enmap or array.
      * @param path Required. The property to verify inside the value object or array.
-     * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @return Whether the property exists.
      */
     public hasProp(key: K, path: string): boolean;
@@ -433,7 +433,7 @@ declare module 'enmap' {
      * Note: Does not return a boolean, unlike the standard Map.
      * @param key Required. The key of the element to delete from The Enmap.
      * @param path Optional. The name of the property to remove from the object.
-     * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @returns The enmap.
      */
     public delete(key: K, path?: string): this;
@@ -442,7 +442,7 @@ declare module 'enmap' {
      * Delete a property from an object or array value in Enmap.
      * @param key Required. The key of the element to delete the property from in Enmap.
      * @param path Required. The name of the property to remove from the object.
-     * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
      */
     public deleteProp(key: K, path: string): void;
 
@@ -460,7 +460,7 @@ declare module 'enmap' {
      * This value MUST be a string or number.
      * @param val Required. The value to remove from the array or object.
      * @param path Optional. The name of the array property to remove from.
-     * Can be a path with dot notation, such as "prop1.subprop2.subprop3".
+     * Should be a path with dot notation, such as "prop1.subprop2.subprop3".
      * If not presents, removes directly from the value.
      * @returns The enmap.
      */
@@ -472,7 +472,7 @@ declare module 'enmap' {
      * @param key Required. The key of the element.
      * This value MUST be a string or number.
      * @param path Required. The name of the array property to remove from.
-     * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
      * @param val Required. The value to remove from the array property.
      * @returns The enmap.
      */

@@ -38,25 +38,36 @@ class Enmap {
   #ensureProps;
   #serializer;
   #deserializer;
-  #changedCB
+  #changedCB;
 
     /**
    * Initializes a new Enmap, with options.
-   * @param {Object} [options] Additional options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details.
-   * @param {string} [options.name] The name of the enmap. Represents its table name in sqlite. If present, the enmap is persistent.
+   * @param {Object} [options] Options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details.
+
+   * @param {string} [options.name] The name of the enmap. Represents its table name in sqlite. Unless inMemory is set to true, the enmap will be persisted to disk.
+
    * @param {string} [options.dataDir] Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative
    * (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes!
-   * *Note*: Will not automatically create the folder if set manually, so make sure it exists.
+   * *Note*: Enmap will not automatically create the folder if it is set manually, so make sure it exists before starting your code!
+   
    * @param {boolean} [options.ensureProps] defaults to `true`. If enabled and the value in the enmap is an object, using ensure() will also ensure that
    * every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information.
+   
    * @param {*} [options.autoEnsure] default is disabled. When provided a value, essentially runs ensure(key, autoEnsure) automatically so you don't have to.
    * This is especially useful on get(), but will also apply on set(), and any array and object methods that interact with the database.
+   
    * @param {Function} [options.serializer] Optional. If a function is provided, it will execute on the data when it is written to the database.
    * This is generally used to convert the value into a format that can be saved in the database, such as converting a complete class instance to just its ID.
    * This function may return the value to be saved, or a promise that resolves to that value (in other words, can be an async function).
+   
    * @param {Function} [options.deserializer] Optional. If a function is provided, it will execute on the data when it is read from the database.
    * This is generally used to convert the value from a stored ID into a more complex object.
    * This function may return a value, or a promise that resolves to that value (in other words, can be an async function).
+   * 
+   * @param {boolean} [options.inMemory] Optional. If set to true, the enmap will be in-memory only, and will not write to disk. Useful for temporary stores.
+   * 
+   * @param {Object} [options.sqliteOptions] Optional. An object of options to pass to the better-sqlite3 Database constructor.
+   *
    * @example
    * const Enmap = require("enmap");
 
@@ -93,19 +104,54 @@ class Enmap {
         }
       }
       const dataDir = resolve(process.cwd(), options.dataDir || 'data');
-      this.#db = new Database(`${dataDir}${sep}enmap.sqlite`);
+      this.#db = new Database(`${dataDir}${sep}enmap.sqlite`, options.sqliteOptions);
     }
 
-    this.#init();
+    if (!this.#db) {
+      throw new Err('Database Could Not Be Opened', 'EnmapDBConnectionError');
+    }
+
+    // Check if enmap by this name is in the sqlite master table
+    const table = this.#db
+    .prepare(
+      "SELECT count(*) FROM sqlite_master WHERE type='table' AND name = ?;",
+    )
+    .get(this.#name);
+
+    // This is a first init, create everything!
+    if (!table['count(*)']) {
+      // Create base table
+      this.#db
+        .prepare(
+          `CREATE TABLE ${this.#name} (key text PRIMARY KEY, value text)`,
+        )
+        .run();
+
+      // Define table properties : sync and write-ahead-log
+      this.#db.pragma('synchronous = 1');
+      this.#db.pragma('journal_mode = wal');
+
+      // Create autonum table
+      this.#db
+        .prepare(
+          `CREATE TABLE IF NOT EXISTS 'internal::autonum' (enmap TEXT PRIMARY KEY, lastnum INTEGER)`,
+        )
+        .run();
+    }
+
+    process.on('exit', () => {
+      this.#db.close();
+    });
   }
   
   /**
-   * Sets a value in Enmap.
-   * @param {string} key Required. The key of the element to add to The Enmap.
-   * @param {*} value Required. The value of the element to add to The Enmap.
-   * If the Enmap is persistent this value MUST be stringifiable as JSON.
+   * Sets a value in Enmap. If the key already has a value, overwrites the data (or the value in a path, if provided).
+   * @param {string} key Required. The location in which the data should be saved.
+   * @param {*} value Required. The value to write.
+   * Values must be serializable, which is done through (better-serialize)[https://github.com/RealShadowNova/better-serialize]
+   * If the value is not directly serializable, please use a custom serializer/deserializer.
    * @param {string} path Optional. The path to the property to modify inside the value object or array.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @example
    * // Direct Value Examples
    * enmap.set('simplevalue', 'this is a string');
@@ -171,10 +217,10 @@ class Enmap {
   }
 
   /**
-   * Retrieves a key from the enmap.
+   * Retrieves a value from the enmap, using its key.
    * @param {string} key The key to retrieve from the enmap.
    * @param {string} path Optional. The property to retrieve from the object or array.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @example
    * const myKeyValue = enmap.get("myKey");
    * console.log(myKeyValue);
@@ -219,7 +265,6 @@ class Enmap {
 
   /**
    * Get the number of key/value pairs saved in the enmap.
-   * @type {number}
    * @readonly
    * @returns {number} The number of elements in the enmap.
   */
@@ -232,7 +277,6 @@ class Enmap {
 
   /**
    * Get all the keys of the enmap as an array.
-   * @type {Array<string>}
    * @readonly
    * @returns {Array<string>} An array of all the keys in the enmap.
   */
@@ -247,7 +291,6 @@ class Enmap {
 
   /**
    * Get all the values of the enmap as an array.
-   * @type {Array<*>}
    * @readonly
    * @returns {Array<*>} An array of all the values in the enmap.
   */
@@ -262,7 +305,6 @@ class Enmap {
 
   /**
    * Get all entries of the enmap as an array, with each item containing the key and value.
-   * @type {Array<Array<*,*>>}
    * @readonly
    * @returns {Array<Array<*,*>>} An array of arrays, with each sub-array containing two items, the key and the value.
   */
@@ -289,7 +331,6 @@ class Enmap {
    * This is a "weak" method, it ensures the value isn't duplicated, but does not
    * guarantee it's sequential (if a value is deleted, another can take its place).
    * Useful for logging, actions, items, etc - anything that doesn't already have a unique ID.
-   * @type {number}
    * @readonly
    * @example
    * enmap.set(enmap.autonum, "This is a new value");
@@ -311,10 +352,9 @@ class Enmap {
     /**
    * Push to an array value in Enmap.
    * @param {string} key Required. The key of the array element to push to in Enmap.
-   * This value MUST be a string or number.
    * @param {*} value Required. The value to push to the array.
    * @param {string} path Optional. The path to the property to modify inside the value object or array.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @param {boolean} allowDupes Optional. Allow duplicate values in the array (default: false).
    * @example
    * // Assuming
@@ -363,7 +403,6 @@ class Enmap {
     return updatedValue;
   }
 
-  
 
   /**
    * Increments a key's value or property by 1. Value must be a number, or a path to a number.
@@ -412,7 +451,7 @@ class Enmap {
    * @param {string} key Required. The key you want to make sure exists.
    * @param {*} defaultValue Required. The value you want to save in the database and return as default.
    * @param {string} path Optional. If presents, ensures both the key exists as an object, and the full path exists.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @example
    * // Simply ensure the data exists (for using property methods):
    * enmap.ensure("mykey", {some: "value", here: "as an example"});
@@ -465,9 +504,8 @@ class Enmap {
   /**
    * Returns whether or not the key exists in the Enmap.
    * @param {string} key Required. The key of the element to add to The Enmap or array.
-   * This value MUST be a string or number.
    * @param {string} path Optional. The property to verify inside the value object or array.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @example
    * if(enmap.has("myKey")) {
    *   // key is there
@@ -488,7 +526,7 @@ class Enmap {
    * @param {string} key Required. The key of the array to check the value of.
    * @param {string|number} value Required. The value to check whether it's in the array.
    * @param {string} path Optional. The property to access the array inside the value object or array.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @return {boolean} Whether the array contains the value.
   */
   includes(key, value, path) {
@@ -503,7 +541,7 @@ class Enmap {
    * Deletes a key in the Enmap.
    * @param {string} key Required. The key of the element to delete from The Enmap.
    * @param {string} path Optional. The name of the property to remove from the object.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3"
+   * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
    */
   delete(key, path) {
     this.#keycheck(key);
@@ -530,11 +568,10 @@ class Enmap {
    * values, not keys. Note that only one value is removed, no more. Arrays of objects must use a function to remove,
    * as full object matching is not supported.
    * @param {string} key Required. The key of the element to remove from in Enmap.
-   * This value MUST be a string or number.
    * @param {*|Function} val Required. The value to remove from the array or object. OR a function to match an object.
    * If using a function, the function provides the object value and must return a boolean that's true for the object you want to remove.
    * @param {string} path Optional. The name of the array property to remove from.
-   * Can be a path with dot notation, such as "prop1.subprop2.subprop3".
+   * Should be a path with dot notation, such as "prop1.subprop2.subprop3".
    * If not presents, removes directly from the value.
    * @example
    * // Assuming
@@ -576,33 +613,30 @@ class Enmap {
   }
 
     /**
-   * Import an existing json export from enmap from a string. This data must have been exported from enmap,
+   * Import an existing json export from enmap. This data must have been exported from enmap,
    * and must be from a version that's equivalent or lower than where you're importing it.
-   * @param {string} data The data to import to Enmap. Must contain all the required fields provided by export()
+   * (This means Enmap 5 data is compatible in Enmap 6).
+   * @param {string} data The data to import to Enmap. Must contain all the required fields provided by an enmap export().
    * @param {boolean} overwrite Defaults to `true`. Whether to overwrite existing key/value data with incoming imported data
    * @param {boolean} clear Defaults to `false`. Whether to clear the enmap of all data before importing
    * (**__WARNING__**: Any existing data will be lost! This cannot be undone.)
    */
   import(data, overwrite = true, clear = false) {
-    if (typeof data === 'string') {
-      data = parse(data);
+    let parsedData;
+    try {
+      parsedData = JSON.parse(data);
+    } catch (e) {
+      throw new Err('Data provided is not valid JSON', 'EnmapDataError');
     }
-    if (data.name !== this.#name) {
-      throw new Err('Data is not for this enmap', 'EnmapDataError');
-    }
-    if (isNil(data))
+
+    if (isNil(parsedData))
     throw new Err(
       `No data provided for import() in "${this.#name}"`,
       'EnmapImportError',
     );
 
-    const majorVersion = parseInt(pkgdata.version.split('.')[0]);
-    if (majorVersion < 6) {
-      throw new Err('Importing data from enmap v5 or lower is not supported', 'EnmapDataError');
-    }
-
     if (clear) this.clear();
-    for (const entry of data.keys) {
+    for (const entry of parsedData.keys) {
       const { key, value } = entry;
       if (!overwrite && this.has(key)) continue;
       this.#set(key, this.#parse(value));
@@ -921,45 +955,6 @@ class Enmap {
     if (!NAME_REGEX.test(key)) {
       throw new Error(`Invalid ${type} for enmap - only alphanumeric characters, underscores and hyphens are allowed.`);
     }
-  }
-
-  #init() {
-    if (!this.#db) {
-      throw new Err('Database Could Not Be Opened', 'EnmapDBConnectionError');
-    }
-
-    // Check if enmap by this name is in the sqlite master table
-    const table = this.#db
-    .prepare(
-      "SELECT count(*) FROM sqlite_master WHERE type='table' AND name = ?;",
-    )
-    .get(this.#name);
-
-    // This is a first init, create everything!
-    if (!table['count(*)']) {
-      // Create base table
-      this.#db
-        .prepare(
-          `CREATE TABLE ${this.#name} (key text PRIMARY KEY, value text)`,
-        )
-        .run();
-
-      // Define table properties : sync and write-ahead-log
-      this.#db.pragma('synchronous = 1');
-      this.#db.pragma('journal_mode = wal');
-
-      // Create autonum table
-      this.#db
-        .prepare(
-          `CREATE TABLE IF NOT EXISTS 'internal::autonum' (enmap TEXT PRIMARY KEY, lastnum INTEGER)`,
-        )
-        .run();
-    }
-
-    process.on('exit', () => {
-      this.#db.close();
-    });
-
   }
 
     /*
