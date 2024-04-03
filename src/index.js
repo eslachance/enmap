@@ -802,7 +802,6 @@ class Enmap {
     }
     return null;
   }
-// TODO: RE-ADD findIndex
 
   /**
    * Searches for the key of a single item where its specified property's value is identical to the given value
@@ -812,11 +811,11 @@ class Enmap {
    * @param {*} [value] The expected value - only applicable and required if using a property for the first argument
    * @returns {string|number}
    * @example
-   * enmap.findKey('username', 'Bob');
+   * enmap.findIndex('username', 'Bob');
    * @example
-   * enmap.findKey(val => val.username === 'Bob');
+   * enmap.findIndex(val => val.username === 'Bob');
   */
-  findKey(pathOrFn, value) {
+  findIndex(pathOrFn, value) {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     for (const row of stmt.iterate()) {
       const parsed = this.#parse(row.value);
