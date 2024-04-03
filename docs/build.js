@@ -1,6 +1,7 @@
-const jsdoc2md = require('jsdoc-to-markdown');
-const fs = require('fs');
-const slug = require('limax');
+/* eslint-disable no-useless-escape */
+import jsdoc2md from 'jsdoc-to-markdown';
+import fs from 'fs';
+import slug from 'limax';
 
 var htmlEntities = {
   nbsp: ' ',
@@ -14,7 +15,7 @@ var htmlEntities = {
   gt: '>',
   quot: '"',
   amp: '&',
-  apos: '\''
+  apos: '\'',
 };
 
 const unescapeHTML = str => str.replace(/\&([^;]+);/g, (entity, entityCode) => {
