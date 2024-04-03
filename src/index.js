@@ -804,7 +804,7 @@ class Enmap {
   }
 // TODO: RE-ADD findIndex
 
-/**
+  /**
    * Searches for the key of a single item where its specified property's value is identical to the given value
    * (`item[prop] === value`), or the given function returns a truthy value. In the latter case, this is similar to
    * [Array.findIndex()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/findIndex).
@@ -850,23 +850,24 @@ class Enmap {
    * [Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter).
    * Returns an array of values where the given function returns true for that value.
    * Alternatively you can provide a value and path to filter by using exact value matching.
-   * @param {Function} valueOrFn Function used to test (should return a boolean)
-   * @param {string} [path] Value to use as `this` when executing function
+   * @param {Function} pathOrFn  The path to the value to test against, or the function to test with.
+   * If using a function, this function should return a boolean.
+   * @param {string} [value] Value to use as `this` when executing function
    * @returns {Enmap}
    */
-  filter(valueOrFn, path) {
+  filter(pathOrFn, value) {
     this.#db.aggregate('filter', {
       start: [],
       step: (accumulator, currentValue) => {
         const parsed = this.#parse(currentValue);
-        if (isFunction(valueOrFn)) {
-          if (valueOrFn(parsed)) {
+        if (isFunction(pathOrFn)) {
+          if (pathOrFn(parsed)) {
             accumulator.push(parsed);
           }
         } else {
-          if (!path) throw new Err('Path is required for non-function predicate', 'EnmapPathError');
-          const value = _get(parsed, path);
-          if (valueOrFn === value) {
+          if (!value) throw new Err('Value is required for non-function predicate', 'EnmapValueError');
+          const pathValue = _get(parsed, pathOrFn);
+          if (value === pathValue) {
             accumulator.push(parsed);
           }
         }
@@ -878,6 +879,7 @@ class Enmap {
     return JSON.parse(results);
   }
 
+  // TODO : change this function to the input parameters are pathOrFn and value, just like the find and findkey method elsewhere in this class.
   /**
    * Deletes entries that satisfy the provided filter function.
    * Alternatively you can provide a value and path to filter by using exact value matching.

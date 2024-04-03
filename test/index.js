@@ -123,12 +123,12 @@ describe('Advanced Data Type Methods', () => {
 
   test('can filter using both properties and path', () => {
     expect(enmap.filter('prop', 'prop').length).toBe(2);
-    expect(enmap.filter('subvalue', 'sub.value').length).toBe(2);
+    expect(enmap.filter('sub.value', 'subvalue').length).toBe(2);
     expect(enmap.filter(value => value?.foo?.includes('pha')).length).toBe(1);
   });
 
   test('can find using both properties and path', () => {
-    expect(enmap.find('subvalue', 'sub.value')).toEqual({
+    expect(enmap.find('sub.value', 'subvalue')).toEqual({
       prop: 'prop',
       foo: 'bar',
       sub: { value: 'subvalue' },
