@@ -9,7 +9,7 @@ import {
   merge,
 } from 'lodash-es';
 import { stringify, parse } from 'better-serialize';
-import onChange  from 'on-change';
+import onChange from 'on-change';
 
 // Custom error codes with stack support.
 import Err from './error.js';
@@ -40,7 +40,7 @@ class Enmap {
   #deserializer;
   #changedCB;
 
-    /**
+  /**
    * Initializes a new Enmap, with options.
    * @param {Object} [options] Options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details.
 
@@ -84,13 +84,15 @@ class Enmap {
     this.#inMemory = options.inMemory ?? false;
     if (options.name === '::memory::') {
       this.#inMemory = true;
-      console.warn('Using ::memory:: as a name is deprecated and will be removed in the future. Use { inMemory: true } instead.')
+      console.warn(
+        'Using ::memory:: as a name is deprecated and will be removed in the future. Use { inMemory: true } instead.',
+      );
     }
     this.#ensureProps = options.ensureProps ?? true;
     this.#serializer = options.serializer ? options.serializer : (data) => data;
     this.#deserializer = options.deserializer
-    ? options.deserializer
-    : (data) => data;
+      ? options.deserializer
+      : (data) => data;
     this.#autoEnsure = options.autoEnsure;
 
     if (this.#inMemory) {
@@ -104,7 +106,10 @@ class Enmap {
         }
       }
       const dataDir = resolve(process.cwd(), options.dataDir || 'data');
-      this.#db = new Database(`${dataDir}${sep}enmap.sqlite`, options.sqliteOptions);
+      this.#db = new Database(
+        `${dataDir}${sep}enmap.sqlite`,
+        options.sqliteOptions,
+      );
     }
 
     if (!this.#db) {
@@ -113,10 +118,10 @@ class Enmap {
 
     // Check if enmap by this name is in the sqlite master table
     const table = this.#db
-    .prepare(
-      "SELECT count(*) FROM sqlite_master WHERE type='table' AND name = ?;",
-    )
-    .get(this.#name);
+      .prepare(
+        "SELECT count(*) FROM sqlite_master WHERE type='table' AND name = ?;",
+      )
+      .get(this.#name);
 
     // This is a first init, create everything!
     if (!table['count(*)']) {
@@ -143,7 +148,7 @@ class Enmap {
       this.#db.close();
     });
   }
-  
+
   /**
    * Sets a value in Enmap. If the key already has a value, overwrites the data (or the value in a path, if provided).
    * @param {string} key Required. The location in which the data should be saved.
@@ -174,7 +179,7 @@ class Enmap {
     } else {
       data = value;
     }
-    if (isFunction(this.#changedCB)) this.#changedCB( key, oldValue, data);
+    if (isFunction(this.#changedCB)) this.#changedCB(key, oldValue, data);
     this.#set(key, data);
   }
 
@@ -235,10 +240,12 @@ class Enmap {
       this.#set(key, this.#autoEnsure);
     }
 
-    const data = this.#db.prepare(`SELECT value FROM ${this.#name}  WHERE key = ?`).get(key);
+    const data = this.#db
+      .prepare(`SELECT value FROM ${this.#name}  WHERE key = ?`)
+      .get(key);
     const parsed = data ? this.#parse(data.value) : null;
     if (isNil(parsed)) return null;
-    
+
     if (path) {
       this.#check(key, ['Object']);
       return _get(parsed, path);
@@ -267,20 +274,26 @@ class Enmap {
    * Get the number of key/value pairs saved in the enmap.
    * @readonly
    * @returns {number} The number of elements in the enmap.
-  */
-  get length() {
+   */
+  get size() {
     const data = this.#db
       .prepare(`SELECT count(*) FROM '${this.#name}';`)
       .get();
     return data['count(*)'];
   }
+  // Aliases are cheap, why not?
+  get count() {
+    return this.size;
+  }
+  get length() {
+    return this.size;
+  }
 
   /**
    * Get all the keys of the enmap as an array.
-   * @readonly
    * @returns {Array<string>} An array of all the keys in the enmap.
-  */
-  get keys() {
+   */
+  keys() {
     const stmt = this.#db.prepare(`SELECT key FROM ${this.#name}`);
     const indexes = [];
     for (const row of stmt.iterate()) {
@@ -288,13 +301,15 @@ class Enmap {
     }
     return indexes;
   }
+  indexes() {
+    return this.keys();
+  }
 
   /**
    * Get all the values of the enmap as an array.
-   * @readonly
    * @returns {Array<*>} An array of all the values in the enmap.
-  */
-  get values() {
+   */
+  values() {
     const stmt = this.#db.prepare(`SELECT value FROM ${this.#name}`);
     const values = [];
     for (const row of stmt.iterate()) {
@@ -305,10 +320,9 @@ class Enmap {
 
   /**
    * Get all entries of the enmap as an array, with each item containing the key and value.
-   * @readonly
    * @returns {Array<Array<*,*>>} An array of arrays, with each sub-array containing two items, the key and the value.
-  */
-  get entries() {
+   */
+  entries() {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     const entries = [];
     for (const row of stmt.iterate()) {
@@ -349,7 +363,7 @@ class Enmap {
     return lastnum.toString();
   }
 
-    /**
+  /**
    * Push to an array value in Enmap.
    * @param {string} key Required. The key of the array element to push to in Enmap.
    * @param {*} value Required. The value to push to the array.
@@ -364,15 +378,16 @@ class Enmap {
    * enmap.push("simpleArray", 5); // adds 5 at the end of the array
    * enmap.push("arrayInObject", "five", "sub"); // adds "five" at the end of the sub array
    */
-    push(key, value, path, allowDupes = false) {
-      this.#keycheck(key);
-      this.#check(key, ['Array', 'Object']);
-      const data = this.get(key, path);
-      if (!isArray(data)) throw new Err('Key does not point to an array', 'EnmapPathError');
-      if (!allowDupes && data.includes(value)) return;
-      data.push(value);
-      this.set(key, data);
-    }
+  push(key, value, path, allowDupes = false) {
+    this.#keycheck(key);
+    this.#check(key, ['Array', 'Object']);
+    const data = this.get(key, path);
+    if (!isArray(data))
+      throw new Err('Key does not point to an array', 'EnmapPathError');
+    if (!allowDupes && data.includes(value)) return;
+    data.push(value);
+    this.set(key, data);
+  }
 
   // AWESOME MATHEMATICAL METHODS
 
@@ -398,11 +413,10 @@ class Enmap {
     this.#keycheck(key);
     this.#check(key, ['Number']);
     const data = this.get(key);
-    const updatedValue = this.#math(data, operation, operand)
+    const updatedValue = this.#math(data, operation, operand);
     this.set(key, updatedValue);
     return updatedValue;
   }
-
 
   /**
    * Increments a key's value or property by 1. Value must be a number, or a path to a number.
@@ -516,7 +530,9 @@ class Enmap {
    */
   has(key) {
     this.#keycheck(key);
-    const data = this.#db.prepare(`SELECT count(*) FROM ${this.#name} WHERE key = ?`).get(key);
+    const data = this.#db
+      .prepare(`SELECT count(*) FROM ${this.#name} WHERE key = ?`)
+      .get(key);
     return data['count(*)'] > 0;
   }
 
@@ -528,12 +544,13 @@ class Enmap {
    * @param {string} path Optional. The property to access the array inside the value object or array.
    * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @return {boolean} Whether the array contains the value.
-  */
+   */
   includes(key, value, path) {
     this.#keycheck(key);
     this.#check(key, ['Array'], path);
     const data = this.get(key, path);
-    if (!isArray(data)) throw new Err('Key does not point to an array', 'EnmapPathError');
+    if (!isArray(data))
+      throw new Err('Key does not point to an array', 'EnmapPathError');
     return data.includes(value);
   }
 
@@ -559,7 +576,7 @@ class Enmap {
    * Deletes everything from the enmap.
    * @returns {void}
    */
-  clear () {
+  clear() {
     this.#db.prepare(`DELETE FROM ${this.#name}`).run();
   }
 
@@ -609,10 +626,10 @@ class Enmap {
       exportDate: Date.now(),
       version: pkgdata.version,
       keys: entries,
-    })
+    });
   }
 
-    /**
+  /**
    * Import an existing json export from enmap. This data must have been exported from enmap,
    * and must be from a version that's equivalent or lower than where you're importing it.
    * (This means Enmap 5 data is compatible in Enmap 6).
@@ -630,10 +647,10 @@ class Enmap {
     }
 
     if (isNil(parsedData))
-    throw new Err(
-      `No data provided for import() in "${this.#name}"`,
-      'EnmapImportError',
-    );
+      throw new Err(
+        `No data provided for import() in "${this.#name}"`,
+        'EnmapImportError',
+      );
 
     if (clear) this.clear();
     for (const entry of parsedData.keys) {
@@ -679,7 +696,9 @@ class Enmap {
    * or an array of values of `count` length
    */
   random(count = 1) {
-    const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name} ORDER BY RANDOM() LIMIT ?`).bind(count);
+    const stmt = this.#db
+      .prepare(`SELECT key, value FROM ${this.#name} ORDER BY RANDOM() LIMIT ?`)
+      .bind(count);
     const results = [];
     for (const row of stmt.iterate()) {
       results.push([row.key, this.#parse(row.value)]);
@@ -694,7 +713,9 @@ class Enmap {
    * or an array of keys of `count` length
    */
   randomKey(count = 1) {
-    const stmt = this.#db.prepare(`SELECT key FROM ${this.#name} ORDER BY RANDOM() LIMIT ?`).bind(count);
+    const stmt = this.#db
+      .prepare(`SELECT key FROM ${this.#name} ORDER BY RANDOM() LIMIT ?`)
+      .bind(count);
     const results = [];
     for (const row of stmt.iterate()) {
       results.push(row.key);
@@ -814,7 +835,7 @@ class Enmap {
    * enmap.findIndex('username', 'Bob');
    * @example
    * enmap.findIndex(val => val.username === 'Bob');
-  */
+   */
   findIndex(pathOrFn, value) {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     for (const row of stmt.iterate()) {
@@ -839,9 +860,13 @@ class Enmap {
   reduce(predicate, initialValue) {
     this.#db.aggregate('reduce', {
       start: initialValue,
-      step: (accumulator, currentValue) => predicate(accumulator, this.#parse(currentValue)),
+      step: (accumulator, currentValue) =>
+        predicate(accumulator, this.#parse(currentValue)),
     });
-    return this.#db.prepare(`SELECT reduce(value) FROM ${this.#name}`).pluck().get();
+    return this.#db
+      .prepare(`SELECT reduce(value) FROM ${this.#name}`)
+      .pluck()
+      .get();
   }
 
   /**
@@ -864,7 +889,11 @@ class Enmap {
             accumulator.push(parsed);
           }
         } else {
-          if (!value) throw new Err('Value is required for non-function predicate', 'EnmapValueError');
+          if (!value)
+            throw new Err(
+              'Value is required for non-function predicate',
+              'EnmapValueError',
+            );
           const pathValue = _get(parsed, pathOrFn);
           if (value === pathValue) {
             accumulator.push(parsed);
@@ -874,7 +903,10 @@ class Enmap {
       },
       result: (accumulator) => JSON.stringify(accumulator),
     });
-    const results = this.#db.prepare(`SELECT filter(value) FROM ${this.#name}`).pluck().get();
+    const results = this.#db
+      .prepare(`SELECT filter(value) FROM ${this.#name}`)
+      .pluck()
+      .get();
     return JSON.parse(results);
   }
 
@@ -885,7 +917,7 @@ class Enmap {
    * @param {Function} valueOrFn Function used to test (should return a boolean)
    * @param {string} [path] Value to use as `this` when executing function
    * @returns {number} The number of removed entries
-  */
+   */
   sweep(valueOrFn, path) {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     let count = 0;
@@ -925,7 +957,7 @@ class Enmap {
   // INTERNAL METHODS
 
   /*
-   * Internal method used to insert or update a key in the database without circular calls to ensure() or others. 
+   * Internal method used to insert or update a key in the database without circular calls to ensure() or others.
    * @param {string} key Key to update in database
    * @param {*} value value to save in database
    * Path is not supported in this method as it writes the whole key.
@@ -937,10 +969,14 @@ class Enmap {
     } catch (e) {
       serialized = stringify(this.#serializer(onChange.target(value), key));
     }
-    this.#db.prepare(`INSERT OR REPLACE INTO ${this.#name} (key, value) VALUES (?, ?)`).run(key, serialized);
+    this.#db
+      .prepare(
+        `INSERT OR REPLACE INTO ${this.#name} (key, value) VALUES (?, ?)`,
+      )
+      .run(key, serialized);
   }
 
-    /*
+  /*
    * Internal Method. Parses JSON data.
    * Reserved for future use (logical checking)
    * @param {*} value The data to check/parse
@@ -954,55 +990,57 @@ class Enmap {
 
   #keycheck(key, type = 'key') {
     if (!NAME_REGEX.test(key)) {
-      throw new Error(`Invalid ${type} for enmap - only alphanumeric characters, underscores and hyphens are allowed.`);
+      throw new Error(
+        `Invalid ${type} for enmap - only alphanumeric characters, underscores and hyphens are allowed.`,
+      );
     }
   }
 
-    /*
+  /*
    * INTERNAL method to verify the type of a key or property
    * Will THROW AN ERROR on wrong type, to simplify code.
    * @param {string} key Required. The key of the element to check
    * @param {string} type Required. The javascript constructor to check
    * @param {string} path Optional. The dotProp path to the property in the object enmap.
    */
-    #check(key, type, path) {
-      key = key.toString();
-      if (!this.has(key))
+  #check(key, type, path) {
+    key = key.toString();
+    if (!this.has(key))
+      throw new Err(
+        `The key "${key}" does not exist in the enmap "${this.#name}"`,
+        'EnmapPathError',
+      );
+    if (!type) return;
+    if (!isArray(type)) type = [type];
+    if (!isNil(path)) {
+      this.#check(key, 'Object');
+      const data = this.get(key);
+      if (isNil(_get(data, path))) {
         throw new Err(
-          `The key "${key}" does not exist in the enmap "${this.#name}"`,
+          `The property "${path}" in key "${key}" does not exist. Please set() it or ensure() it."`,
           'EnmapPathError',
         );
-      if (!type) return;
-      if (!isArray(type)) type = [type];
-      if (!isNil(path)) {
-        this.#check(key, 'Object');
-        const data = this.get(key);
-        if (isNil(_get(data, path))) {
-          throw new Err(
-            `The property "${path}" in key "${key}" does not exist. Please set() it or ensure() it."`,
-            'EnmapPathError',
-          );
-        }
-        if (!type.includes(_get(data, path).constructor.name)) {
-          throw new Err(
-            `The property "${path}" in key "${key}" is not of type "${type.join(
-              '" or "',
-            )}" in the enmap "${this.#name}" 
-  (key was of type "${_get(data, path).constructor.name}")`,
-            'EnmapTypeError',
-          );
-        }
-      } else if (!type.includes(this.get(key).constructor.name)) {
+      }
+      if (!type.includes(_get(data, path).constructor.name)) {
         throw new Err(
-          `The value for key "${key}" is not of type "${type.join(
+          `The property "${path}" in key "${key}" is not of type "${type.join(
             '" or "',
-          )}" in the enmap "${this.#name}" (value was of type "${
-            this.get(key).constructor.name
-          }")`,
+          )}" in the enmap "${this.#name}" 
+  (key was of type "${_get(data, path).constructor.name}")`,
           'EnmapTypeError',
         );
       }
+    } else if (!type.includes(this.get(key).constructor.name)) {
+      throw new Err(
+        `The value for key "${key}" is not of type "${type.join(
+          '" or "',
+        )}" in the enmap "${this.#name}" (value was of type "${
+          this.get(key).constructor.name
+        }")`,
+        'EnmapTypeError',
+      );
     }
+  }
 
   /*
    * INTERNAL method to execute a mathematical operation. Cuz... javascript.
