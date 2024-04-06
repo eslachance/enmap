@@ -1,11 +1,12 @@
-/* global describe, test, beforeEach, afterEach, expect */
+/* global describe, test, beforeEach, afterEach, expect, beforeAll */
 import Enmap from '../';
+const enmap = new Enmap({ inMemory: true });
 
 describe('Standard Enmaps', () => {
-  let enmap;
-
+  beforeAll(() => {
+    enmap.clear();
+  })
   describe('Basic Enmap', () => {
-    enmap = new Enmap({ inMemory : true });
     test('inserts primitive values', () => {
       expect(enmap.set('simplevalue', 'this is a string')).not.toBe(null);
       expect(enmap.set('boolean', true)).not.toBe(null);
@@ -31,6 +32,10 @@ describe('Standard Enmaps', () => {
       expect(enmap.has('simplevalue')).toBe(true);
       expect(enmap.has('nonexistent')).toBe(false);
     });
+    test('can delete values', () => {
+      enmap.delete('simplevalue');
+      expect(enmap.get('simplevalue')).toBe(null);
+    });
     test('can be cleared', () => {
       enmap.clear();
       expect(enmap.length).toBe(0);
@@ -38,8 +43,6 @@ describe('Standard Enmaps', () => {
   });
 
   describe('Advanced Data Types', () => {
-    enmap = new Enmap({ inMemory : true });
-
     test('supports arrays', () => {
       expect(enmap.set('array', [1, 2, 3])).not.toBe(null);
       expect(enmap.get('array').length).toBe(3);
@@ -100,13 +103,24 @@ describe('Standard Enmaps', () => {
       expect(enmap.get('serialized', 'undef')).toBeUndefined();
       expect(enmap.get('serialized', 'map').get('hello')).toBe('world');
     });
+
+    test('deleting data', () => {
+      enmap.delete('serialized', 'str');
+      expect(enmap.get('serialized', 'str')).toBeUndefined();
+      enmap.delete('serialized', 'obj.foo');
+      expect(enmap.get('serialized', 'obj.foo')).toBeUndefined();
+      enmap.delete('serialized');
+      expect(enmap.get('serialized')).toBeNull();
+    });
   });
 });
 
 describe('Advanced Data Type Methods', () => {
-  let enmap;
+  beforeAll(() => {
+    enmap.clear();
+  });
   beforeEach(() => {
-    enmap = new Enmap({ inMemory : true });
+    enmap.clear();
     enmap.set('obj1', {
       prop: 'prop',
       foo: 'bar',
@@ -171,27 +185,118 @@ describe('Advanced Data Type Methods', () => {
   });
 });
 
-describe('Basic Enmap Options', () => {
-  let enmap;
-
-  afterEach(() => {
+describe('partition', () => {
+  beforeAll(() => {
     enmap.clear();
-    enmap = null;
+    for (let i = 0; i < 10; i++) {
+      enmap.set(`${i}`, {
+        number: i,
+        isEven: i % 2 === 0,
+      });
+    };
   });
 
+  test('partition by function', () => {
+    const partitioned = enmap.partition((value) => {
+      return value.number % 2 === 0;
+    });
+    expect(partitioned[0].length).toBe(5);
+    expect(partitioned[1].length).toBe(5);
+  });
+
+  test('partition by property', () => {
+    const partitioned = enmap.partition('isEven', true);
+    expect(partitioned[0].length).toBe(5);
+    expect(partitioned[1].length).toBe(5);
+  });
+});
+
+describe('Enmap Observables', () => {
+  // This entire set of test was written by Copilot. What do you think?
+
+  beforeAll(() => {
+    enmap.clear();
+    enmap.set('test', {
+      a: 1,
+      b: 2,
+      c: 3,
+      d: [1, 2, 3, 4],
+      e: { a: 'a', b: 'b', c: 'c' },
+    });
+  });
+
+  test('can observe a value', () => {
+    const obj = enmap.observe('test');
+    expect(obj.a).toBe(1);
+    obj.a = 2;
+    expect(enmap.get('test', 'a')).toBe(2);
+  });
+
+  test('can observe a subproperty', () => {
+    const obj = enmap.observe('test', 'e');
+    expect(obj.a).toBe('a');
+    obj.a = 'b';
+    expect(enmap.get('test', 'e.a')).toBe('b');
+  });
+
+  test('can observe an array', () => {
+    const arr = enmap.observe('test', 'd');
+    expect(arr.length).toBe(4);
+    arr.push(5);
+    expect(enmap.get('test', 'd').length).toBe(5);
+  });
+
+  test('can observe a subproperty of an array', () => {
+    const arr = enmap.observe('test', 'd');
+    const obj = arr[0];
+    expect(obj).toBe(1);
+    arr[0] = 2;
+    expect(enmap.get('test', 'd.0')).toBe(2);
+  });
+});
+
+describe('sweep', () => {
+  beforeEach(() => {
+    enmap.clear();
+    for (let i = 0; i < 10; i++) {
+      enmap.set(`${i}`, {
+        number: i,
+        isEven: i % 2 === 0,
+      });
+    };
+  });
+  test('sweep by function', () => {
+    enmap.sweep((value) => {
+      return value.number % 2 === 0;
+    });
+    expect(enmap.size).toBe(5);
+  });
+
+  test('sweep by property', () => {
+    enmap.sweep('isEven', false);
+    expect(enmap.size).toBe(5);
+  });
+});
+
+describe('Basic Enmap Options', () => {
+  const localEnmap = new Enmap({ inMemory : true, ensureProps: true });
   test('supports deep ensure() merge', () => {
-    enmap = new Enmap({ inMemory : true, ensureProps: true });
     const defaultValue = {
       foo: 'bar',
       bar: { foo: 1 },
     };
-    enmap.set('obj', {});
-    enmap.ensure('obj', defaultValue);
-    expect(enmap.get('obj', 'bar.foo')).toBe(1);
+    localEnmap.set('obj', {});
+    localEnmap.ensure('obj', defaultValue);
+    expect(localEnmap.get('obj', 'bar.foo')).toBe(1);
   });
 });
 
 describe('Enmap Advanced Options', () => {
+  class ExampleClass {
+    constructor(id) {
+      this.id = id;
+    }
+  }
   let enmap;
   const defaultData = {
     a: 1,
@@ -222,15 +327,18 @@ describe('Enmap Advanced Options', () => {
   });
 
   test('supports serializers', () => {
+    defaultData.c = new ExampleClass(3);
     enmap = new Enmap({
       inMemory: true,
       serializer: (data) => ({
         ...data,
         a: 'modified',
+        c: data.c.id,
       }),
       deserializer: (data) => ({
         ...data,
         a: 1,
+        c: new ExampleClass(data.c),
       }),
     });
     enmap.set('test', defaultData);

@@ -910,32 +910,36 @@ class Enmap {
     return JSON.parse(results);
   }
 
-  // TODO : change this function to the input parameters are pathOrFn and value, just like the find and findkey method elsewhere in this class.
   /**
-   * Deletes entries that satisfy the provided filter function.
-   * Alternatively you can provide a value and path to filter by using exact value matching.
-   * @param {Function} valueOrFn Function used to test (should return a boolean)
-   * @param {string} [path] Value to use as `this` when executing function
-   * @returns {number} The number of removed entries
+   * Deletes entries that satisfy the provided filter function or value matching.
+   * @param {Function|string} pathOrFn The path to the value to test against, or the function to test with.
+   * @param {*} [value] The expected value - only applicable and required if using a property for the first argument.
+   * @returns {number} The number of removed entries.
    */
-  sweep(valueOrFn, path) {
+  sweep(pathOrFn, value) {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
+    const deleteStmt = this.#db.prepare(`DELETE FROM ${this.#name} WHERE key = ?`);
+    const deleteKeys = [];
+    const deleteMany = this.#db.transaction((cats) => {
+      for (const cat of cats) deleteStmt.run(cat);
+    });
     let count = 0;
     for (const row of stmt.iterate()) {
       const parsed = this.#parse(row.value);
-      const data = isNil(path) ? parsed : _get(parsed, path);
-      if (isFunction(valueOrFn)) {
-        if (valueOrFn(data, row.key)) {
+      const data = isNil(value) ? parsed : _get(parsed, pathOrFn);
+      if (isFunction(pathOrFn)) {
+        if (pathOrFn(data, row.key)) {
           count++;
-          this.delete(row.key);
+          deleteKeys.push(row.key);
         }
       } else {
-        if (valueOrFn === data) {
+        if (value === data) {
           count++;
-          this.delete(row.key);
+          deleteKeys.push(row.key);
         }
       }
     }
+    deleteMany(deleteKeys);
     return count;
   }
 
@@ -952,7 +956,35 @@ class Enmap {
     this.#changedCB = cb;
   }
 
-  // TODO: RE-ADD forEach (ugh). (partition, merge?)
+  /**
+   * Separates the Enmap into multiple arrays given a function that separates them.
+   * @param {*} pathOrFn the path to the value to test against, or the function to test with.
+   * @param {*} value the value to use as a condition for partitioning.
+   * @returns {Array<Array<*>>} An array of arrays with the partitioned data.
+   */
+  partition(pathOrFn, value) {
+    const results = [[], []];
+    const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
+    for (const row of stmt.iterate()) {
+      const parsed = this.#parse(row.value);
+      const data = isNil(value) ? parsed : _get(parsed, pathOrFn);
+      if (isFunction(pathOrFn)) {
+        if (pathOrFn(data, row.key)) {
+          results[0].push(parsed);
+        } else {
+          results[1].push(parsed);
+        }
+      } else {
+        if (value === data) {
+          results[0].push(parsed);
+        } else {
+          results[1].push(parsed);
+        }
+      }
+    }
+    return results;
+  }
+  
 
   // INTERNAL METHODS
 
