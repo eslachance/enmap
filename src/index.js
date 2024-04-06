@@ -21,7 +21,7 @@ import { resolve, sep } from 'path';
 // Package.json
 const pkgdata = JSON.parse(readFileSync('./package.json', 'utf8'));
 
-import Database from 'better-sqlite3/lib/database';
+import Database from 'better-sqlite3';
 
 const NAME_REGEX = /^([\w-]+)$/;
 
