@@ -1015,7 +1015,18 @@ class Enmap {
    * @returns {*} An object or the original data.
    */
   #parse(value) {
-    return this.#deserializer(parse(value));
+    let parsed;
+    try {
+      parsed = parse(value);
+      try {
+        parsed = this.#deserializer(parsed);
+      } catch (e) {
+        throw new Err('Error while deserializing data: ', e.message, 'EnmapParseError');
+      }
+    } catch (e) {
+      throw new Err('Error while deserializing data: ', e.message, 'EnmapParseError');
+    }
+    return parsed;
   }
 
   /* INTERNAL METHOD */
