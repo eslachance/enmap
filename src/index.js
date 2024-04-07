@@ -784,19 +784,26 @@ class Enmap {
    * @param {Function | string} pathOrFn A function that produces an element of the new Array, or a path to the property to map.
    * @returns {Array}
    */
-  map(pathOrFn) {
-    const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
-    const results = [];
-    for (const row of stmt.iterate()) {
-      const parsed = this.#parse(row.value);
-      if (isFunction(pathOrFn)) {
-        results.push(pathOrFn(parsed, row.key));
-      } else {
-        results.push(_get(parsed, pathOrFn));
-      }
+    map(pathOrFn) {
+      this.#db.aggregate('map', {
+        start: [],
+        step: (accumulator, value, key) => {
+          const parsed = this.#parse(value);
+          if (isFunction(pathOrFn)) {
+            accumulator.push(pathOrFn(parsed, key));
+          } else {
+            accumulator.push(_get(parsed, pathOrFn));
+          }
+          return accumulator;
+        },
+        result: (accumulator) => JSON.stringify(accumulator),
+      });
+      const results = this.#db
+        .prepare(`SELECT map(value, key) FROM ${this.#name}`)
+        .pluck()
+        .get();
+      return JSON.parse(results);
     }
-    return results;
-  }
 
   /**
    * Searches for a single item where its specified property's value is identical to the given value
@@ -882,10 +889,10 @@ class Enmap {
   filter(pathOrFn, value) {
     this.#db.aggregate('filter', {
       start: [],
-      step: (accumulator, currentValue) => {
+      step: (accumulator, currentValue, key) => {
         const parsed = this.#parse(currentValue);
         if (isFunction(pathOrFn)) {
-          if (pathOrFn(parsed)) {
+          if (pathOrFn(parsed, key)) {
             accumulator.push(parsed);
           }
         } else {
@@ -904,7 +911,7 @@ class Enmap {
       result: (accumulator) => JSON.stringify(accumulator),
     });
     const results = this.#db
-      .prepare(`SELECT filter(value) FROM ${this.#name}`)
+      .prepare(`SELECT filter(value, key) FROM ${this.#name}`)
       .pluck()
       .get();
     return JSON.parse(results);
