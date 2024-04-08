@@ -1,0 +1,17 @@
+input: ./docs
+output: .retype
+url: enmap.evie.dev
+branding:
+  logo:  assets/enmap-logo.svg
+favicon: assets/favicon.png
+links:
+- text: Github
+  link: https://github.com/eslachance/enmap
+- text: NPM
+  link: https://npmjs.com/package/enmap
+- text: Discord
+  link: https://discord.gg/N7ZKH3P
+edit:
+  repo: "http://github.com/eslachance/enmap/edit/"
+footer:
+  copyright: "&copy; Copyright {{ year }}. All rights reserved."

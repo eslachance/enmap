@@ -67,7 +67,6 @@ class Enmap {
    * @param {boolean} [options.inMemory] Optional. If set to true, the enmap will be in-memory only, and will not write to disk. Useful for temporary stores.
    * 
    * @param {Object} [options.sqliteOptions] Optional. An object of options to pass to the better-sqlite3 Database constructor.
-   *
    * @example
    * const Enmap = require("enmap");
 
@@ -867,11 +866,11 @@ class Enmap {
   reduce(predicate, initialValue) {
     this.#db.aggregate('reduce', {
       start: initialValue,
-      step: (accumulator, currentValue) =>
-        predicate(accumulator, this.#parse(currentValue)),
+      step: (accumulator, currentValue, key) =>
+        predicate(accumulator, this.#parse(currentValue), key),
     });
     return this.#db
-      .prepare(`SELECT reduce(value) FROM ${this.#name}`)
+      .prepare(`SELECT reduce(value, key) FROM ${this.#name}`)
       .pluck()
       .get();
   }
@@ -991,7 +990,6 @@ class Enmap {
     }
     return results;
   }
-  
 
   // INTERNAL METHODS
 

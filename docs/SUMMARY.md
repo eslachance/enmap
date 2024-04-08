@@ -1,0 +1,22 @@
+# Table of contents
+
+* [What is Enmap?](README.md)
+* [Enmap Installation](install/README.md)
+  * [Troubleshooting Guide](install/troubleshooting-guide.md)
+  * [Migrating data from Enmap 3](install/upgrade.md)
+  * [Upgrading to Enmap 6](install/upgradev6.md)
+* [Usage Documentation](usage/README.md)
+  * [Basic Data Use](usage/basic.md)
+  * [Understanding Paths](usage/paths.md)
+  * [Working with Objects](usage/objects.md)
+  * [Array Methods](usage/arrays.md)
+  * [Mathematical Methods](usage/math.md)
+  * [Using from multiple files](usage/using-from-multiple-files.md)
+  * [Serializing and Deserializing](usage/serialize.md)
+* [Full Documentation](api.md)
+* [Blog Posts](blog-posts/README.md)
+  * [Enmap's History](blog-posts/enmaps-history.md)
+  * [V4: Why SQLITE only?](blog-posts/why-sqlite-only.md)
+  * [V6: Why remove cache?](blog-posts/why-remove-cache.md)
+  * [Enmap and Josh](blog-posts/josh.md)
+<!-- * [Supporters and Partners](sponsors.md) -->
