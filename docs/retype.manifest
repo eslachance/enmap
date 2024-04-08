@@ -1,0 +1,135 @@
+{
+  "version": "3.5.0",
+  "created": "2024-04-08T05:27:41Z",
+  "files": [
+    {
+      "path": ".nojekyll"
+    },
+    {
+      "path": "404.html"
+    },
+    {
+      "path": "api\\index.html"
+    },
+    {
+      "path": "assets\\enmap-logo.svg"
+    },
+    {
+      "path": "assets\\favicon.ico"
+    },
+    {
+      "path": "assets\\favicon.png"
+    },
+    {
+      "path": "blog-posts\\enmaps-history\\index.html"
+    },
+    {
+      "path": "blog-posts\\index.html"
+    },
+    {
+      "path": "blog-posts\\josh\\index.html"
+    },
+    {
+      "path": "blog-posts\\why-remove-cache\\index.html"
+    },
+    {
+      "path": "blog-posts\\why-sqlite-only\\index.html"
+    },
+    {
+      "path": "CNAME"
+    },
+    {
+      "path": "help\\cjstoesm\\index.html"
+    },
+    {
+      "path": "index.html"
+    },
+    {
+      "path": "install\\index.html"
+    },
+    {
+      "path": "install\\troubleshooting-guide\\index.html"
+    },
+    {
+      "path": "install\\upgrade\\index.html"
+    },
+    {
+      "path": "install\\upgradev6\\index.html"
+    },
+    {
+      "path": "resources\\css\\retype.css"
+    },
+    {
+      "path": "resources\\fonts\\Inter-italic-latin-var.woff2"
+    },
+    {
+      "path": "resources\\fonts\\Inter-roman-latin-var.woff2"
+    },
+    {
+      "path": "resources\\js\\config.js"
+    },
+    {
+      "path": "resources\\js\\lunr.js"
+    },
+    {
+      "path": "resources\\js\\prism.js"
+    },
+    {
+      "path": "resources\\js\\retype.js"
+    },
+    {
+      "path": "resources\\js\\search.json"
+    },
+    {
+      "path": "resources\\lunr.js.LICENSE.txt"
+    },
+    {
+      "path": "resources\\mermaid.js.LICENSE.txt"
+    },
+    {
+      "path": "resources\\prism.js.LICENSE.txt"
+    },
+    {
+      "path": "resources\\retype.js.LICENSE.txt"
+    },
+    {
+      "path": "resources\\retype.LICENSE.txt"
+    },
+    {
+      "path": "robots.txt"
+    },
+    {
+      "path": "sitemap.xml.gz"
+    },
+    {
+      "path": "sponsors\\index.html"
+    },
+    {
+      "path": "usage\\arrays\\index.html"
+    },
+    {
+      "path": "usage\\basic\\index.html"
+    },
+    {
+      "path": "usage\\index.html"
+    },
+    {
+      "path": "usage\\math\\index.html"
+    },
+    {
+      "path": "usage\\objects\\index.html"
+    },
+    {
+      "path": "usage\\paths\\index.html"
+    },
+    {
+      "path": "usage\\serialize\\index.html"
+    },
+    {
+      "path": "usage\\using-enmap.multi\\index.html"
+    },
+    {
+      "path": "usage\\using-from-multiple-files\\index.html"
+    }
+  ]
+}

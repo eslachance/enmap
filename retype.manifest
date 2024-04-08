@@ -1,0 +1,153 @@
+{
+  "version": "3.5.0",
+  "created": "2024-04-08T05:24:23Z",
+  "files": [
+    {
+      "path": ".nojekyll"
+    },
+    {
+      "path": "404.html"
+    },
+    {
+      "path": "CNAME"
+    },
+    {
+      "path": "docs\\api\\index.html"
+    },
+    {
+      "path": "docs\\assets\\enmap-logo.svg"
+    },
+    {
+      "path": "docs\\assets\\favicon.ico"
+    },
+    {
+      "path": "docs\\assets\\favicon.png"
+    },
+    {
+      "path": "docs\\blog-posts\\enmaps-history\\index.html"
+    },
+    {
+      "path": "docs\\blog-posts\\index.html"
+    },
+    {
+      "path": "docs\\blog-posts\\josh\\index.html"
+    },
+    {
+      "path": "docs\\blog-posts\\why-remove-cache\\index.html"
+    },
+    {
+      "path": "docs\\blog-posts\\why-sqlite-only\\index.html"
+    },
+    {
+      "path": "docs\\help\\cjstoesm\\index.html"
+    },
+    {
+      "path": "docs\\index.html"
+    },
+    {
+      "path": "docs\\install\\index.html"
+    },
+    {
+      "path": "docs\\install\\troubleshooting-guide\\index.html"
+    },
+    {
+      "path": "docs\\install\\upgrade\\index.html"
+    },
+    {
+      "path": "docs\\install\\upgradev6\\index.html"
+    },
+    {
+      "path": "docs\\sponsors\\index.html"
+    },
+    {
+      "path": "docs\\summary\\index.html"
+    },
+    {
+      "path": "docs\\usage\\arrays\\index.html"
+    },
+    {
+      "path": "docs\\usage\\basic\\index.html"
+    },
+    {
+      "path": "docs\\usage\\fetchall\\index.html",
+      "old": true
+    },
+    {
+      "path": "docs\\usage\\index.html"
+    },
+    {
+      "path": "docs\\usage\\init\\index.html",
+      "old": true
+    },
+    {
+      "path": "docs\\usage\\math\\index.html"
+    },
+    {
+      "path": "docs\\usage\\objects\\index.html"
+    },
+    {
+      "path": "docs\\usage\\paths\\index.html"
+    },
+    {
+      "path": "docs\\usage\\persistent-enmaps\\index.html",
+      "old": true
+    },
+    {
+      "path": "docs\\usage\\serialize\\index.html"
+    },
+    {
+      "path": "docs\\usage\\using-enmap.multi\\index.html"
+    },
+    {
+      "path": "docs\\usage\\using-from-multiple-files\\index.html"
+    },
+    {
+      "path": "index.html"
+    },
+    {
+      "path": "resources\\css\\retype.css"
+    },
+    {
+      "path": "resources\\fonts\\Inter-italic-latin-var.woff2"
+    },
+    {
+      "path": "resources\\fonts\\Inter-roman-latin-var.woff2"
+    },
+    {
+      "path": "resources\\js\\config.js"
+    },
+    {
+      "path": "resources\\js\\lunr.js"
+    },
+    {
+      "path": "resources\\js\\prism.js"
+    },
+    {
+      "path": "resources\\js\\retype.js"
+    },
+    {
+      "path": "resources\\js\\search.json"
+    },
+    {
+      "path": "resources\\lunr.js.LICENSE.txt"
+    },
+    {
+      "path": "resources\\mermaid.js.LICENSE.txt"
+    },
+    {
+      "path": "resources\\prism.js.LICENSE.txt"
+    },
+    {
+      "path": "resources\\retype.js.LICENSE.txt"
+    },
+    {
+      "path": "resources\\retype.LICENSE.txt"
+    },
+    {
+      "path": "robots.txt"
+    },
+    {
+      "path": "sitemap.xml.gz"
+    }
+  ]
+}
