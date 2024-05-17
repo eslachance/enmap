@@ -42,18 +42,18 @@ class Enmap {
 
   /**
    * Initializes a new Enmap, with options.
-   * @param {Object} [options] Options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details.
+   * @param {Object} options Options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details.
 
-   * @param {string} [options.name] The name of the enmap. Represents its table name in sqlite. Unless inMemory is set to true, the enmap will be persisted to disk.
+   * @param {string} options.name The name of the enmap. Represents its table name in sqlite. Unless inMemory is set to true, the enmap will be persisted to disk.
 
-   * @param {string} [options.dataDir] Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative
+   * @param {string} [options.dataDir] Optional. Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative
    * (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes!
    * *Note*: Enmap will not automatically create the folder if it is set manually, so make sure it exists before starting your code!
    
-   * @param {boolean} [options.ensureProps] defaults to `true`. If enabled and the value in the enmap is an object, using ensure() will also ensure that
+   * @param {boolean} [options.ensureProps] Optional. defaults to `true`. If enabled and the value in the enmap is an object, using ensure() will also ensure that
    * every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information.
    
-   * @param {*} [options.autoEnsure] default is disabled. When provided a value, essentially runs ensure(key, autoEnsure) automatically so you don't have to.
+   * @param {*} [options.autoEnsure] Optional. default is disabled. When provided a value, essentially runs ensure(key, autoEnsure) automatically so you don't have to.
    * This is especially useful on get(), but will also apply on set(), and any array and object methods that interact with the database.
    
    * @param {Function} [options.serializer] Optional. If a function is provided, it will execute on the data when it is written to the database.
