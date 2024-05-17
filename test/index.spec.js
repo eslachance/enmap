@@ -14,6 +14,8 @@ import { mkdir, rm } from 'fs/promises';
 import CustomError from '../src/error';
 
 describe('Enmap', () => {
+  process.setMaxListeners(100);
+
   describe('can instantiate', () => {
     test('should create an Enmap', () => {
       const enmap = new Enmap({ inMemory: true });
@@ -22,9 +24,12 @@ describe('Enmap', () => {
     });
 
     test('should create an Enmap w/ warning', () => {
+      const spy = vi.spyOn(console, 'warn');
+
       const enmap = new Enmap({ name: '::memory::' });
 
       expect(enmap).toBeInstanceOf(Enmap);
+      expect(spy).toHaveBeenCalledTimes(1);
     });
 
     test('should create an Enmap w/ custom serializing', () => {
@@ -456,15 +461,13 @@ describe('Enmap', () => {
       });
 
       test('should ignore + warn ensure value w/ default', () => {
-        const emitWarning = vi.fn();
-
-        process.emitWarning = emitWarning;
+        const spy = vi.spyOn(process, 'emitWarning');
 
         expect(defaultEnmap.ensure('unknown', 'hello')).toEqual({
           hello: 'world',
         });
 
-        expect(emitWarning).toHaveBeenCalledTimes(1);
+        expect(spy).toHaveBeenCalledTimes(1);
       });
     });
 
