@@ -1,9 +1,6 @@
 import {
   describe,
-  beforeAll,
   test,
-  beforeEach,
-  afterEach,
   expect,
   vi,
 } from 'vitest';
@@ -58,22 +55,22 @@ describe('Enmap', () => {
     });
 
     test('should create a persistent Enmap w/ dir', async () => {
-      await mkdir('/tmp/data').catch(() => {});
+      await mkdir('./tmp').catch(() => {});
 
-      const enmap = new Enmap({ name: 'test', dataDir: '/tmp/data' });
+      const enmap = new Enmap({ name: 'test', dataDir: './tmp' });
 
       expect(enmap).toBeInstanceOf(Enmap);
     });
 
     test('should load a persistent Enmap w/ dir', () => {
-      const enmap = new Enmap({ name: 'test', dataDir: '/tmp/data' });
+      const enmap = new Enmap({ name: 'test', dataDir: './tmp' });
 
       expect(enmap).toBeInstanceOf(Enmap);
     });
 
     test('should fail to create a persistent Enmap w/o dir', async () => {
       expect(
-        () => new Enmap({ name: 'test', dataDir: '/tmp/data-not-found' }),
+        () => new Enmap({ name: 'test', dataDir: './data-not-found' }),
       ).toThrow(TypeError);
     });
 

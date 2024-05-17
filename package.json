@@ -9,6 +9,10 @@
     "build-api-docs": "node ./scripts/build-docs.js",
     "build-docs": "cd docs && npx retype build"
   },
+  "files": [
+    "src",
+    "typings"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/eslachance/enmap.git"

@@ -18,3 +18,4 @@ out/
 !.yarn/versions
 .retype/
 coverage/
+tmp/

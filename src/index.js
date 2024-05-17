@@ -148,6 +148,8 @@ class Enmap {
     });
   }
 
+  // MARK: Set Methods
+  
   /**
    * Sets a value in Enmap. If the key already has a value, overwrites the data (or the value in a path, if provided).
    * @param {string} key Required. The location in which the data should be saved.
@@ -391,7 +393,7 @@ class Enmap {
     this.set(key, data, path);
   }
 
-  // AWESOME MATHEMATICAL METHODS
+  // MARK: Math Methods
 
   /**
    * Executes a mathematical operation on a value and saves it in the enmap.
@@ -657,7 +659,11 @@ class Enmap {
     for (const entry of parsedData.keys) {
       const { key, value } = entry;
       if (!overwrite && this.has(key)) continue;
-      this.#set(key, value);
+      this.#db
+      .prepare(
+        `INSERT OR REPLACE INTO ${this.#name} (key, value) VALUES (?, ?)`,
+      )
+      .run(key, value);
     }
   }
 
@@ -995,7 +1001,7 @@ class Enmap {
     return results;
   }
 
-  // INTERNAL METHODS
+  // MARK: Internal Methods
 
   /*
    * Internal method used to insert or update a key in the database without circular calls to ensure() or others.
@@ -1045,8 +1051,6 @@ class Enmap {
     }
     return parsed;
   }
-
-  /* INTERNAL METHOD */
 
   #keycheck(key, type = 'key') {
     if (!NAME_REGEX.test(key)) {
