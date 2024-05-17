@@ -17,3 +17,4 @@ out/
 !.yarn/sdks
 !.yarn/versions
 .retype/
+coverage/
