@@ -25,6 +25,6 @@ describe('CustomError', () => {
 
   test('should capture the stack trace', () => {
     const error = new CustomError('An error occurred');
-    expect(error.stack).toContain('EnmapError'); // Ensuring stack trace includes 'CustomError'
+    expect(error.stack).toContain('EnmapError');
   });
 });
