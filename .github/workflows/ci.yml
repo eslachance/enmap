@@ -8,7 +8,7 @@ on:
 
 jobs:
   ci:
-    name: Tests and Docs
+    name: Tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Project
@@ -17,8 +17,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
+          cache: 'npm'
       - name: Install Dependencies
         run: npm install
       - name: Run Tests
-        run: npm run test
-
+        run: npm run test -- --coverage
