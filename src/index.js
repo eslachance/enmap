@@ -657,7 +657,7 @@ class Enmap {
     for (const entry of parsedData.keys) {
       const { key, value } = entry;
       if (!overwrite && this.has(key)) continue;
-      this.#set(key, this.#parse(value));
+      this.#set(key, value);
     }
   }
 
