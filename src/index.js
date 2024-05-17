@@ -42,7 +42,7 @@ class Enmap {
 
   /**
    * Initializes a new Enmap, with options.
-   * @param {Object} [options] Options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details.
+   * @param {Object} [options] Options for the enmap. See https://enmap.evie.dev/usage#enmap-options for details.
 
    * @param {string} [options.name] The name of the enmap. Represents its table name in sqlite. Unless inMemory is set to true, the enmap will be persisted to disk.
 
