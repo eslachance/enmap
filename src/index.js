@@ -42,18 +42,18 @@ class Enmap {
 
   /**
    * Initializes a new Enmap, with options.
-   * @param {Object} [options] Options for the enmap. See https://enmap.evie.codes/usage#enmap-options for details.
+   * @param {Object} options Options for the enmap. See https://enmap.evie.dev/usage#enmap-options for details.
 
-   * @param {string} [options.name] The name of the enmap. Represents its table name in sqlite. Unless inMemory is set to true, the enmap will be persisted to disk.
+   * @param {string} options.name The name of the enmap. Represents its table name in sqlite. Unless inMemory is set to true, the enmap will be persisted to disk.
 
-   * @param {string} [options.dataDir] Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative
+   * @param {string} [options.dataDir] Optional. Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative
    * (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes!
    * *Note*: Enmap will not automatically create the folder if it is set manually, so make sure it exists before starting your code!
    
-   * @param {boolean} [options.ensureProps] defaults to `true`. If enabled and the value in the enmap is an object, using ensure() will also ensure that
+   * @param {boolean} [options.ensureProps] Optional. defaults to `true`. If enabled and the value in the enmap is an object, using ensure() will also ensure that
    * every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information.
    
-   * @param {*} [options.autoEnsure] default is disabled. When provided a value, essentially runs ensure(key, autoEnsure) automatically so you don't have to.
+   * @param {*} [options.autoEnsure] Optional. default is disabled. When provided a value, essentially runs ensure(key, autoEnsure) automatically so you don't have to.
    * This is especially useful on get(), but will also apply on set(), and any array and object methods that interact with the database.
    
    * @param {Function} [options.serializer] Optional. If a function is provided, it will execute on the data when it is written to the database.
@@ -148,6 +148,8 @@ class Enmap {
     });
   }
 
+  // MARK: Set Methods
+  
   /**
    * Sets a value in Enmap. If the key already has a value, overwrites the data (or the value in a path, if provided).
    * @param {string} key Required. The location in which the data should be saved.
@@ -350,9 +352,12 @@ class Enmap {
    * @return {number} The generated key number.
    */
   get autonum() {
-    let { lastnum } = this.#db
+    let result = this.#db
       .prepare("SELECT lastnum FROM 'internal::autonum' WHERE enmap = ?")
       .get(this.#name);
+
+    let lastnum = result ? parseInt(result.lastnum, 10) : 0;
+
     lastnum++;
     this.#db
       .prepare(
@@ -385,10 +390,10 @@ class Enmap {
       throw new Err('Key does not point to an array', 'EnmapPathError');
     if (!allowDupes && data.includes(value)) return;
     data.push(value);
-    this.set(key, data);
+    this.set(key, data, path);
   }
 
-  // AWESOME MATHEMATICAL METHODS
+  // MARK: Math Methods
 
   /**
    * Executes a mathematical operation on a value and saves it in the enmap.
@@ -490,8 +495,9 @@ class Enmap {
     const clonedDefault = cloneDeep(defaultValue);
 
     if (!isNil(path)) {
-      if (this.#ensureProps) this.ensure(key, {});
       if (this.has(key, path)) return this.get(key, path);
+      if (this.#ensureProps) this.ensure(key, {});
+
       this.set(key, clonedDefault, path);
       return clonedDefault;
     }
@@ -548,8 +554,6 @@ class Enmap {
     this.#keycheck(key);
     this.#check(key, ['Array'], path);
     const data = this.get(key, path);
-    if (!isArray(data))
-      throw new Err('Key does not point to an array', 'EnmapPathError');
     return data.includes(value);
   }
 
@@ -655,7 +659,11 @@ class Enmap {
     for (const entry of parsedData.keys) {
       const { key, value } = entry;
       if (!overwrite && this.has(key)) continue;
-      this.#set(key, value);
+      this.#db
+      .prepare(
+        `INSERT OR REPLACE INTO ${this.#name} (key, value) VALUES (?, ?)`,
+      )
+      .run(key, value);
     }
   }
 
@@ -675,7 +683,7 @@ class Enmap {
    * @returns {Object} An array of initialized Enmaps.
    */
   static multi(names, options) {
-    if (!names.length || names.length < 1) {
+    if (!names.length) {
       throw new Err(
         '"names" argument must be an array of string names.',
         'EnmapTypeError',
@@ -783,26 +791,26 @@ class Enmap {
    * @param {Function | string} pathOrFn A function that produces an element of the new Array, or a path to the property to map.
    * @returns {Array}
    */
-    map(pathOrFn) {
-      this.#db.aggregate('map', {
-        start: [],
-        step: (accumulator, value, key) => {
-          const parsed = this.#parse(value);
-          if (isFunction(pathOrFn)) {
-            accumulator.push(pathOrFn(parsed, key));
-          } else {
-            accumulator.push(_get(parsed, pathOrFn));
-          }
-          return accumulator;
-        },
-        result: (accumulator) => JSON.stringify(accumulator),
-      });
-      const results = this.#db
-        .prepare(`SELECT map(value, key) FROM ${this.#name}`)
-        .pluck()
-        .get();
-      return JSON.parse(results);
-    }
+  map(pathOrFn) {
+    this.#db.aggregate('map', {
+      start: [],
+      step: (accumulator, value, key) => {
+        const parsed = this.#parse(value);
+        if (isFunction(pathOrFn)) {
+          accumulator.push(pathOrFn(parsed, key));
+        } else {
+          accumulator.push(_get(parsed, pathOrFn));
+        }
+        return accumulator;
+      },
+      result: (accumulator) => JSON.stringify(accumulator),
+    });
+    const results = this.#db
+      .prepare(`SELECT map(value, key) FROM ${this.#name}`)
+      .pluck()
+      .get();
+    return JSON.parse(results);
+  }
 
   /**
    * Searches for a single item where its specified property's value is identical to the given value
@@ -924,7 +932,9 @@ class Enmap {
    */
   sweep(pathOrFn, value) {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
-    const deleteStmt = this.#db.prepare(`DELETE FROM ${this.#name} WHERE key = ?`);
+    const deleteStmt = this.#db.prepare(
+      `DELETE FROM ${this.#name} WHERE key = ?`,
+    );
     const deleteKeys = [];
     const deleteMany = this.#db.transaction((cats) => {
       for (const cat of cats) deleteStmt.run(cat);
@@ -991,7 +1001,7 @@ class Enmap {
     return results;
   }
 
-  // INTERNAL METHODS
+  // MARK: Internal Methods
 
   /*
    * Internal method used to insert or update a key in the database without circular calls to ensure() or others.
@@ -1026,15 +1036,21 @@ class Enmap {
       try {
         parsed = this.#deserializer(parsed);
       } catch (e) {
-        throw new Err('Error while deserializing data: ', e.message, 'EnmapParseError');
+        throw new Err(
+          'Error while deserializing data: ',
+          e.message,
+          'EnmapParseError',
+        );
       }
     } catch (e) {
-      throw new Err('Error while deserializing data: ', e.message, 'EnmapParseError');
+      throw new Err(
+        'Error while deserializing data: ',
+        e.message,
+        'EnmapParseError',
+      );
     }
     return parsed;
   }
-
-  /* INTERNAL METHOD */
 
   #keycheck(key, type = 'key') {
     if (!NAME_REGEX.test(key)) {
