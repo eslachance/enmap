@@ -11,6 +11,7 @@ declare module 'enmap' {
     wal?: boolean;
     verbose?: (query: string) => void;
     autoEnsure?: unknown;
+    inMemory?: boolean;
     serializer?: (value: V, key: string) => SV;
     deserializer?: (value: SV, key: string) => V;
   }
