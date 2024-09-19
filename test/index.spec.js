@@ -6,7 +6,6 @@ import {
 } from 'vitest';
 import { parse, stringify } from 'better-serialize';
 import Enmap from '../src';
-import { it } from 'node:test';
 import { mkdir, rm } from 'fs/promises';
 import CustomError from '../src/error';
 
@@ -318,62 +317,62 @@ describe('Enmap', () => {
       });
 
       test('should add value', () => {
-        enmap.set('add', 1);
-        enmap.math('add', '+', 1);
-        enmap.math('add', 'add', 1);
-        enmap.math('add', 'addition', 1);
+        enmap.set('simplevalue', 1);
+        enmap.math('simplevalue', '+', 1);
+        enmap.math('simplevalue', 'add', 1);
+        enmap.math('simplevalue', 'addition', 1);
 
-        expect(enmap.get('add')).toBe(4);
+        expect(enmap.get('simplevalue')).toBe(4);
       });
 
       test('should subtract value', () => {
-        enmap.set('sub', 1);
-        enmap.math('sub', '-', 1);
-        enmap.math('sub', 'sub', 1);
-        enmap.math('sub', 'subtract', 1);
+        enmap.set('simplevalue', 1);
+        enmap.math('simplevalue', '-', 1);
+        enmap.math('simplevalue', 'sub', 1);
+        enmap.math('simplevalue', 'subtract', 1);
 
-        expect(enmap.get('sub')).toBe(-2);
+        expect(enmap.get('simplevalue')).toBe(-2);
       });
 
       test('should multiply value', () => {
-        enmap.set('mul', 2);
-        enmap.math('mul', '*', 2);
-        enmap.math('mul', 'mult', 2);
-        enmap.math('mul', 'multiply', 2);
+        enmap.set('simplevalue', 2);
+        enmap.math('simplevalue', '*', 2);
+        enmap.math('simplevalue', 'mult', 2);
+        enmap.math('simplevalue', 'multiply', 2);
 
-        expect(enmap.get('mul')).toBe(16);
+        expect(enmap.get('simplevalue')).toBe(16);
       });
 
       test('should divide value', () => {
-        enmap.set('div', 4);
-        enmap.math('div', '/', 2);
-        enmap.math('div', 'div', 2);
-        enmap.math('div', 'divide', 2);
+        enmap.set('simplevalue', 4);
+        enmap.math('simplevalue', '/', 2);
+        enmap.math('simplevalue', 'div', 2);
+        enmap.math('simplevalue', 'divide', 2);
 
-        expect(enmap.get('div')).toBe(0.5);
+        expect(enmap.get('simplevalue')).toBe(0.5);
       });
 
       test('should exponent value', () => {
-        enmap.set('exp', 2);
-        enmap.math('exp', '^', 2);
-        enmap.math('exp', 'exp', 2);
-        enmap.math('exp', 'exponent', 2);
+        enmap.set('simplevalue', 2);
+        enmap.math('simplevalue', '^', 2);
+        enmap.math('simplevalue', 'exp', 2);
+        enmap.math('simplevalue', 'exponent', 2);
 
-        expect(enmap.get('exp')).toBe(256);
+        expect(enmap.get('simplevalue')).toBe(256);
       });
 
       test('should modulo value', () => {
-        enmap.set('mod', 5);
-        enmap.math('mod', '%', 2);
-        enmap.math('mod', 'mod', 2);
-        enmap.math('mod', 'modulo', 2);
+        enmap.set('simplevalue', 5);
+        enmap.math('simplevalue', '%', 2);
+        enmap.math('simplevalue', 'mod', 2);
+        enmap.math('simplevalue', 'modulo', 2);
 
-        expect(enmap.get('mod')).toBe(1);
+        expect(enmap.get('simplevalue')).toBe(1);
       });
 
       test('should random value', () => {
         enmap.set('rand', 1);
-        enmap.math('rand', 'rand', 1, 10);
+        enmap.math('rand', 'rand', 1);
 
         expect(enmap.get('rand')).toBeGreaterThanOrEqual(0);
         expect(enmap.get('rand')).toBeLessThanOrEqual(1);
@@ -384,6 +383,16 @@ describe('Enmap', () => {
         enmap.math('huh', 'huh', 1);
 
         expect(enmap.get('huh')).toBe(null);
+      });
+
+      test('should math value w/ path', () => {
+        enmap.set('pathobj', { a: 1 });
+        enmap.math('pathobj', 'sub', 1, 'a');
+        expect(enmap.get('pathobj')).toEqual({ a: 0 });
+        enmap.inc('pathobj', 'a');
+        expect(enmap.get('pathobj')).toEqual({ a: 1 });
+        enmap.dec('pathobj', 'a');
+        expect(enmap.get('pathobj')).toEqual({ a: 0 });
       });
     });
 

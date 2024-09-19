@@ -1,6 +1,7 @@
 {
   "extends": [
     "eslint:recommended",
+    "plugin:node/recommended",
     "prettier"
   ],
   "env": {
@@ -9,7 +10,7 @@
   },
   "parserOptions": {
     "ecmaVersion": 2023,
-		"sourceType": "module"
+	  "sourceType": "module"
   },
   "rules": {
     "no-unused-vars": 1,
@@ -27,6 +28,8 @@
 				"error": "Error"
 			}
 		}],
+    "semi": ["error", "always"],
+    "indent": ["error", 2, {"SwitchCase": 1}],
     "comma-dangle": ["error", "always-multiline"],
     "keyword-spacing": ["error", {
 			"overrides": {

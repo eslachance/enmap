@@ -413,12 +413,12 @@ class Enmap {
    * points.math("numberInObject", "+", 10, "sub.anInt");
    * @returns {number} The updated value after the operation
    */
-  math(key, operation, operand) {
+  math(key, operation, operand, path) {
     this.#keycheck(key);
-    this.#check(key, ['Number']);
-    const data = this.get(key);
+    this.#check(key, ['Number'], path);
+    const data = this.get(key, path);
     const updatedValue = this.#math(data, operation, operand);
-    this.set(key, updatedValue);
+    this.set(key, updatedValue, path);
     return updatedValue;
   }
 
@@ -435,12 +435,12 @@ class Enmap {
    * points.inc("numberInObject", "sub.anInt"); // {sub: { anInt: 6 }}
    * @returns {number} The udpated value after incrementing.
    */
-  inc(key) {
+  inc(key, path = null) {
     this.#keycheck(key);
-    this.#check(key, ['Number']);
-    const data = this.get(key);
-    this.set(key, data + 1);
-    return data + 1;
+    this.#check(key, ['Number'], path);
+    const data = this.get(key, path);
+    this.set(key, data + 1, path);
+    return this;
   }
 
   /**
@@ -456,11 +456,12 @@ class Enmap {
    * points.dec("numberInObject", "sub.anInt"); // {sub: { anInt: 4 }}
    * @returns {Enmap} The enmap.
    */
-  dec(key) {
+  dec(key, path = null) {
     this.#keycheck(key);
-    const data = this.get(key);
-    this.set(key, data - 1);
-    return data - 1;
+    this.#check(key, ['Number'], path);
+    const data = this.get(key, path);
+    this.set(key, data - 1, path);
+    return this;
   }
 
   /**
@@ -660,10 +661,10 @@ class Enmap {
       const { key, value } = entry;
       if (!overwrite && this.has(key)) continue;
       this.#db
-      .prepare(
-        `INSERT OR REPLACE INTO ${this.#name} (key, value) VALUES (?, ?)`,
-      )
-      .run(key, value);
+        .prepare(
+          `INSERT OR REPLACE INTO ${this.#name} (key, value) VALUES (?, ?)`,
+        )
+        .run(key, value);
     }
   }
 
