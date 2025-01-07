@@ -1,8 +1,11 @@
 class CustomError extends Error {
-  constructor(message, name = null) {
-    super();
+  name: string;
+  message: string;
+
+  constructor(message: string, name: string = 'EnmapError') {
+    super(message);
     Error.captureStackTrace(this, this.constructor);
-    this.name = name || 'EnmapError';
+    this.name = name;
     this.message = message;
   }
 }
