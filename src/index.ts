@@ -8,6 +8,7 @@ import {
   cloneDeep,
   merge,
 } from 'lodash-es';
+//@ts-ignore the irony of this package being made by my most fervent TS advocate
 import { stringify, parse } from 'better-serialize';
 import onChange from 'on-change';
 
@@ -25,20 +26,31 @@ import Database from 'better-sqlite3';
 
 const NAME_REGEX = /^([\w-]+)$/;
 
+type EnmapOptions<Value, SerializedValue> = {
+  name: string;
+  dataDir?: string;
+  inMemory: boolean;
+  autoEnsure: Value;
+  ensureProps?: boolean;
+  serializer: (value: Value, key?: string) => SerializedValue;
+  deserializer: (value: SerializedValue, key?: string) => Value;
+  sqliteOptions?: Database.Options;
+}
+
 /**
  * A simple, synchronous, fast key/value storage build around better-sqlite3.
  * Contains extra utility methods for managing arrays and objects.
  * @class Enmap
  */
-class Enmap {
-  #name;
-  #db;
-  #inMemory;
-  #autoEnsure;
-  #ensureProps;
-  #serializer;
-  #deserializer;
-  #changedCB;
+class Enmap<Value, SerializedValue> {
+  #name: string;
+  #db: Database.Database;
+  #inMemory: boolean;
+  #autoEnsure: Value;
+  #ensureProps: boolean;
+  #serializer: (value: Value) => SerializedValue;
+  #deserializer: (value: SerializedValue) => Value;
+  #changedCB: (key: string, oldValue: Value | undefined, data: Value | undefined) => void;
 
   /**
    * Initializes a new Enmap, with options.
@@ -79,7 +91,7 @@ class Enmap {
    * // Enmap that automatically assigns a default object when getting or setting anything.
    * const autoEnmap = new Enmap({name: "settings", autoEnsure: { setting1: false, message: "default message"}})
    */
-  constructor(options) {
+  constructor(options: EnmapOptions<Value, SerializedValue>) {
     this.#inMemory = options.inMemory ?? false;
     if (options.name === '::memory::') {
       this.#inMemory = true;
@@ -88,10 +100,12 @@ class Enmap {
       );
     }
     this.#ensureProps = options.ensureProps ?? true;
-    this.#serializer = options.serializer ? options.serializer : (data) => data;
+    this.#serializer = options.serializer
+      ? options.serializer
+      : (data: Value) => data as unknown as SerializedValue;
     this.#deserializer = options.deserializer
       ? options.deserializer
-      : (data) => data;
+      : (data: SerializedValue) => data as unknown as Value;
     this.#autoEnsure = options.autoEnsure;
 
     if (this.#inMemory) {
@@ -156,7 +170,7 @@ class Enmap {
    * @param {*} value Required. The value to write.
    * Values must be serializable, which is done through (better-serialize)[https://github.com/RealShadowNova/better-serialize]
    * If the value is not directly serializable, please use a custom serializer/deserializer.
-   * @param {string} path Optional. The path to the property to modify inside the value object or array.
+   * @param {string} [path] Optional. The path to the property to modify inside the value object or array.
    * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @example
    * // Direct Value Examples
@@ -170,7 +184,7 @@ class Enmap {
    * enmap.set('IhazObjects', 'blue', 'color'); //modified previous object
    * enmap.set('ArraysToo', 'three', 2); // changes "tree" to "three" in array.
    */
-  set(key, value, path) {
+  set(key: string, value: Value, path?: string): void {
     this.#keycheck(key);
     let data = this.get(key);
     const oldValue = cloneDeep(data);
@@ -210,7 +224,7 @@ class Enmap {
    * // More info: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Spread_syntax
    * @returns {*} The modified (merged) value.
    */
-  update(key, valueOrFunction) {
+  update(key: string, valueOrFunction: Value | ((previous: Value) => Value)): Value {
     this.#keycheck(key);
     this.#check(key, ['Object']);
     const data = this.get(key);
@@ -225,7 +239,7 @@ class Enmap {
   /**
    * Retrieves a value from the enmap, using its key.
    * @param {string} key The key to retrieve from the enmap.
-   * @param {string} path Optional. The property to retrieve from the object or array.
+   * @param {string} [path] Optional. The property to retrieve from the object or array.
    * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @example
    * const myKeyValue = enmap.get("myKey");
@@ -234,7 +248,7 @@ class Enmap {
    * const someSubValue = enmap.get("anObjectKey", "someprop.someOtherSubProp");
    * @return {*} The parsed value for this key.
    */
-  get(key, path) {
+  get(key: string, path?: string): Value | null {
     this.#keycheck(key);
 
     if (!isNil(this.#autoEnsure) && !this.has(key)) {
@@ -262,11 +276,11 @@ class Enmap {
    * @param {string} path Optional. The property to retrieve from the object or array.
    * @return {*} The value for this key.
    */
-  observe(key, path) {
+  observe(key: string, path?: string): Record<string, any> {
     this.#check(key, ['Object', 'Array'], path);
     const data = this.get(key, path);
     const proxy = onChange(data, () => {
-      this.set(key, proxy, path);
+      this.set(key, proxy.target, path);
     });
     return proxy;
   }
@@ -276,17 +290,17 @@ class Enmap {
    * @readonly
    * @returns {number} The number of elements in the enmap.
    */
-  get size() {
+  get size(): number {
     const data = this.#db
       .prepare(`SELECT count(*) FROM '${this.#name}';`)
       .get();
     return data['count(*)'];
   }
   // Aliases are cheap, why not?
-  get count() {
+  get count(): number {
     return this.size;
   }
-  get length() {
+  get length(): number {
     return this.size;
   }
 
@@ -294,7 +308,7 @@ class Enmap {
    * Get all the keys of the enmap as an array.
    * @returns {Array<string>} An array of all the keys in the enmap.
    */
-  keys() {
+  keys(): string[] {
     const stmt = this.#db.prepare(`SELECT key FROM ${this.#name}`);
     const indexes = [];
     for (const row of stmt.iterate()) {
@@ -302,7 +316,7 @@ class Enmap {
     }
     return indexes;
   }
-  indexes() {
+  indexes(): string[] {
     return this.keys();
   }
 
@@ -310,7 +324,7 @@ class Enmap {
    * Get all the values of the enmap as an array.
    * @returns {Array<*>} An array of all the values in the enmap.
    */
-  values() {
+  values(): Value[] {
     const stmt = this.#db.prepare(`SELECT value FROM ${this.#name}`);
     const values = [];
     for (const row of stmt.iterate()) {
@@ -337,7 +351,7 @@ class Enmap {
    * underlying SQLite database. Use at your own risk, as errors here might cause loss of data or corruption!
    * @return {Database}
    */
-  get db() {
+  get db(): Database.Database {
     return this.#db;
   }
 
@@ -382,11 +396,11 @@ class Enmap {
    * enmap.push("simpleArray", 5); // adds 5 at the end of the array
    * enmap.push("arrayInObject", "five", "sub"); // adds "five" at the end of the sub array
    */
-  push(key, value, path, allowDupes = false) {
+  push(key: string, value: Value, path: string, allowDupes = false) {
     this.#keycheck(key);
     this.#check(key, ['Array', 'Object']);
     const data = this.get(key, path);
-    if (!isArray(data))
+    if (!data || !Array.isArray(data))
       throw new Err('Key does not point to an array', 'EnmapPathError');
     if (!allowDupes && data.includes(value)) return;
     data.push(value);
@@ -413,7 +427,7 @@ class Enmap {
    * points.math("numberInObject", "+", 10, "sub.anInt");
    * @returns {number} The updated value after the operation
    */
-  math(key, operation, operand, path) {
+  math(key: string, operation: string, operand: number, path: string) {
     this.#keycheck(key);
     this.#check(key, ['Number'], path);
     const data = this.get(key, path);
@@ -435,11 +449,13 @@ class Enmap {
    * points.inc("numberInObject", "sub.anInt"); // {sub: { anInt: 6 }}
    * @returns {number} The udpated value after incrementing.
    */
-  inc(key, path = null) {
+  inc(key: string, path: string | undefined = undefined) {
     this.#keycheck(key);
     this.#check(key, ['Number'], path);
     const data = this.get(key, path);
-    this.set(key, data + 1, path);
+    if (!data || typeof data !== 'number')
+      throw new Err('Key does not point to a numerical value', 'EnmapPathError');
+    this.set(key, (data + 1) as Value, path);
     return this;
   }
 
@@ -456,7 +472,7 @@ class Enmap {
    * points.dec("numberInObject", "sub.anInt"); // {sub: { anInt: 4 }}
    * @returns {Enmap} The enmap.
    */
-  dec(key, path = null) {
+  dec(key: string, path: string | undefined = undefined) {
     this.#keycheck(key);
     this.#check(key, ['Number'], path);
     const data = this.get(key, path);
@@ -482,7 +498,7 @@ class Enmap {
    * console.log(settings) // enmap's value for "1234567890" if it exists, otherwise the defaultSettings value.
    * @return {*} The value from the database for the key, or the default value provided for a new key.
    */
-  ensure(key, defaultValue, path) {
+  ensure(key: string, defaultValue: Value, path: string | undefined = undefined) {
     this.#keycheck(key);
 
     if (!isNil(this.#autoEnsure)) {
@@ -534,7 +550,7 @@ class Enmap {
    * if(!enmap.has("myOtherKey", "oneProp.otherProp.SubProp")) return false;
    * @returns {boolean}
    */
-  has(key) {
+  has(key: string) {
     this.#keycheck(key);
     const data = this.#db
       .prepare(`SELECT count(*) FROM ${this.#name} WHERE key = ?`)
@@ -551,7 +567,7 @@ class Enmap {
    * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
    * @return {boolean} Whether the array contains the value.
    */
-  includes(key, value, path) {
+  includes(key: string, value: Value, path: string | undefined = undefined) {
     this.#keycheck(key);
     this.#check(key, ['Array'], path);
     const data = this.get(key, path);
@@ -564,7 +580,7 @@ class Enmap {
    * @param {string} path Optional. The name of the property to remove from the object.
    * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
    */
-  delete(key, path) {
+  delete(key: string, path: string | undefined = undefined) {
     this.#keycheck(key);
     if (path) {
       this.#check(key, ['Object']);
@@ -602,7 +618,7 @@ class Enmap {
    * enmap.remove('array', 1); // value is now [2, 3]
    * enmap.remove('objectarray', (value) => value.e === 5); // value is now [{ a: 1, b: 2, c: 3 }]
    */
-  remove(key, val, path) {
+  remove(key: string, val: Value, path: string | undefined = undefined) {
     this.#keycheck(key);
     this.#check(key, ['Array', 'Object']);
     const data = this.get(key, path);
@@ -642,7 +658,7 @@ class Enmap {
    * @param {boolean} clear Defaults to `false`. Whether to clear the enmap of all data before importing
    * (**__WARNING__**: Any existing data will be lost! This cannot be undone.)
    */
-  import(data, overwrite = true, clear = false) {
+  import(data: string, overwrite = true, clear = false) {
     let parsedData;
     try {
       parsedData = JSON.parse(data);
@@ -683,14 +699,14 @@ class Enmap {
    *
    * @returns {Object} An array of initialized Enmaps.
    */
-  static multi(names, options) {
+  static multi<Value, SerializedValue>(names: string[], options: EnmapOptions<Value, SerializedValue>) {
     if (!names.length) {
       throw new Err(
         '"names" argument must be an array of string names.',
         'EnmapTypeError',
       );
     }
-    const enmaps = {};
+    const enmaps: Record<string, Enmap<Value, SerializedValue>> = {};
     for (const name of names) {
       enmaps[name] = new Enmap({ ...options, name });
     }
@@ -700,14 +716,14 @@ class Enmap {
   /**
    * Obtains random value(s) from this Enmap. This relies on {@link Enmap#array}.
    * @param {number} [count] Number of values to obtain randomly
-   * @returns {*|Array<*>} The single value if `count` is undefined,
+   * @returns {Array<*>} The single value if `count` is undefined,
    * or an array of values of `count` length
    */
-  random(count = 1) {
+  random(count = 1): [string, Value][] {
     const stmt = this.#db
       .prepare(`SELECT key, value FROM ${this.#name} ORDER BY RANDOM() LIMIT ?`)
       .bind(count);
-    const results = [];
+    const results: [string, Value][] = [];
     for (const row of stmt.iterate()) {
       results.push([row.key, this.#parse(row.value)]);
     }
@@ -720,11 +736,11 @@ class Enmap {
    * @returns {*|Array<*>} The single key if `count` is undefined,
    * or an array of keys of `count` length
    */
-  randomKey(count = 1) {
+  randomKey(count = 1): string[] {
     const stmt = this.#db
       .prepare(`SELECT key FROM ${this.#name} ORDER BY RANDOM() LIMIT ?`)
       .bind(count);
-    const results = [];
+    const results: string[] = [];
     for (const row of stmt.iterate()) {
       results.push(row.key);
     }
