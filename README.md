@@ -10,7 +10,7 @@
 </div>
 
 <div align="center">
-  <p><img src="https://evie.codes/enmap-logo.svg" alt="Enmap Logo" />
+  <p><img src="https://alterion.dev/enmap-logo.svg" alt="Enmap Logo" />
 </div>
 
 Enhanced Maps are a data structure that can be used to store data in memory that can also be saved in a database behind the scenes.
@@ -22,14 +22,14 @@ and supports multiple simultaneous connections.
 
 ## Documentation
 
-* [Installation](https://enmap.evie.dev/install)
-* [Basic Setup](https://enmap.evie.dev/usage)
-* [API Reference](https://enmap.evie.dev/api)
-* [Examples](https://enmap.evie.dev/complete-examples)
+* [Installation](https://enmap.alterion.dev/install)
+* [Basic Setup](https://enmap.alterion.dev/usage)
+* [API Reference](https://enmap.alterion.dev/api)
+* [Examples](https://enmap.alterion.dev/complete-examples)
 
 ## Support
 
-Support is offered on my official [Evie.Codes Discord](https://discord.gg/N7ZKH3P).
+Support is offered on my official [Alterion.dev Discord](https://discord.gg/N7ZKH3P).
 
 ## FAQs
 
@@ -49,7 +49,7 @@ when you restart your project, your data is not lost and is loaded on startup.
 
 **A**: The size of the memory used is directly proportional to the size of all the keys loaded in memory.
 The more data you have, the more complex it is, the more memory it may use. You can use the
-[fetchAll](https://enmap.evie.dev/usage/fetchall) option to reduce memory usage.
+[fetchAll](https://enmap.alterion.dev/usage/fetchall) option to reduce memory usage.
 
 ### Q: Who did you make this for?
 

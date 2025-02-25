@@ -144,7 +144,7 @@ declare module 'enmap' {
      * @param iterable If iterable data, only valid in non-persistent enmaps.
      * If this parameter is a string, it is assumed to be the enmap's name, which is a shorthand for adding a name in the options
      * and making the enmap persistent.
-     * @param options Additional options for the enmap. See https://enmap.evie.dev/usage#enmap-options for details.
+     * @param options Additional options for the enmap. See https://enmap.alterion.dev/usage#enmap-options for details.
      * @example
      * const Enmap = require("enmap");
      * // Non-persistent enmap:

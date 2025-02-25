@@ -20,7 +20,7 @@ Initializes a new Enmap, with options.
 
 | Param | Type | Description |
 | --- | --- | --- |
-| [options] | <code>Object</code> | Options for the enmap. See https://enmap.evie.dev/usage#enmap-options for details. |
+| [options] | <code>Object</code> | Options for the enmap. See https://enmap.alterion.dev/usage#enmap-options for details. |
 | [options.name] | <code>string</code> | The name of the enmap. Represents its table name in sqlite. Unless inMemory is set to true, the enmap will be persisted to disk. |
 | [options.dataDir] | <code>string</code> | Defaults to `./data`. Determines where the sqlite files will be stored. Can be relative (to your project root) or absolute on the disk. Windows users , remember to escape your backslashes! *Note*: Enmap will not automatically create the folder if it is set manually, so make sure it exists before starting your code! |
 | [options.ensureProps] | <code>boolean</code> | defaults to `true`. If enabled and the value in the enmap is an object, using ensure() will also ensure that every property present in the default object will be added to the value, if it's absent. See ensure API reference for more information. |
