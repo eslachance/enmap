@@ -39,7 +39,7 @@
   "license": "Apache-2.0",
   "dependencies": {
     "better-serialize": "^1.0.0",
-    "better-sqlite3": "^9.4.3",
+    "better-sqlite3": "^11.10.0",
     "lodash-es": "^4.17.21",
     "on-change": "^5.0.1"
   },

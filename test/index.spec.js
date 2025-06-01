@@ -137,9 +137,12 @@ describe('Enmap', () => {
       });
 
       test('should fail to set a value w/ invalid key', () => {
-        expect(() => enmap.set('$', 'value', [])).toThrow(
-          `Invalid key for enmap - only alphanumeric characters, underscores and hyphens are allowed.`,
+        expect(() => enmap.set([], {}, () => {})).toThrow(
+          `Invalid key for enmap - keys must be a string.`,
         );
+        // I don't know what happened that made me think this wasn't valid...
+        enmap.set('$', 'Dollar signs are accepted');
+        expect(enmap.get('$')).toBe('Dollar signs are accepted');
       });
 
       test('should call callback after set', () => {

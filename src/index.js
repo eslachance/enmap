@@ -1054,11 +1054,17 @@ class Enmap {
   }
 
   #keycheck(key, type = 'key') {
-    if (!NAME_REGEX.test(key)) {
+    if (typeof key !== 'string') {
       throw new Error(
-        `Invalid ${type} for enmap - only alphanumeric characters, underscores and hyphens are allowed.`,
+        `Invalid ${type} for enmap - keys must be a string.`,
       );
     }
+    // I would love to know what went through my brain when I put this in.
+    // if (!NAME_REGEX.test(key)) {
+    //   throw new Error(
+    //     `Invalid ${type} for enmap - only alphanumeric characters, underscores and hyphens are allowed.`,
+    //   );
+    // }
   }
 
   /*
