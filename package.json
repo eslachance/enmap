@@ -2,16 +2,20 @@
   "name": "enmap",
   "version": "6.0.5",
   "description": "A simple database wrapper to make sqlite database interactions much easier for beginners, with additional array helper methods.",
-  "main": "src/index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "type": "module",
   "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build",
     "test": "vitest run",
     "build-api-docs": "node ./scripts/build-docs.js",
     "build-docs": "cd docs && npx retype build"
   },
   "files": [
-    "src",
-    "typings"
+    "dist",
+    "src"
   ],
   "repository": {
     "type": "git",
@@ -44,6 +48,9 @@
     "on-change": "^5.0.1"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.8",
+    "@types/lodash-es": "^4.17.12",
+    "@types/node": "^20.10.0",
     "@vitest/coverage-v8": "^1.6.0",
     "eslint": "^8.41.0",
     "eslint-config-prettier": "^8.8.0",
@@ -51,10 +58,10 @@
     "jsdoc-to-markdown": "^8.0.0",
     "limax": "^4.0.0",
     "retypeapp": "^3.5.0",
+    "typescript": "^5.3.0",
     "vitest": "^1.6.0"
   },
   "engines": {
     "node": ">=16.0.0"
-  },
-  "types": "./typings/index.d.ts"
+  }
 }
