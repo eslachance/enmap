@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import CustomError from '../src/error';
+import CustomError from '../src/error.ts';
 
 describe('CustomError', () => {
   test('should create an instance of CustomError', () => {

@@ -5,9 +5,9 @@ import {
   vi,
 } from 'vitest';
 import { parse, stringify } from 'better-serialize';
-import Enmap from '../src';
+import Enmap from '../src/index.ts';
 import { mkdir, rm } from 'fs/promises';
-import CustomError from '../src/error';
+import CustomError from '../src/error.ts';
 
 describe('Enmap', () => {
   process.setMaxListeners(100);
