@@ -67,7 +67,7 @@ type Path<T, Key extends keyof T = keyof T> = Key extends string
             string}`
         | `${Key}.${Exclude<keyof T[Key], keyof any[]> & string}`
         | Key
-    : never
+    : Key
   : never;
 
 type PathValue<T, P extends Path<T>> = P extends `${infer Key}.${infer Rest}`
@@ -163,7 +163,7 @@ export default class Enmap<V = any, SV = unknown> {
     });
   }
 
-  set(key: string, value: V, path?: string): this {
+  set(key: string, value: any, path?: Path<V>): this {
     this.#keycheck(key);
     let data = this.get(key as any) as any;
     const oldValue = cloneDeep(data);
@@ -178,7 +178,7 @@ export default class Enmap<V = any, SV = unknown> {
     return this;
   }
 
-  get(key: string, path?: string): V | undefined {
+  get(key: string, path?: Path<V>): any {
     this.#keycheck(key);
 
     if (!isNil(this.#autoEnsure) && !this.has(key)) {
@@ -206,7 +206,7 @@ export default class Enmap<V = any, SV = unknown> {
     return data['count(*)'] > 0;
   }
 
-  delete(key: string, path?: string): this {
+  delete(key: string, path?: Path<V>): this {
     this.#keycheck(key);
     if (path) {
       this.#check(key, ['Object']);
@@ -304,56 +304,56 @@ export default class Enmap<V = any, SV = unknown> {
     return merged;
   }
 
-  observe(key: string, path?: any): any {
+  observe(key: string, path?: Path<V>): any {
     this.#check(key, ['Object', 'Array'], path);
-    const data = this.get(key, path);
+    const data = this.get(key, path as any);
     const proxy = onChange(data as any, () => {
-      this.set(key, proxy as any, path);
+      this.set(key, proxy as any, path as any);
     });
     return proxy;
   }
 
-  push(key: string, value: V, path?: any, allowDupes = false): this {
+  push(key: string, value: V, path?: Path<V>, allowDupes = false): this {
     this.#keycheck(key);
     this.#check(key, ['Array', 'Object']);
-    const data = this.get(key, path);
+    const data = this.get(key, path as any);
     if (!isArray(data))
       throw new Err('Key does not point to an array', 'EnmapPathError');
     if (!allowDupes && data.includes(value)) return this;
     data.push(value);
-    this.set(key, data, path);
+    this.set(key, data as any, path as any);
     return this;
   }
 
-  math(key: string, operation: MathOps, operand: number, path?: any): number | null {
+  math(key: string, operation: MathOps, operand: number, path?: Path<V>): number | null {
     this.#keycheck(key);
     this.#check(key, ['Number'], path);
-    const data = this.get(key, path);
+    const data = this.get(key, path as any);
     if (typeof data !== 'number') {
       throw new Err(`Value at key "${key}" is not a number`, 'EnmapTypeError');
     }
     const updatedValue = this.#math(data, operation, operand);
-    this.set(key, updatedValue as any, path);
+    this.set(key, updatedValue as any, path as any);
     return updatedValue;
   }
 
-  inc(key: string, path?: any): this {
+  inc(key: string, path?: Path<V>): this {
     this.#keycheck(key);
     this.#check(key, ['Number'], path);
     const data = this.get(key, path) as any;
-    this.set(key, (data + 1) as any, path);
+    this.set(key, (data + 1) as any, path as any);
     return this;
   }
 
-  dec(key: string, path?: any): this {
+  dec(key: string, path?: Path<V>): this {
     this.#keycheck(key);
     this.#check(key, ['Number'], path);
     const data = this.get(key, path) as any;
-    this.set(key, (data - 1) as any, path);
+    this.set(key, (data - 1) as any, path as any);
     return this;
   }
 
-  ensure(key: string, defaultValue: any, path?: any): any {
+  ensure(key: string, defaultValue: any, path?: Path<V>): any {
     this.#keycheck(key);
 
     if (!isNil(this.#autoEnsure)) {
@@ -370,7 +370,7 @@ export default class Enmap<V = any, SV = unknown> {
       if (this.has(key) && this.get(key, path) !== undefined) return this.get(key, path);
       if (this.#ensureProps) this.ensure(key, {});
 
-      this.set(key, clonedDefault, path);
+      this.set(key, clonedDefault as any, path as any);
       return clonedDefault;
     }
 
@@ -383,23 +383,23 @@ export default class Enmap<V = any, SV = unknown> {
           'EnmapArgumentError',
         );
       const merged = merge(clonedDefault, this.get(key as any));
-      this.set(key, merged);
+      this.set(key, merged as any);
       return merged;
     }
 
     if (this.has(key)) return this.get(key as any);
-    this.set(key, clonedDefault);
+    this.set(key, clonedDefault as any);
     return clonedDefault;
   }
 
-  includes(key: string, value: V, path?: any): boolean {
+  includes(key: string, value: V, path?: Path<V>): boolean {
     this.#keycheck(key);
     this.#check(key, ['Array'], path);
     const data = this.get(key, path) as any;
     return data?.includes(value) || false;
   }
 
-  remove(key: string, val: any, path?: any): this {
+  remove(key: string, val: any, path?: Path<V>): this {
     this.#keycheck(key);
     this.#check(key, ['Array', 'Object']);
     const data = this.get(key, path) as any;
@@ -408,7 +408,7 @@ export default class Enmap<V = any, SV = unknown> {
     if (index > -1) {
       data.splice(index, 1);
     }
-    this.set(key, data, path);
+    this.set(key, data as any, path as any);
     return this;
   }
 
@@ -490,8 +490,8 @@ export default class Enmap<V = any, SV = unknown> {
   }
 
   every(fn: (val: V, key: string) => boolean): boolean;
-  every(value: V, path: string): boolean;
-  every(valueOrFunction: ((val: V, key: string) => boolean) | any, path?: string): boolean {
+  every(value: any, path: Path<V>): boolean;
+  every(valueOrFunction: ((val: V, key: string) => boolean) | any, path?: Path<V>): boolean {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     for (const row of stmt.iterate() as any) {
       const parsed = this.#parse(row.value, row.key);
@@ -510,8 +510,8 @@ export default class Enmap<V = any, SV = unknown> {
   }
 
   some(fn: (val: V, key: string) => boolean): boolean;
-  some(value: V, path: string): boolean;
-  some(valueOrFunction: ((val: V, key: string) => boolean) | any, path?: string): boolean {
+  some(value: any, path: Path<V>): boolean;
+  some(valueOrFunction: ((val: V, key: string) => boolean) | any, path?: Path<V>): boolean {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     for (const row of stmt.iterate() as any) {
       const parsed = this.#parse(row.value, row.key);
@@ -705,7 +705,7 @@ export default class Enmap<V = any, SV = unknown> {
     }
   }
 
-  #check(key: string, type: any, path?: any): void {
+  #check(key: string, type: any, path?: Path<V>): void {
     const keyStr = key.toString();
     if (!this.has(key))
       throw new Err(
