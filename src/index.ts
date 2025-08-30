@@ -84,7 +84,7 @@ type PathValue<T, P extends Path<T>> = P extends `${infer Key}.${infer Rest}`
  * A simple, synchronous, fast key/value storage build around better-sqlite3.
  * Contains extra utility methods for managing arrays and objects.
  */
-export default class Enmap<K extends string | number = string | number, V = any, SV = unknown> {
+export default class Enmap<V = any, SV = unknown> {
   #name: string;
   #db: Database.Database;
   #inMemory: boolean;
@@ -92,7 +92,7 @@ export default class Enmap<K extends string | number = string | number, V = any,
   #ensureProps: boolean;
   #serializer: (value: V, key: string) => SV;
   #deserializer: (value: SV, key: string) => V;
-  #changedCB?: (key: K, oldValue: V | undefined, newValue: V | undefined) => void;
+  #changedCB?: (key: string, oldValue: V | undefined, newValue: V | undefined) => void;
 
   constructor(options: EnmapOptions<V, SV>) {
     this.#inMemory = options.inMemory ?? false;
@@ -103,7 +103,7 @@ export default class Enmap<K extends string | number = string | number, V = any,
       );
     }
     this.#ensureProps = options.ensureProps ?? true;
-    this.#serializer = options.serializer ? options.serializer : (data: V) => data as unknown as SV;
+    this.#serializer = options.serializer ? options.serializer : (data: V, key: string) => data as unknown as SV;
     this.#deserializer = options.deserializer
       ? options.deserializer
       : (data: SV) => data as unknown as V;
@@ -163,8 +163,7 @@ export default class Enmap<K extends string | number = string | number, V = any,
     });
   }
 
-  // Core methods with proper typing
-  set(key: K, value: V, path?: string): this {
+  set(key: string, value: V, path?: string): this {
     this.#keycheck(key);
     let data = this.get(key as any) as any;
     const oldValue = cloneDeep(data);
@@ -179,7 +178,7 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return this;
   }
 
-  get(key: K, path?: string): V | undefined {
+  get(key: string, path?: string): V | undefined {
     this.#keycheck(key);
 
     if (!isNil(this.#autoEnsure) && !this.has(key)) {
@@ -189,7 +188,7 @@ export default class Enmap<K extends string | number = string | number, V = any,
     const data = this.#db
       .prepare(`SELECT value FROM ${this.#name}  WHERE key = ?`)
       .get(key) as any;
-    const parsed = data ? this.#parse(data.value) : null;
+    const parsed = data ? this.#parse(data.value, key) : null;
     if (isNil(parsed)) return null as any;
 
     if (path) {
@@ -199,7 +198,7 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return parsed;
   }
 
-  has(key: K): boolean {
+  has(key: string): boolean {
     this.#keycheck(key);
     const data = this.#db
       .prepare(`SELECT count(*) FROM ${this.#name} WHERE key = ?`)
@@ -207,7 +206,7 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return data['count(*)'] > 0;
   }
 
-  delete(key: K, path?: string): this {
+  delete(key: string, path?: string): this {
     this.#keycheck(key);
     if (path) {
       this.#check(key, ['Object']);
@@ -261,16 +260,16 @@ export default class Enmap<K extends string | number = string | number, V = any,
   }
 
   // Array methods
-  keys(): K[] {
+  keys(): string[] {
     const stmt = this.#db.prepare(`SELECT key FROM ${this.#name}`);
-    const indexes: K[] = [];
+    const indexes: string[] = [];
     for (const row of stmt.iterate() as any) {
       indexes.push(row.key);
     }
     return indexes;
   }
 
-  indexes(): K[] {
+  indexes(): string[] {
     return this.keys();
   }
 
@@ -283,17 +282,17 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return values;
   }
 
-  entries(): [K, V][] {
+  entries(): [string, V][] {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
-    const entries: [K, V][] = [];
+    const entries: [string, V][] = [];
     for (const row of stmt.iterate() as any) {
-      entries.push([row.key, this.#parse(row.value)]);
+      entries.push([row.key, this.#parse(row.value, row.key)]);
     }
     return entries;
   }
 
   // Simplified method implementations using 'any' for parameters to make it compile
-  update(key: any, valueOrFunction: any): any {
+  update(key: string, valueOrFunction: any): any {
     this.#keycheck(key);
     this.#check(key, ['Object']);
     const data = this.get(key);
@@ -305,7 +304,7 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return merged;
   }
 
-  observe(key: any, path?: any): any {
+  observe(key: string, path?: any): any {
     this.#check(key, ['Object', 'Array'], path);
     const data = this.get(key, path);
     const proxy = onChange(data as any, () => {
@@ -314,7 +313,7 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return proxy;
   }
 
-  push(key: any, value: any, path?: any, allowDupes = false): this {
+  push(key: string, value: V, path?: any, allowDupes = false): this {
     this.#keycheck(key);
     this.#check(key, ['Array', 'Object']);
     const data = this.get(key, path);
@@ -326,16 +325,19 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return this;
   }
 
-  math(key: any, operation: any, operand: any, path?: any): number | null {
+  math(key: string, operation: MathOps, operand: number, path?: any): number | null {
     this.#keycheck(key);
     this.#check(key, ['Number'], path);
     const data = this.get(key, path);
+    if (typeof data !== 'number') {
+      throw new Err(`Value at key "${key}" is not a number`, 'EnmapTypeError');
+    }
     const updatedValue = this.#math(data, operation, operand);
     this.set(key, updatedValue as any, path);
     return updatedValue;
   }
 
-  inc(key: any, path?: any): this {
+  inc(key: string, path?: any): this {
     this.#keycheck(key);
     this.#check(key, ['Number'], path);
     const data = this.get(key, path) as any;
@@ -343,7 +345,7 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return this;
   }
 
-  dec(key: any, path?: any): this {
+  dec(key: string, path?: any): this {
     this.#keycheck(key);
     this.#check(key, ['Number'], path);
     const data = this.get(key, path) as any;
@@ -351,7 +353,7 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return this;
   }
 
-  ensure(key: any, defaultValue: any, path?: any): any {
+  ensure(key: string, defaultValue: any, path?: any): any {
     this.#keycheck(key);
 
     if (!isNil(this.#autoEnsure)) {
@@ -390,18 +392,18 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return clonedDefault;
   }
 
-  includes(key: any, value: any, path?: any): boolean {
+  includes(key: string, value: V, path?: any): boolean {
     this.#keycheck(key);
     this.#check(key, ['Array'], path);
     const data = this.get(key, path) as any;
     return data?.includes(value) || false;
   }
 
-  remove(key: any, val: any, path?: any): this {
+  remove(key: string, val: any, path?: any): this {
     this.#keycheck(key);
     this.#check(key, ['Array', 'Object']);
     const data = this.get(key, path) as any;
-    const criteria = isFunction(val) ? val : (value: any) => val === value;
+    const criteria = isFunction(val) ? val : (value: V) => val === value;
     const index = data?.findIndex(criteria) ?? -1;
     if (index > -1) {
       data.splice(index, 1);
@@ -465,34 +467,34 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return enmaps;
   }
 
-  random(count = 1): [K, V][] {
+  random(count = 1): [string, V][] {
     const stmt = this.#db
       .prepare(`SELECT key, value FROM ${this.#name} ORDER BY RANDOM() LIMIT ?`)
       .bind(count);
-    const results: [K, V][] = [];
+    const results: [string, V][] = [];
     for (const row of stmt.iterate() as any) {
-      results.push([row.key, this.#parse(row.value)]);
+      results.push([row.key, this.#parse(row.value, row.key)]);
     }
     return results;
   }
 
-  randomKey(count = 1): K[] {
+  randomKey(count = 1): string[] {
     const stmt = this.#db
       .prepare(`SELECT key FROM ${this.#name} ORDER BY RANDOM() LIMIT ?`)
       .bind(count);
-    const results: K[] = [];
+    const results: string[] = [];
     for (const row of stmt.iterate() as any) {
       results.push(row.key);
     }
     return results;
   }
 
-  every(fn: (val: V, key: K) => boolean): boolean;
-  every(value: any, path: string): boolean;
-  every(valueOrFunction: ((val: V, key: K) => boolean) | any, path?: string): boolean {
+  every(fn: (val: V, key: string) => boolean): boolean;
+  every(value: V, path: string): boolean;
+  every(valueOrFunction: ((val: V, key: string) => boolean) | any, path?: string): boolean {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     for (const row of stmt.iterate() as any) {
-      const parsed = this.#parse(row.value);
+      const parsed = this.#parse(row.value, row.key);
       const data = isNil(path) ? parsed : _get(parsed, path);
       if (isFunction(valueOrFunction)) {
         if (!valueOrFunction(data, row.key)) {
@@ -507,12 +509,12 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return true;
   }
 
-  some(fn: (val: V, key: K) => boolean): boolean;
-  some(value: any, path: string): boolean;
-  some(valueOrFunction: ((val: V, key: K) => boolean) | any, path?: string): boolean {
+  some(fn: (val: V, key: string) => boolean): boolean;
+  some(value: V, path: string): boolean;
+  some(valueOrFunction: ((val: V, key: string) => boolean) | any, path?: string): boolean {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     for (const row of stmt.iterate() as any) {
-      const parsed = this.#parse(row.value);
+      const parsed = this.#parse(row.value, row.key);
       const data = isNil(path) ? parsed : _get(parsed, path);
       if (isFunction(valueOrFunction)) {
         if (valueOrFunction(data, row.key)) {
@@ -527,11 +529,11 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return false;
   }
 
-  map<R>(pathOrFn: ((val: V, key: K) => R) | string): R[] {
+  map<R>(pathOrFn: ((val: V, key: string) => R) | string): R[] {
     const results: R[] = [];
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     for (const row of stmt.iterate() as any) {
-      const parsed = this.#parse(row.value);
+      const parsed = this.#parse(row.value, row.key);
       if (isFunction(pathOrFn)) {
         results.push(pathOrFn(parsed, row.key));
       } else {
@@ -541,10 +543,10 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return results;
   }
 
-  find(pathOrFn: ((val: V, key: K) => boolean) | string, value?: any): V | null {
+  find(pathOrFn: ((val: V, key: string) => boolean) | string, value?: any): V | null {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     for (const row of stmt.iterate() as any) {
-      const parsed = this.#parse(row.value);
+      const parsed = this.#parse(row.value, row.key);
       const func = isFunction(pathOrFn)
         ? pathOrFn
         : (v: any) => value === _get(v, pathOrFn);
@@ -555,10 +557,10 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return null;
   }
 
-  findIndex(pathOrFn: ((val: V, key: K) => boolean) | string, value?: any): K | null {
+  findIndex(pathOrFn: ((val: V, key: string) => boolean) | string, value?: any): string | null {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     for (const row of stmt.iterate() as any) {
-      const parsed = this.#parse(row.value);
+      const parsed = this.#parse(row.value, row.key);
       const func = isFunction(pathOrFn)
         ? pathOrFn
         : (v: any) => value === _get(v, pathOrFn);
@@ -569,21 +571,21 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return null;
   }
 
-  reduce<R>(predicate: (accumulator: R, val: V, key: K) => R, initialValue: R): R {
+  reduce<R>(predicate: (accumulator: R, val: V, key: string) => R, initialValue: R): R {
     let accumulator = initialValue;
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     for (const row of stmt.iterate() as any) {
-      const parsed = this.#parse(row.value);
+      const parsed = this.#parse(row.value, row.key);
       accumulator = predicate(accumulator, parsed, row.key);
     }
     return accumulator;
   }
 
-  filter(pathOrFn: ((val: V, key: K) => boolean) | string, value?: any): V[] {
+  filter(pathOrFn: ((val: V, key: string) => boolean) | string, value?: any): V[] {
     const results: V[] = [];
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     for (const row of stmt.iterate() as any) {
-      const parsed = this.#parse(row.value);
+      const parsed = this.#parse(row.value, row.key);
       if (isFunction(pathOrFn)) {
         if (pathOrFn(parsed, row.key)) {
           results.push(parsed);
@@ -603,7 +605,7 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return results;
   }
 
-  sweep(pathOrFn: ((val: V, key: K) => boolean) | string, value?: any): number {
+  sweep(pathOrFn: ((val: V, key: string) => boolean) | string, value?: any): number {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     const deleteStmt = this.#db.prepare(
       `DELETE FROM ${this.#name} WHERE key = ?`,
@@ -614,7 +616,7 @@ export default class Enmap<K extends string | number = string | number, V = any,
     });
     let count = 0;
     for (const row of stmt.iterate() as any) {
-      const parsed = this.#parse(row.value);
+      const parsed = this.#parse(row.value, row.key);
       if (isFunction(pathOrFn)) {
         if (pathOrFn(parsed, row.key)) {
           count++;
@@ -632,15 +634,15 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return count;
   }
 
-  changed(cb: (key: K, oldValue: V | undefined, newValue: V | undefined) => void): void {
+  changed(cb: (key: string, oldValue: V | undefined, newValue: V | undefined) => void): void {
     this.#changedCB = cb;
   }
 
-  partition(pathOrFn: ((val: V, key: K) => boolean) | string, value?: any): [V[], V[]] {
+  partition(pathOrFn: ((val: V, key: string) => boolean) | string, value?: any): [V[], V[]] {
     const results: [V[], V[]] = [[], []];
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     for (const row of stmt.iterate() as any) {
-      const parsed = this.#parse(row.value);
+      const parsed = this.#parse(row.value, row.key);
       if (isFunction(pathOrFn)) {
         if (pathOrFn(parsed, row.key)) {
           results[0].push(parsed);
@@ -660,12 +662,12 @@ export default class Enmap<K extends string | number = string | number, V = any,
   }
 
   // MARK: Internal Methods
-  #set(key: any, value: any): void {
+  #set(key: string, value: V): void {
     let serialized;
     try {
       serialized = stringify(this.#serializer(value, key));
     } catch (e) {
-      serialized = stringify(this.#serializer(onChange.target(value), key));
+      serialized = stringify(this.#serializer(onChange.target(value as any) as V, key));
     }
     this.#db
       .prepare(
@@ -674,12 +676,12 @@ export default class Enmap<K extends string | number = string | number, V = any,
       .run(key, serialized);
   }
 
-  #parse(value: any): any {
+  #parse(value: any, key?: string): any {
     let parsed;
     try {
       parsed = parse(value);
       try {
-        parsed = this.#deserializer(parsed as any, '');
+        parsed = this.#deserializer(parsed as any, key || '');
       } catch (e: any) {
         throw new Err(
           'Error while deserializing data: ' + e.message,
@@ -695,7 +697,7 @@ export default class Enmap<K extends string | number = string | number, V = any,
     return parsed;
   }
 
-  #keycheck(key: any, type = 'key'): void {
+  #keycheck(key: string, type = 'key'): void {
     if (typeof key !== 'string') {
       throw new Error(
         `Invalid ${type} for enmap - keys must be a string.`,
@@ -703,11 +705,11 @@ export default class Enmap<K extends string | number = string | number, V = any,
     }
   }
 
-  #check(key: any, type: any, path?: any): void {
-    key = key.toString();
+  #check(key: string, type: any, path?: any): void {
+    const keyStr = key.toString();
     if (!this.has(key))
       throw new Err(
-        `The key "${key}" does not exist in the enmap "${this.#name}"`,
+        `The key "${keyStr}" does not exist in the enmap "${this.#name}"`,
         'EnmapPathError',
       );
     if (!type) return;
@@ -717,13 +719,13 @@ export default class Enmap<K extends string | number = string | number, V = any,
       const data = this.get(key as any);
       if (isNil(_get(data, path))) {
         throw new Err(
-          `The property "${path}" in key "${key}" does not exist. Please set() it or ensure() it."`,
+          `The property "${path}" in key "${keyStr}" does not exist. Please set() it or ensure() it."`,
           'EnmapPathError',
         );
       }
       if (!type.includes(_get(data, path).constructor.name)) {
         throw new Err(
-          `The property "${path}" in key "${key}" is not of type "${type.join(
+          `The property "${path}" in key "${keyStr}" is not of type "${type.join(
             '" or "',
           )}" in the enmap "${this.#name}" 
 (key was of type "${_get(data, path).constructor.name}")`,
@@ -732,7 +734,7 @@ export default class Enmap<K extends string | number = string | number, V = any,
       }
     } else if (!type.includes(this.get(key as any)!.constructor.name)) {
       throw new Err(
-        `The value for key "${key}" is not of type "${type.join(
+        `The value for key "${keyStr}" is not of type "${type.join(
           '" or "',
         )}" in the enmap "${this.#name}" (value was of type "${
           this.get(key as any)!.constructor.name
@@ -742,7 +744,7 @@ export default class Enmap<K extends string | number = string | number, V = any,
     }
   }
 
-  #math(base: any, op: any, opand: any): number | null {
+  #math(base: number, op: MathOps, opand: number): number | null {
     if (base == undefined || op == undefined || opand == undefined)
       throw new Err(
         'Math Operation requires base and operation',
