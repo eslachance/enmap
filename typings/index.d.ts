@@ -554,50 +554,43 @@ declare module 'enmap' {
 
 
     /**
-     * Removes entries that satisfy the provided filter function.
-     * @param fn Function used to test (should return a boolean)
-     * @param thisArg Value to use as `this` when executing function
-     * @returns The number of removed entries
+     * Deletes entries that satisfy the provided filter function or value matching.
+     * @param pathOrFn The path to the value to test against, or the function to test with.
+     * @param value The expected value - only applicable and required if using a property for the first argument.
+     * @returns The number of removed entries.
      */
     public sweep(
-      fn: (val: V, key: K, enmap: this) => boolean,
-      thisArg?: any,
+      pathOrFn: ((val: V, key: K) => boolean) | string,
+      value?: any,
     ): number;
 
     /**
-     * Identical to [Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter),
-     * but returns a Enmap instead of an Array.
-     * @param fn Function used to test (should return a boolean)
-     * @param thisArg Value to use as `this` when executing function
+     * Similar to [Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter).
+     * Returns an array of values where the given function returns true for that value.
+     * Alternatively you can provide a value and path to filter by using exact value matching.
+     * @param pathOrFn The path to the value to test against, or the function to test with.
+     * If using a function, this function should return a boolean.
+     * @param value Value to use as `this` when executing function
+     * @returns Array of values that match the filter criteria
      */
     public filter(
-      fn: (val: V, key: K, enmap: this) => boolean,
-      thisArg?: any,
-    ): this;
-
-    /**
-     * Identical to
-     * [Array.filter()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/filter).
-     * @param fn Function used to test (should return a boolean)
-     * @param thisArg Value to use as `this` when executing function
-     */
-    public filterArray(
-      fn: (val: V, key: K, enmap: this) => boolean,
-      thisArg?: any,
+      pathOrFn: ((val: V, key: K) => boolean) | string,
+      value?: any,
     ): V[];
 
     /**
-     * Partitions the collection into two collections where the first collection
+     * Separates the Enmap into two arrays where the first array
      * contains the items that passed and the second contains the items that failed.
-     * @param fn Function used to test (should return a boolean)
-     * @param thisArg Value to use as `this` when executing function
+     * @param pathOrFn the path to the value to test against, or the function to test with.
+     * @param value the value to use as a condition for partitioning.
+     * @returns An array of two arrays with the partitioned data.
      * @example
-     * const [big, small] = collection.partition(guild => guild.memberCount > 250);
+     * const [approved, pending] = comments.partition(c => c.approved === true);
      */
     public partition(
-      fn: (val: V, key: K, enmap: this) => boolean,
-      thisArg?: any,
-    ): [Enmap, Enmap];
+      pathOrFn: ((val: V, key: K) => boolean) | string,
+      value?: any,
+    ): [V[], V[]];
 
     /**
      * Identical to
@@ -608,25 +601,31 @@ declare module 'enmap' {
     public map<R>(fn: (val: V, key: K, enmap: this) => R, thisArg?: any): R[];
 
     /**
-     * Identical to
+     * Similar to
      * [Array.some()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/some).
-     * @param fn Function used to test (should return a boolean)
-     * @param thisArg Value to use as `this` when executing function
+     * Supports either a predicate function or a value to compare.
+     * Returns true if the predicate function returns true for at least one element in the array (or the value is equal in at least one element).
+     * @param valueOrFunction Function used to test (should return a boolean), or a value to compare.
+     * @param path Required if the value is an object. The path to the property to compare with.
+     * @returns boolean
      */
     public some(
-      fn: (val: V, key: K, enmap: this) => boolean,
-      thisArg?: any,
+      valueOrFunction: ((val: V, key: K) => boolean) | any,
+      path?: string,
     ): boolean;
 
     /**
-     * Identical to
+     * Similar to
      * [Array.every()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/every).
-     * @param fn Function used to test (should return a boolean)
-     * @param thisArg Value to use as `this` when executing function
+     * Supports either a predicate function or a value to compare.
+     * Returns true only if the predicate function returns true for all elements in the array (or the value is strictly equal in all elements).
+     * @param valueOrFunction Function used to test (should return a boolean), or a value to compare.
+     * @param path Required if the value is an object. The path to the property to compare with.
+     * @returns boolean
      */
     public every(
-      fn: (val: V, key: K, enmap: this) => boolean,
-      thisArg?: any,
+      valueOrFunction: ((val: V, key: K) => boolean) | any,
+      path?: string,
     ): boolean;
 
     /**
