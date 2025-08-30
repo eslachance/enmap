@@ -165,7 +165,7 @@ export default class Enmap<V = any, SV = unknown> {
 
   set(key: string, value: any, path?: Path<V>): this {
     this.#keycheck(key);
-    let data = this.get(key as any) as any;
+    let data = this.get(key) as any;
     const oldValue = cloneDeep(data);
     if (!isNil(path)) {
       if (isNil(data)) data = {};
@@ -210,7 +210,7 @@ export default class Enmap<V = any, SV = unknown> {
     this.#keycheck(key);
     if (path) {
       this.#check(key, ['Object']);
-      const data = this.get(key as any) as any;
+      const data = this.get(key) as any;
       _set(data, path, undefined);
       this.set(key, data);
     } else {
@@ -306,9 +306,9 @@ export default class Enmap<V = any, SV = unknown> {
 
   observe(key: string, path?: Path<V>): any {
     this.#check(key, ['Object', 'Array'], path);
-    const data = this.get(key, path as any);
+    const data = this.get(key, path);
     const proxy = onChange(data as any, () => {
-      this.set(key, proxy as any, path as any);
+      this.set(key, proxy as any, path);
     });
     return proxy;
   }
@@ -316,24 +316,24 @@ export default class Enmap<V = any, SV = unknown> {
   push(key: string, value: V, path?: Path<V>, allowDupes = false): this {
     this.#keycheck(key);
     this.#check(key, ['Array', 'Object']);
-    const data = this.get(key, path as any);
+    const data = this.get(key, path);
     if (!isArray(data))
       throw new Err('Key does not point to an array', 'EnmapPathError');
     if (!allowDupes && data.includes(value)) return this;
     data.push(value);
-    this.set(key, data as any, path as any);
+    this.set(key, data as any, path);
     return this;
   }
 
   math(key: string, operation: MathOps, operand: number, path?: Path<V>): number | null {
     this.#keycheck(key);
     this.#check(key, ['Number'], path);
-    const data = this.get(key, path as any);
+    const data = this.get(key, path);
     if (typeof data !== 'number') {
       throw new Err(`Value at key "${key}" is not a number`, 'EnmapTypeError');
     }
     const updatedValue = this.#math(data, operation, operand);
-    this.set(key, updatedValue as any, path as any);
+    this.set(key, updatedValue as any, path);
     return updatedValue;
   }
 
@@ -341,7 +341,7 @@ export default class Enmap<V = any, SV = unknown> {
     this.#keycheck(key);
     this.#check(key, ['Number'], path);
     const data = this.get(key, path) as any;
-    this.set(key, (data + 1) as any, path as any);
+    this.set(key, (data + 1) as any, path);
     return this;
   }
 
@@ -349,7 +349,7 @@ export default class Enmap<V = any, SV = unknown> {
     this.#keycheck(key);
     this.#check(key, ['Number'], path);
     const data = this.get(key, path) as any;
-    this.set(key, (data - 1) as any, path as any);
+    this.set(key, (data - 1) as any, path);
     return this;
   }
 
@@ -370,11 +370,11 @@ export default class Enmap<V = any, SV = unknown> {
       if (this.has(key) && this.get(key, path) !== undefined) return this.get(key, path);
       if (this.#ensureProps) this.ensure(key, {});
 
-      this.set(key, clonedDefault as any, path as any);
+      this.set(key, clonedDefault as any, path);
       return clonedDefault;
     }
 
-    if (this.#ensureProps && isObject(this.get(key as any))) {
+    if (this.#ensureProps && isObject(this.get(key))) {
       if (!isObject(clonedDefault))
         throw new Err(
           `Default value for "${key}" in enmap "${
@@ -382,12 +382,12 @@ export default class Enmap<V = any, SV = unknown> {
           }" must be an object when merging with an object value.`,
           'EnmapArgumentError',
         );
-      const merged = merge(clonedDefault, this.get(key as any));
+      const merged = merge(clonedDefault, this.get(key));
       this.set(key, merged as any);
       return merged;
     }
 
-    if (this.has(key)) return this.get(key as any);
+    if (this.has(key)) return this.get(key);
     this.set(key, clonedDefault as any);
     return clonedDefault;
   }
@@ -399,7 +399,7 @@ export default class Enmap<V = any, SV = unknown> {
     return data?.includes(value) || false;
   }
 
-  remove(key: string, val: any, path?: Path<V>): this {
+  remove(key: string, val: V, path?: Path<V>): this {
     this.#keycheck(key);
     this.#check(key, ['Array', 'Object']);
     const data = this.get(key, path) as any;
@@ -408,7 +408,7 @@ export default class Enmap<V = any, SV = unknown> {
     if (index > -1) {
       data.splice(index, 1);
     }
-    this.set(key, data as any, path as any);
+    this.set(key, data, path);
     return this;
   }
 
@@ -676,12 +676,12 @@ export default class Enmap<V = any, SV = unknown> {
       .run(key, serialized);
   }
 
-  #parse(value: any, key?: string): any {
+  #parse(value: string, key?: string): any {
     let parsed;
     try {
-      parsed = parse(value);
+      parsed = parse(value) as SV;
       try {
-        parsed = this.#deserializer(parsed as any, key || '');
+        parsed = this.#deserializer(parsed, key || '');
       } catch (e: any) {
         throw new Err(
           'Error while deserializing data: ' + e.message,
@@ -716,7 +716,7 @@ export default class Enmap<V = any, SV = unknown> {
     if (!isArray(type)) type = [type];
     if (!isNil(path)) {
       this.#check(key, 'Object');
-      const data = this.get(key as any);
+      const data = this.get(key);
       if (isNil(_get(data, path))) {
         throw new Err(
           `The property "${path}" in key "${keyStr}" does not exist. Please set() it or ensure() it."`,
@@ -732,12 +732,12 @@ export default class Enmap<V = any, SV = unknown> {
           'EnmapTypeError',
         );
       }
-    } else if (!type.includes(this.get(key as any)!.constructor.name)) {
+    } else if (!type.includes(this.get(key)!.constructor.name)) {
       throw new Err(
         `The value for key "${keyStr}" is not of type "${type.join(
           '" or "',
         )}" in the enmap "${this.#name}" (value was of type "${
-          this.get(key as any)!.constructor.name
+          this.get(key)!.constructor.name
         }")`,
         'EnmapTypeError',
       );
