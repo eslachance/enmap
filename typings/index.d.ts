@@ -1,18 +1,13 @@
 declare module 'enmap' {
   export interface EnmapOptions<V, SV> {
     name?: string;
-    fetchAll?: boolean;
-    autoFetch?: boolean;
     dataDir?: string;
-    cloneLevel?: 'none' | 'shallow' | 'deep';
-    polling?: boolean;
-    pollingInterval?: number;
     ensureProps?: boolean;
-    wal?: boolean;
-    verbose?: (query: string) => void;
     autoEnsure?: unknown;
     serializer?: (value: V, key: string) => SV;
     deserializer?: (value: SV, key: string) => V;
+    inMemory?: boolean;
+    sqliteOptions?: any;
   }
 
   type MathOps =
@@ -58,31 +53,7 @@ declare module 'enmap' {
     ? T[P]
     : never;
 
-  /**
-   * Hack to work around TypeScript's structural integrity requirement.
-   * This is the Map<K, V> class without the delete method since Enmap returns this
-   * while the standard returns boolean.
-   */
-  class AlmostMap<K, V> {
-    readonly size: number;
-    readonly [Symbol.toStringTag]: 'Map';
 
-    clear(): void;
-    forEach(
-      callbackfn: (value: V, key: K, map: Map<K, V>) => void,
-      thisArg?: any,
-    ): void;
-
-    get(key: K): V | undefined;
-    has(key: K): boolean;
-    set(key: K, value: V): this;
-
-    entries(): IterableIterator<[K, V]>;
-    keys(): IterableIterator<K>;
-    values(): IterableIterator<V>;
-
-    [Symbol.iterator](): IterableIterator<[K, V]>;
-  }
 
   /**
    * A enhanced Map structure with additional utility methods.
@@ -92,41 +63,27 @@ declare module 'enmap' {
     K extends string | number = string | number,
     V = any,
     SV = unknown,
-  > extends AlmostMap<K, V> {
-    public readonly cloneLevel: 'none' | 'shallow' | 'deep';
-    public readonly name: string;
-    public readonly dataDir: string;
-    public readonly fetchAll: boolean;
-    public readonly autoFetch: boolean;
-    public readonly defer: Promise<void>;
-    public readonly persistent: boolean;
-    public readonly pollingInterval: number;
-    public readonly polling: boolean;
-    public readonly isReady: boolean;
-    public readonly lastSync: Date;
-    public readonly ensureProps: boolean;
-    public readonly wal: boolean;
-    public readonly changedCB: (
-      key: K,
-      oldValue: V | undefined,
-      newValue: V | undefined,
-    ) => void;
-
-    private db: any;
-    private pool: any;
-    private ready: () => void;
+  > {
+    /**
+     * Get the better-sqlite3 database object. Useful if you want to directly query or interact with the
+     * underlying SQLite database. Use at your own risk, as errors here might cause loss of data or corruption!
+     */
+    public readonly db: any;
 
     /**
-     * Retrieves the number of rows in the database for this enmap, even if they aren't fetched.
-     * @return The number of rows in the database.
+     * Get the number of key/value pairs saved in the enmap.
+     */
+    public readonly size: number;
+
+    /**
+     * Alias for size
      */
     public readonly count: number;
 
     /**
-     * Retrieves all the indexes (keys) in the database for this enmap, even if they aren't fetched.
-     * @return Array of all indexes (keys) in the enmap, cached or not.
+     * Alias for size  
      */
-    public readonly indexes: string[];
+    public readonly length: number;
 
     /**
      * Generates an automatic numerical key for inserting a new value.
@@ -141,25 +98,20 @@ declare module 'enmap' {
 
     /**
      * Initializes a new Enmap, with options.
-     * @param iterable If iterable data, only valid in non-persistent enmaps.
-     * If this parameter is a string, it is assumed to be the enmap's name, which is a shorthand for adding a name in the options
-     * and making the enmap persistent.
-     * @param options Additional options for the enmap. See https://enmap.alterion.dev/usage#enmap-options for details.
+     * @param options Options for the enmap. See https://enmap.alterion.dev/usage#enmap-options for details.
      * @example
      * const Enmap = require("enmap");
-     * // Non-persistent enmap:
-     * const inMemory = new Enmap();
+     * 
+     * // Named, Persistent enmap
+     * const myEnmap = new Enmap({ name: "testing" });
+     * 
+     * // Memory-only enmap
+     * const memoryEnmap = new Enmap({ inMemory: true });
      *
-     * // Named, Persistent enmap with string option
-     * const myEnmap = new Enmap("testing");
-     *
-     * // Named, Persistent enmap with a few options:
-     * const myEnmap = new Enmap({name: "testing", fetchAll: false, autoFetch: true});
+     * // Enmap that automatically assigns a default object when getting or setting anything.
+     * const autoEnmap = new Enmap({name: "settings", autoEnsure: { setting1: false, message: "default message"}})
      */
-    constructor(
-      iterable?: Iterable<[K, V]> | string | EnmapOptions<V, SV>,
-      options?: EnmapOptions<V, SV>,
-    );
+    constructor(options: EnmapOptions<V, SV>);
 
     /**
      * Sets a value in Enmap.
@@ -225,31 +177,40 @@ declare module 'enmap' {
     public get(key: K, path: string): unknown;
 
     /**
-     * Fetches every key from the persistent enmap and loads them into the current enmap value.
-     * @return The enmap containing all values.
+     * Returns an observable object. Modifying this object or any of its properties/indexes/children
+     * will automatically save those changes into enmap. This only works on
+     * objects and arrays, not "basic" values like strings or integers.
+     * @param key The key to retrieve from the enmap.
+     * @param path Optional. The property to retrieve from the object or array.
+     * @return The value for this key.
      */
-    public fetchEverything(): this;
+    public observe(key: K, path?: string): any;
 
     /**
-     * Force fetch one or more key values from the enmap. If the database has changed, that new value is used.
-     * @param keys A single key or array of keys to force fetch from the enmap database.
-     * @return The Enmap, including the new fetched values
+     * Get all the keys of the enmap as an array.
+     * @returns An array of all the keys in the enmap.
      */
-    public fetch(keys: K[]): this;
+    public keys(): K[];
 
     /**
-     * Force fetch one or more key values from the enmap. If the database has changed, that new value is used.
-     * @param key A single key to force fetch from the enmap database.
-     * @return The value.
+     * Alias for keys()
+     * @returns An array of all the keys in the enmap.
      */
-    public fetch(key: K): V;
+    public indexes(): K[];
 
     /**
-     * Removes a key or keys from the cache - useful when disabling autoFetch.
-     * @param keyOrArrayOfKeys A single key or array of keys to remove from the cache.
-     * @returns the Enmap minus the evicted keys.
+     * Get all the values of the enmap as an array.
+     * @returns An array of all the values in the enmap.
      */
-    public evict(keyOrArrayOfKeys: K | K[]): this;
+    public values(): V[];
+
+    /**
+     * Get all entries of the enmap as an array, with each item containing the key and value.
+     * @returns An array of arrays, with each sub-array containing two items, the key and the value.
+     */
+    public entries(): [K, V][];
+
+
 
     /**
      * Function called whenever data changes within Enmap after the initial load.
@@ -264,25 +225,7 @@ declare module 'enmap' {
       cb: (key: K, oldValue: V | undefined, newValue: V | undefined) => void,
     ): void;
 
-    /**
-     * Shuts down the database. WARNING: USING THIS MAKES THE ENMAP UNUSEABLE. You should
-     * only use this method if you are closing your entire application.
-     * Note that honestly I've never had to use this, shutting down the app without a close() is fine.
-     * @return The promise of the database closing operation.
-     */
-    public close(): Promise<void>;
 
-    /**
-     * Modify the property of a value inside the enmap, if the value is an object or array.
-     * This is a shortcut to loading the key, changing the value, and setting it back.
-     * @param key Required. The key of the element to add to The Enmap or array.
-     * This value MUST be a string or number.
-     * @param path Required. The property to modify inside the value object or array.
-     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
-     * @param val Required. The value to apply to the specified property.
-     * @returns The enmap.
-     */
-    public setProp(key: K, path: string, val: any): this;
 
     /**
      * Push to an array value in Enmap.
@@ -302,18 +245,6 @@ declare module 'enmap' {
      * @returns The enmap.
      */
     public push(key: K, val: any, path?: string, allowDupes?: boolean): this;
-
-    /**
-     * Push to an array element inside an Object or Array element in Enmap.
-     * @param key Required. The key of the element.
-     * This value MUST be a string or number.
-     * @param path Required. The name of the array property to push to.
-     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
-     * @param val Required. The value push to the array property.
-     * @param allowDupes Allow duplicate values in the array (default: false).
-     * @returns The enmap.
-     */
-    public pushIn(key: K, path: string, val: any, allowDupes?: boolean): this;
 
     // AWESOME MATHEMATICAL METHODS
 
@@ -373,14 +304,7 @@ declare module 'enmap' {
      */
     public dec(key: K, path?: string): this;
 
-    /**
-     * Returns the specific property within a stored value. If the key does not exist or the value is not an object, throws an error.
-     * @param key Required. The key of the element to get from The Enmap.
-     * @param path Required. The property to retrieve from the object or array.
-     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
-     * @return The value of the property obtained.
-     */
-    public getProp(key: K, path: string): any;
+
 
     /**
      * Returns the key's value, or the default given, ensuring that the data is there.
@@ -406,27 +330,25 @@ declare module 'enmap' {
 
     /**
      * Returns whether or not the key exists in the Enmap.
-     * @param key Required. The key of the element to add to The Enmap or array.
-     * This value MUST be a string or number.
-     * @param path Optional. The property to verify inside the value object or array.
-     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
+     * @param key Required. The key of the element to check in The Enmap.
      * @example
      * if(enmap.has("myKey")) {
      *   // key is there
      * }
-     *
-     * if(!enmap.has("myOtherKey", "oneProp.otherProp.SubProp")) return false;
+     * @returns {boolean}
      */
-    public has(key: K, path?: string): boolean;
+    public has(key: K): boolean;
 
     /**
-     * Returns whether or not the property exists within an object or array value in enmap.
-     * @param key Required. The key of the element to check in the Enmap or array.
-     * @param path Required. The property to verify inside the value object or array.
+     * Performs Array.includes() on a certain enmap value. Works similar to
+     * [Array.includes()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/includes).
+     * @param key Required. The key of the array to check the value of.
+     * @param value Required. The value to check whether it's in the array.
+     * @param path Optional. The property to access the array inside the value object or array.
      * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
-     * @return Whether the property exists.
+     * @return Whether the array contains the value.
      */
-    public hasProp(key: K, path: string): boolean;
+    public includes(key: K, value: any, path?: string): boolean;
 
     /**
      * Deletes a key in the Enmap.
@@ -439,44 +361,30 @@ declare module 'enmap' {
     public delete(key: K, path?: string): this;
 
     /**
-     * Delete a property from an object or array value in Enmap.
-     * @param key Required. The key of the element to delete the property from in Enmap.
-     * @param path Required. The name of the property to remove from the object.
-     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
+     * Deletes everything from the enmap.
+     * @returns {void}
      */
-    public deleteProp(key: K, path: string): void;
-
-    /**
-     * Deletes everything from the enmap. If persistent, clears the database of all its data for this table.
-     */
-    public deleteAll(): void;
-
     public clear(): void;
 
     /**
      * Remove a value in an Array or Object element in Enmap. Note that this only works for
-     * values, not keys. Complex values such as objects and arrays will not be removed this way.
+     * values, not keys. Note that only one value is removed, no more. Arrays of objects must use a function to remove,
+     * as full object matching is not supported.
      * @param key Required. The key of the element to remove from in Enmap.
-     * This value MUST be a string or number.
-     * @param val Required. The value to remove from the array or object.
+     * @param val Required. The value to remove from the array or object. OR a function to match an object.
+     * If using a function, the function provides the object value and must return a boolean that's true for the object you want to remove.
      * @param path Optional. The name of the array property to remove from.
      * Should be a path with dot notation, such as "prop1.subprop2.subprop3".
      * If not presents, removes directly from the value.
-     * @returns The enmap.
+     * @example
+     * // Assuming
+     * enmap.set('array', [1, 2, 3])
+     * enmap.set('objectarray', [{ a: 1, b: 2, c: 3 }, { d: 4, e: 5, f: 6 }])
+     *
+     * enmap.remove('array', 1); // value is now [2, 3]
+     * enmap.remove('objectarray', (value) => value.e === 5); // value is now [{ a: 1, b: 2, c: 3 }]
      */
-    public remove(key: K, val: V, path?: string): this;
-
-    /**
-     * Remove a value from an Array or Object property inside an Array or Object element in Enmap.
-     * Confusing? Sure is.
-     * @param key Required. The key of the element.
-     * This value MUST be a string or number.
-     * @param path Required. The name of the array property to remove from.
-     * Should be a path with dot notation, such as "prop1.subprop2.subprop3"
-     * @param val Required. The value to remove from the array property.
-     * @returns The enmap.
-     */
-    public removeFrom(key: K, path: string, val: any): this;
+    public remove(key: K, val: any | ((value: any) => boolean), path?: string): this;
 
     /**
      * Exports the enmap data to stringified JSON format. WARNING: Does not work on memory enmaps containing complex data!
@@ -582,57 +490,24 @@ declare module 'enmap' {
         https://github.com/discordjs/discord.js/blob/stable/src/util/Collection.js
         */
 
-    /**
-     * Creates an ordered array of the values of this Enmap.
-     * The array will only be reconstructed if an item is added to or removed from the Enmap,
-     * or if you change the length of the array itself. If you don't want this caching behavior,
-     * use `Array.from(enmap.values())` instead.
-     */
-    public array(): V[];
+
+
 
     /**
-     * Creates an ordered array of the keys of this Enmap
-     * The array will only be reconstructed if an item is added to or removed from the Enmap,
-     * or if you change the length of the array itself. If you don't want this caching behavior,
-     * use `Array.from(enmap.keys())` instead.
+     * Obtains random key-value pair(s) from this Enmap.
+     * @param count Number of pairs to obtain randomly (defaults to 1)
+     * @returns An array of [key, value] pairs
      */
-    public keyArray(): K[];
+    public random(count?: number): [K, V][];
 
     /**
-     * Obtains a random value from this Enmap. This relies on {@link Enmap#array}.
-     * @returns A random value from the Enmap.
+     * Obtains random key(s) from this Enmap.
+     * @param count Number of keys to obtain randomly (defaults to 1)
+     * @returns An array of keys
      */
-    public random(): V;
+    public randomKey(count?: number): K[];
 
-    /**
-     * Obtains random values from this Enmap. This relies on {@link Enmap#array}.
-     * @param count Number of values to obtain randomly
-     * @returns An array of values of `count` length
-     */
-    public random(count: number): V[];
 
-    /**
-     * Obtains a random key from this Enmap. This relies on {@link Enmap#keyArray}
-     * @returns A random key from the Enmap
-     */
-    public randomKey(): K;
-
-    /**
-     * Obtains random keys from this Enmap. This relies on {@link Enmap#keyArray}
-     * @param count Number of keys to obtain randomly
-     * @returns An array of keys of `count` length
-     */
-    public randomKey(count: number): V[];
-
-    /**
-     * Searches for all items where their specified property's value is identical to the given value
-     * (`item[prop] === value`).
-     * @param prop The property to test against
-     * @param value The expected value
-     * @example
-     * enmap.findAll('username', 'Bob');
-     */
-    public findAll(prop: string, value: any): V[];
 
     /**
      * Searches for a single item where the given function returns a truthy value. This is identical to [Array.find()](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/find).
@@ -676,19 +551,7 @@ declare module 'enmap' {
      */
     public findKey(prop: string, value: any): K | undefined;
 
-    /**
-     * Searches for the existence of a single item where its specified property's value is identical to the given value
-     * (`item[prop] === value`).
-     * <warn>Do not use this to check for an item by its ID. Instead, use `enmap.has(id)`. See
-     * [MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map/has) for details.</warn>
-     * @param prop The property to test against
-     * @param value The expected value
-     * @example
-     * if (enmap.exists('username', 'Bob')) {
-     *  console.log('user here!');
-     * }
-     */
-    public exists(prop: string, value: any): boolean;
+
 
     /**
      * Removes entries that satisfy the provided filter function.
