@@ -13,19 +13,20 @@
   <p><img src="https://alterion.dev/enmap-logo.svg" alt="Enmap Logo" />
 </div>
 
-Enhanced Maps are a data structure that can be used to store data in memory that can also be saved in a database behind the scenes.
-These operations are fast, safe, and painless.
+Enmap is a simple and efficient wrapper around SQLite, based around the idea of being a Map() with additional array methods added on to it.
 
-The data is synchronized to the database automatically, seamlessly, and asynchronously for maximum effectiveness.
-The storage system used is an `sqlite` database which is fast, performant, can be easily backed up,
-and supports multiple simultaneous connections.
+Enmap is: 
+
+- **Anti-ORM**, in that it can store any serializable data, and each value can be of a different shape. Compared to an ORM which strictly defines a shape for your data.
+- Fully **typescript compatible**. Accepts generics if you *do* want to define a data shape for your own code. Return values are properly typed according to your generics if provided.
+- **Synchronous**. Meaning, it doesn't use callbacks or promises, no await, no .then, just call the method and go. This is thanks to [better-sqlite3][https://npm.im/better-sqlite3]!
+- **Modern and maintained**. I try to keep up to date with dependency updates, too add new functionality, and resolve issues, as fast as I can. Even if there's months where I don't update Enmap, it is not abandonned.
 
 ## Documentation
 
 * [Installation](https://enmap.alterion.dev/install)
 * [Basic Setup](https://enmap.alterion.dev/usage)
 * [API Reference](https://enmap.alterion.dev/api)
-* [Examples](https://enmap.alterion.dev/complete-examples)
 
 ## Support
 
@@ -33,23 +34,15 @@ Support is offered on my official [Alterion.dev Discord](https://discord.gg/N7ZK
 
 ## FAQs
 
-### Q: So what's Enmap?
-
-**A**: Enmaps are the Javascript Map() data structure with additional utility methods. This started
-as a pretty straight clone of the [Discord.js Collections](https://discord.js.org/#/docs/collection/main/class/Collection)
-but since its creation has grown far beyond those methods alone.
-
 ### Q: What is "Persistent"?
 
 **A**: By using a database layer with `better-sqlite3`, any data added to the Enmap
-is stored not only in temporary memory but also backed up in a local database. This means that
+is stored up in a local database. This means that
 when you restart your project, your data is not lost and is loaded on startup.
 
 ### Q: How big can the Enmap be?
 
-**A**: The size of the memory used is directly proportional to the size of all the keys loaded in memory.
-The more data you have, the more complex it is, the more memory it may use. You can use the
-[fetchAll](https://enmap.alterion.dev/usage/fetchall) option to reduce memory usage.
+**A**: Theoretically there is no limit to how much data you can store, except for the file system limitations. In most cases, it's not something you need to worry about.
 
 ### Q: Who did you make this for?
 
