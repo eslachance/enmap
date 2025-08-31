@@ -39,7 +39,7 @@
     "simple",
     "wrapper"
   ],
-  "author": "Evelyne Lachance <eslachance@gmail.com> (https://alterion.dev/)",
+  "author": "Eric-Sebastien Lachance <eslachance@gmail.com> (https://alterion.dev/)",
   "license": "Apache-2.0",
   "dependencies": {
     "better-serialize": "^1.0.0",

@@ -70,16 +70,6 @@ type Path<T, Key extends keyof T = keyof T> = Key extends string
     : Key
   : never;
 
-type PathValue<T, P extends Path<T>> = P extends `${infer Key}.${infer Rest}`
-  ? Key extends keyof T
-    ? Rest extends Path<T[Key]>
-      ? PathValue<T[Key], Rest>
-      : never
-    : never
-  : P extends keyof T
-  ? T[P]
-  : never;
-
 /**
  * A simple, synchronous, fast key/value storage build around better-sqlite3.
  * Contains extra utility methods for managing arrays and objects.
