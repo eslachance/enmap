@@ -10,7 +10,8 @@
     "dev": "tsc --watch",
     "prepublishOnly": "npm run build",
     "test": "vitest run",
-    "build-api-docs": "node ./scripts/build-docs.js"
+    "docs": "node ./scripts/generate-docs.js",
+    "retype": "cd docs && npx retype build"
   },
   "files": [
     "dist",
@@ -56,6 +57,7 @@
     "eslint-plugin-node": "^11.1.0",
     "jsdoc-to-markdown": "^8.0.0",
     "limax": "^4.0.0",
+    "retype": "^0.2.0",
     "typescript": "^5.9.2",
     "vitest": "^1.6.0"
   },
