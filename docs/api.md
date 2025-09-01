@@ -547,7 +547,7 @@ const Enmap = require('enmap');
 const { settings, tags, blacklist } = Enmap.multi(['settings', 'tags', 'blacklist']);
 
 // Attaching to an existing object (for instance some API's client)
-const Enmap = require("enmap");
+import Enmap from 'enmap';
 Object.assign(client, Enmap.multi(["settings", "tags", "blacklist"]));
 ```
 <a name="random"></a>

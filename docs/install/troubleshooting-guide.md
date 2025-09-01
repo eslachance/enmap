@@ -23,6 +23,7 @@ Some tips: Make sure you are doing this install on a fast hard drive (ideally SS
 Looks like someone hasn't follows the [installation instructions](/install) correctly...
 
 (are you sensing there's a theme yet in this troubleshooting guide?)
+
 ## My Question Isn't Answered Here!
 
 Please make sure you read the [install page](/install) first. If you can't find what your looking for you can join the discord [here](https://discord.gg/N7ZKH3P).

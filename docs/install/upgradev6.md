@@ -14,7 +14,7 @@ Here's a quick and dirty script:
 
 ```js
 const fs = require("fs");
-const Enmap = require("enmap");
+import Enmap from 'enmap';
 
 const enmap = new Enmap({ name: 'nameofenmap' });
 
@@ -32,7 +32,7 @@ Once exporting is done, you can `npm i enmap@latest` to get version 6.X. After t
 
 ```js
 const fs = require("fs");
-const Enmap = require("enmap");
+import Enmap from 'enmap';
 
 const enmap = new Enmap({ name: 'nameofenmap' });
 
@@ -55,7 +55,7 @@ going to ESM is important in your JavaScript developer journey anyways.
 
 So what does this mean? It means modifying all your imports and exports, starting with Enmap:
 ```diff
-- const Enmap = require("enmap");
+- import Enmap from 'enmap';
 + import Enmap from 'enmap';
 ```
 

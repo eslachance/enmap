@@ -11,7 +11,7 @@ Enmap is a wrapper around better-sqlite3, which requires to be built directly on
 
 {% hint style="warning" %}
 SQLite modules usually only successfully work on LTS versions of node which are even-numbered. This means
-it will work on node 12, 14, 16 but will most likely _not_ work on 13, 15, 17. Make sure you have the right version, check this with `node -v`.
+it will work on node 18, 20, 22 but will most likely _not_ work on 17, 19, 21. Make sure you have the right version, check this with `node -v`.
 {% endhint %}
 
 How to install the pre-requisites depends on your operating system, so see below for instructions:
@@ -20,20 +20,21 @@ How to install the pre-requisites depends on your operating system, so see below
 {% tab title="Windows" %}
 On Windows, two things are required to install better-sqlite3. Python, and the Visual Studio C++ Build Tools. They are required for any module that is _built_ on the system, which includes sqlite.
 
-To install the necessary prerequisites on Windows, the easiest is to simply run the following commands separately, _under an **administrative** command prompt or powershell:_
+**The Easy Way**: When installing NodeJS, in the "Tools for native modules", make sure to check the option "Automatically install the necessary tools". This will install the required dependencies.
 
-```javascript
-// First run:
-npm i -g --add-python-to-path --vs2015 --production windows-build-tools
-// If you get an error here READ THE TEXT ABOVE AND BELOW THIS CODE BLOCK, IT IS IMPORTANT.
+![](/assets/nodejs-gyp-install.png "Installing build tools in nodejs")
 
-// Then run:
-npm i -g node-gyp@latest
+**The slightly harder way**: If you've already installed nodejs and don't wish to reinstall it, you can install the tools using [choco](https://chocolatey.org/install). Once choco is installed, simply run the following command, _under an **administrative** command prompt or powershell:_
+
+```cmd
+choco install python visualstudio2022-workload-vctools -y
 ```
 
-> It's _very important_ that this be run in the **administrative** prompt, and not a regular one.
+!!!danger Danger
+If you get an error here READ THIS: It's _very important_ that this be run in the **administrative** prompt, and not a regular one. Run as admin.
+!!!
 
-Once the windows-build-tools are installed \(this might take quite some time, depending on your internet connection\), **close all open command prompts, powershell windows, VSCode, and editors with a built-in console/prompt**. Otherwise, the next command will not work.
+Once the build tools are installed \(this might take quite some time, depending on your internet connection\), **close all open command prompts, powershell windows, VSCode, and editors with a built-in console/prompt**. Otherwise, the next command will not work.
 {% endtab %}
 
 {% tab title="Linux" %}
@@ -54,7 +55,7 @@ Once installed, you're ready to continue.
 
 ## Installing Enmap
 
-Once those pre-requisites are installed \(if they're not, scroll up, and _follow the instructions_\), and you've closed all open command prompts, open a new, _normal_ \(not-admin\) command prompt or terminal in your project, then install Enmap using the following command:
+Once those pre-requisites are installed and you've closed all open command prompts, open a new, _normal_ \(not-admin\) command prompt or terminal in your project, then install Enmap using the following command:
 
 ```text
 npm i enmap

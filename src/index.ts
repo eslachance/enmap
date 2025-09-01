@@ -96,7 +96,7 @@ export default class Enmap<V = any, SV = unknown> {
    * @param options.inMemory Optional. If set to true, the enmap will be in-memory only, and will not write to disk. Useful for temporary stores.
    * @param options.sqliteOptions Optional. An object of options to pass to the better-sqlite3 Database constructor.
    * @example
-   * const Enmap = require("enmap");
+   * import Enmap from 'enmap';
    * // Named, Persistent enmap
    * const myEnmap = new Enmap({ name: "testing" });
    * 
@@ -703,11 +703,11 @@ export default class Enmap<V = any, SV = unknown> {
    * @param {Object} options Options object to pass to each enmap, excluding the name..
    * @example
    * // Using local variables.
-   * const Enmap = require('enmap');
+   * import Enmap from 'enmap';
    * const { settings, tags, blacklist } = Enmap.multi(['settings', 'tags', 'blacklist']);
    *
    * // Attaching to an existing object (for instance some API's client)
-   * const Enmap = require("enmap");
+   * import Enmap from 'enmap';
    * Object.assign(client, Enmap.multi(["settings", "tags", "blacklist"]));
    *
    * @returns {Object} An array of initialized Enmaps.

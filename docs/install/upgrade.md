@@ -24,7 +24,7 @@ You should now have something like the following image.
 In the `migrate` folder, create an `index.js` and use the following script for migration. Note that it's an example, change the provider option to fit what you're actually using.
 
 ```javascript
-const Enmap = require("enmap");
+import Enmap from 'enmap';
 const Provider = require("enmap-mongo");
 const SQLite = require("enmap-sqlite");
 
@@ -51,7 +51,7 @@ From the `migrate` folder, run `node index.js`, which should correctly migrate y
 If you're using enmap-sqlite already, you don't really need to do the entire thing above. Adding a single file called `migrate.js` to your project folder, then running it with `node migrate.js` will convert the format and then all you need is to modify the code for Enmap 4. Still, I recommend backing up your bot first. Just in case.
 
 ```javascript
-const Enmap = require("enmap");
+import Enmap from 'enmap';
 const SQLite = require("enmap-sqlite");
 
 const source = new SQLite({"name": "test"});
@@ -65,13 +65,13 @@ There is _very little_ you need to change when moving to Enmap 4. The only chang
 
 ```javascript
 // Change From: 
-const Enmap = require("enmap");
+import Enmap from 'enmap';
 const Provider = require("enmap-mongo");
 
 client.points = new Enmap({provider: new Provider({name: "points", url: "blah"});
 
 // Change To: 
-const Enmap = require("enmap");
+import Enmap from 'enmap';
 client.points = new Enmap({name: "points"});
 ```
 
@@ -79,13 +79,13 @@ If using Enmap.multi\(\), the change is just as simple:
 
 ```javascript
 // Change from V3:  
-const Enmap = require("enmap");
+import Enmap from 'enmap';
 const Provider = require("enmap-mongo");
 
 Object.assign(client, Enmap.multi(["settings", "tags"], Provider, { url: "blah" }));
 
 // Change to V4: 
-const Enmap = require("enmap");
+import Enmap from 'enmap';
 Object.assign(client, Enmap.multi(["settings", "tags"]));
 ```
 

@@ -10,7 +10,10 @@
     "dev": "tsc --watch",
     "prepublishOnly": "npm run build",
     "test": "vitest run",
-    "docs": "node ./scripts/generate-docs.js",
+        "docs": "node ./scripts/generate-docs-enhanced.js all",
+    "docs:markdown": "node ./scripts/generate-docs-enhanced.js markdown", 
+    "docs:typedoc": "node ./scripts/generate-docs-enhanced.js typedoc",
+    "docs:retype": "node ./scripts/generate-docs-enhanced.js retype",
     "retype": "cd docs && npx retype build"
   },
   "files": [
@@ -58,6 +61,8 @@
     "jsdoc-to-markdown": "^8.0.0",
     "limax": "^4.0.0",
     "retype": "^0.2.0",
+    "typedoc": "^0.28.11",
+    "typedoc-plugin-markdown": "^4.8.1",
     "typescript": "^5.9.2",
     "vitest": "^1.6.0"
   },

@@ -1,0 +1,6 @@
+- how to clone the app
+- how to run in dev
+- how to test using npm link
+- updating tests
+- running docs 
+- retype needs `npm install retypeapp --global` to work.

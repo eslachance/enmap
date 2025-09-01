@@ -13,7 +13,7 @@ When Enmap is used with its default options, it loads everything in its cache an
 
 > Hi! When I update data in Enmap from one file, it doesn't update in the other file, I have to restart the bot to update. Is this a bug?
 
-To answer my own obvious question: it's not a bug, it's a feature that I cannot implement. The way Enmap's cache works is that the data is loaded in memory _in that _[_instance _](https://js.evie.dev/classes)_of Enmap_, and only for that instance. This is what enables you to have many different Enmaps in your project - one Enmap doesn't share data with another.
+To answer my own obvious question: it's not a bug, it's a feature that I cannot implement. The way Enmap's cache works is that the data is loaded in memory _in that _[_instance _](https://js.alterion.dev/classes)_of Enmap_, and only for that instance. This is what enables you to have many different Enmaps in your project - one Enmap doesn't share data with another.
 
 However, this also means that when you do `new Enmap({ name: "something" })` from more than one file, that's also a different instance, that doesn't share the same memory space. So not only will it not update the data in memory for the other file, it also uses double the memory. And of course, that's bad. So how do we fix this?
 
@@ -22,10 +22,10 @@ However, this also means that when you do `new Enmap({ name: "something" })` fro
 Admittedly, the vast majority of you Enmap users are doing Discord.js Bots, and even though Enmap works fine with _any_ nodejs project that need simple data storage, bots are my main clients. Considering this fact, we have an extremely simple way to share an Enmap between multiple files: We attach it to the bot client. Usually your client is defined in your main file (index.js, app.js, bot.js, whatever you named it), and every part of your bot has access to this client. We can attach Enmap directly to it, like so:
 
 ```javascript
-const Discord = require("discord.js");
+import { Discord } from 'discord.js';
 const client = new Discord.Client();
 
-const Enmap = require("enmap");
+import Enmap from 'enmap';
 
 // this is the important bit
 client.settings = new Enmap({ name: "settings" });
@@ -50,14 +50,14 @@ In other frameworks and libraries, you might have something similar. For example
 
 ## The Module Method
 
-All things considered, [modules ](https://js.evie.dev/modules)are probably the recommended way to use your Enmap in multiple files within your project. Not only does it give you a single file to import, lets you define multiple Enmaps you can individually import, it also gives you the ability to add specific functions to do common actions you use throughout your project.
+All things considered, [modules ](https://js.alterion.dev/modules)are probably the recommended way to use your Enmap in multiple files within your project. Not only does it give you a single file to import, lets you define multiple Enmaps you can individually import, it also gives you the ability to add specific functions to do common actions you use throughout your project.
 
-As covered in [My JavaScript Guide](https://js.evie.dev/modules), modules are fairly straightforward. This is how I have done an Enmap shared module before:
+As covered in [My JavaScript Guide](https://js.alterion.dev/modules), modules are fairly straightforward. This is how I have done an Enmap shared module before:
 
 ```javascript
-const Enmap = require("enmap");
+import Enmap from 'enmap';
 
-module.exports = {
+export default {
   settings: new Enmap({
     name: "settings",
     autoFetch: true,
@@ -71,7 +71,7 @@ module.exports = {
 This means you can simply require that file elsewhere. Let's say we called that file `db.js` , here's how you'd use it:
 
 ```javascript
-const db = require("./db.js");
+import db from './db.js';
 
 console.log(db.settings.size);
 db.tags.set("blah", {
@@ -91,9 +91,9 @@ const guildTags = db.tags.find(tag => tag.guild === message.guild.id);
 now let's say you use this code _a lot_ in your app, and you'd like to not have to type this whole thing every time. You could add a simple function in your module that only takes an ID and returns the tags:
 
 ```javascript
-const Enmap = require("enmap");
+import Enmap from 'enmap';
 
-module.exports = {
+export default {
   settings: new Enmap({
     name: "settings",
     autoFetch: true,
@@ -107,4 +107,4 @@ module.exports = {
 }
 ```
 
-And there you have it! There are other ways to build the exports, you can also split it differently, take a look at [My Modules Guide ](https://js.evie.dev/modules)for more information.
+And there you have it! There are other ways to build the exports, you can also split it differently, take a look at [My Modules Guide ](https://js.alterion.dev/modules)for more information.

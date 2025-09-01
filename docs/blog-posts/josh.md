@@ -12,7 +12,7 @@ But since that moment where Providers were removed, I had a plan in mind to give
 
 ### Introducing Josh
 
-Then plan was [Josh](https://josh.evie.dev/), all along. Josh is the Javascript Object Storage Helper, and if that sounds a lot like what Enmap does it's because it is. In fact, [Josh ](https://josh.evie.dev/)could best be described to you, my reader, as "A version of Enmap that doesn't have caching, is promised-based, and supports providers again". 
+Then plan was [Josh](https://josh.alterion.dev/), all along. Josh is the Javascript Object Storage Helper, and if that sounds a lot like what Enmap does it's because it is. In fact, [Josh ](https://josh.alterion.dev/)could best be described to you, my reader, as "A version of Enmap that doesn't have caching, is promised-based, and supports providers again". 
 
 So I've been working on it for a few years now - not full time, mind you, as it would have been ready a long time ago, but as a side project. It's finally picked up steam, and you can Get Josh right now to try out the early access version. It's limited \(not as powerful as Enmap is currently\) but that's rapidly evolving. 
 
