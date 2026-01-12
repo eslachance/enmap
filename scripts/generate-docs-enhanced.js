@@ -1,7 +1,6 @@
-
 /**
  * Enhanced documentation generation script with TypeScript type support
- * 
+ *
  * This script provides options for:
  * 1. TypeDoc HTML generation (best TypeScript types)
  * 2. JSDoc-to-Markdown generation (for existing workflow)
@@ -44,7 +43,7 @@ async function fixMarkdownForRetype(docsPath) {
   const fixFile = async (filePath) => {
     try {
       const content = await readFile(filePath, 'utf-8');
-      
+
       // Fix problematic patterns that cause Retype to interpret generics as HTML tags
       let fixedContent = content
         // Fix headings with generics: "# Class: default\<V, SV\>" -> "# Class: default (V, SV)"
@@ -55,14 +54,14 @@ async function fixMarkdownForRetype(docsPath) {
         .replace(/(`[^`]+`)\\<([^>]+)\\>/g, '$1<$2>')
         // Fix link references: "[`EnmapOptions`](../interfaces/EnmapOptions.md)\<`V`, `SV`\>" -> "[`EnmapOptions`](../interfaces/EnmapOptions.md)<V, SV>"
         .replace(/(\[[^\]]+\]\([^)]+\))\\<([^>]+)\\>/g, '$1<$2>');
-        
+
       // Also handle any remaining HTML entities that might cause issues
       fixedContent = fixedContent
         // Convert problematic HTML entities in headings back to parentheses format
         .replace(/^(#+\s+.*?)&lt;([^&]+)&gt;/gm, '$1 ($2)')
         // But keep them in code blocks and inline code
         .replace(/(`[^`]*?)&lt;([^&]*?)&gt;([^`]*?`)/g, '$1<$2>$3');
-      
+
       if (content !== fixedContent) {
         await writeFile(filePath, fixedContent);
       }
@@ -74,10 +73,10 @@ async function fixMarkdownForRetype(docsPath) {
   const processDirectory = async (dirPath) => {
     try {
       const entries = await readdir(dirPath, { withFileTypes: true });
-      
+
       for (const entry of entries) {
         const fullPath = join(dirPath, entry.name);
-        
+
         if (entry.isDirectory()) {
           await processDirectory(fullPath);
         } else if (entry.name.endsWith('.md')) {
@@ -85,7 +84,10 @@ async function fixMarkdownForRetype(docsPath) {
         }
       }
     } catch (error) {
-      console.warn(`⚠️  Could not process directory ${dirPath}:`, error.message);
+      console.warn(
+        `⚠️  Could not process directory ${dirPath}:`,
+        error.message,
+      );
     }
   };
 
@@ -94,16 +96,16 @@ async function fixMarkdownForRetype(docsPath) {
 
 async function generateJSDocMarkdown() {
   console.log('📚 Generating JSDoc-to-Markdown documentation...');
-  
+
   // Compile TypeScript first
   console.log('📦 Compiling TypeScript...');
   execSync('npm run build', { stdio: 'inherit' });
-  
+
   // Generate JSDoc markdown
-  const rendered = await jsdoc2md.render({ 
+  const rendered = await jsdoc2md.render({
     files: './dist/index.js',
   });
-  
+
   if (!rendered || rendered.trim().length === 0) {
     console.warn('⚠️  Warning: JSDoc generated empty output.');
     return '';
@@ -113,22 +115,30 @@ async function generateJSDocMarkdown() {
   const processedOutput = rendered
     .replace(/## Members/g, '## Properties')
     .replace(/## Functions/g, '## Methods')
-    .replace(/\*\*Kind\*\*: global function/g, '**Kind**: instance method of <code>Enmap</code>')
-    .replace(/\*\*Kind\*\*: global variable/g, '**Kind**: instance property of <code>Enmap</code>')
+    .replace(
+      /\*\*Kind\*\*: global function/g,
+      '**Kind**: instance method of <code>Enmap</code>',
+    )
+    .replace(
+      /\*\*Kind\*\*: global variable/g,
+      '**Kind**: instance property of <code>Enmap</code>',
+    )
     .replace(/\n{3,}/g, '\n\n');
 
   const finalOutput = apiDocsHeader + processedOutput;
   await writeFile('./docs/api.md', finalOutput, 'utf8');
-  
+
   console.log('✅ JSDoc-to-Markdown documentation saved to ./docs/api.md');
   return finalOutput;
 }
 
 async function generateTypeDoc() {
   console.log('🔷 Generating TypeDoc HTML documentation...');
-  
+
   try {
-    execSync('npx typedoc --out ./docs-typedoc --plugin default', { stdio: 'inherit' });
+    execSync('npx typedoc --out ./docs-typedoc --plugin default', {
+      stdio: 'inherit',
+    });
     console.log('✅ TypeDoc HTML documentation saved to ./docs-typedoc/');
     return true;
   } catch (error) {
@@ -139,13 +149,13 @@ async function generateTypeDoc() {
 
 async function generateTypeDocMarkdown() {
   console.log('📝 Generating TypeDoc Markdown for Retype...');
-  
+
   try {
     execSync('npx typedoc', { stdio: 'inherit' });
-    
+
     // Post-process the generated markdown files to fix angle bracket issues
     await fixMarkdownForRetype('./docs/typedoc');
-    
+
     // Create the README.md file for the typedoc folder
     const retypeReadmeContent = `---
 icon: code
@@ -206,10 +216,12 @@ The TypeScript API documentation includes live examples, full method signatures,
 
     // Write the README.md into the typedoc folder
     await writeFile('./docs/typedoc/README.md', retypeReadmeContent);
-    
+
     console.log('✅ TypeDoc Markdown documentation saved to ./docs/typedoc/');
     console.log('✅ Retype README.md created at ./docs/typedoc/README.md');
-    console.log('✅ Fixed angle brackets in markdown files for Retype compatibility');
+    console.log(
+      '✅ Fixed angle brackets in markdown files for Retype compatibility',
+    );
     return true;
   } catch (error) {
     console.error('❌ TypeDoc Markdown generation failed:', error.message);
@@ -228,11 +240,12 @@ async function generateAllFormats() {
 
   console.log('\n📊 Documentation Generation Summary:');
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-  
+
   if (markdownOutput) {
     const methodCount = (markdownOutput.match(/## \w+\(/g) || []).length;
-    const propertyCount = (markdownOutput.match(/⇒ <code>\w+<\/code>/g) || []).length;
-    
+    const propertyCount = (markdownOutput.match(/⇒ <code>\w+<\/code>/g) || [])
+      .length;
+
     console.log('📄 JSDoc-to-Markdown:');
     console.log(`   • Output: ./docs/api.md`);
     console.log(`   • Content: ${markdownOutput.length} characters`);
@@ -260,7 +273,9 @@ async function generateAllFormats() {
   }
 
   console.log('\n💡 Recommendations:');
-  console.log('   • Use Retype integration for your main docs (best of both worlds!)');
+  console.log(
+    '   • Use Retype integration for your main docs (best of both worlds!)',
+  );
   console.log('   • Use TypeDoc HTML for development/API reference');
   console.log('   • JSDoc Markdown as fallback for existing workflows');
 }
@@ -293,9 +308,15 @@ async function main() {
         console.log('Formats: markdown, typedoc, retype, all (default)');
         console.log('');
         console.log('Examples:');
-        console.log('  node generate-docs-enhanced.js markdown  # JSDoc markdown only');
-        console.log('  node generate-docs-enhanced.js typedoc   # TypeDoc HTML only');
-        console.log('  node generate-docs-enhanced.js retype    # TypeDoc markdown for Retype');
+        console.log(
+          '  node generate-docs-enhanced.js markdown  # JSDoc markdown only',
+        );
+        console.log(
+          '  node generate-docs-enhanced.js typedoc   # TypeDoc HTML only',
+        );
+        console.log(
+          '  node generate-docs-enhanced.js retype    # TypeDoc markdown for Retype',
+        );
         console.log('  node generate-docs-enhanced.js all       # All formats');
         process.exit(1);
     }
