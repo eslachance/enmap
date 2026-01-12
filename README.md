@@ -10,7 +10,7 @@
 </div>
 
 <div align="center">
-  <p><img src="https://alterion.dev/enmap-logo.svg" alt="Enmap Logo" />
+  <p><img src="https://enmap.alterion.dev/assets/enmap-logo.svg" alt="Enmap Logo" />
 </div>
 
 Enmap is a simple and efficient wrapper around SQLite, based around the idea of being a Map() with additional array methods added on to it.
