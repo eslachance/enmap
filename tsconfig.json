@@ -20,14 +20,6 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
-  "include": [
-    "src/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist",
-    "test",
-    "docs",
-    "typings"
-  ]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "test", "docs", "typings"]
 }

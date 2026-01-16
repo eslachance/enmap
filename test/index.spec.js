@@ -1,9 +1,4 @@
-import {
-  describe,
-  test,
-  expect,
-  vi,
-} from 'vitest';
+import { describe, test, expect, vi } from 'vitest';
 import { parse, stringify } from 'better-serialize';
 import Enmap from '../src/index.ts';
 import { mkdir, rm } from 'fs/promises';

@@ -10,23 +10,23 @@
 </div>
 
 <div align="center">
-  <p><img src="https://alterion.dev/enmap-logo.svg" alt="Enmap Logo" />
+  <p><img src="https://enmap.alterion.dev/assets/enmap-logo.svg" alt="Enmap Logo" />
 </div>
 
 Enmap is a simple and efficient wrapper around SQLite, based around the idea of being a Map() with additional array methods added on to it.
 
-Enmap is: 
+Enmap is:
 
 - **Anti-ORM**, in that it can store any serializable data, and each value can be of a different shape. Compared to an ORM which strictly defines a shape for your data.
-- Fully **typescript compatible**. Accepts generics if you *do* want to define a data shape for your own code. Return values are properly typed according to your generics if provided.
+- Fully **typescript compatible**. Accepts generics if you _do_ want to define a data shape for your own code. Return values are properly typed according to your generics if provided.
 - **Synchronous**. Meaning, it doesn't use callbacks or promises, no await, no .then, just call the method and go. This is thanks to [better-sqlite3][https://npm.im/better-sqlite3]!
 - **Modern and maintained**. I try to keep up to date with dependency updates, too add new functionality, and resolve issues, as fast as I can. Even if there's months where I don't update Enmap, it is not abandonned.
 
 ## Documentation
 
-* [Installation](https://enmap.alterion.dev/install)
-* [Basic Setup](https://enmap.alterion.dev/usage)
-* [API Reference](https://enmap.alterion.dev/api)
+- [Installation](https://enmap.alterion.dev/install)
+- [Basic Setup](https://enmap.alterion.dev/usage)
+- [API Reference](https://enmap.alterion.dev/api)
 
 ## Support
 
@@ -65,7 +65,7 @@ Some user comments!
 > I know how to use a real db, but enmap is so sweet and easy to use
 
 > Thanks to Enmap, I am able to do tons of things that I never thought I would accomplish.
-From custom settings to even just saving the little things, it is amazing to use.
+> From custom settings to even just saving the little things, it is amazing to use.
 
 > Enmap helped me, and it stills helps me, because it is very simple and useful. Thank you for creating Enmap.
 

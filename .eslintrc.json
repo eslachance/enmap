@@ -1,46 +1,52 @@
 {
-  "extends": [
-    "eslint:recommended",
-    "plugin:node/recommended",
-    "prettier"
-  ],
+  "extends": ["eslint:recommended", "plugin:node/recommended", "prettier"],
   "env": {
     "node": true,
     "es6": true
   },
   "parserOptions": {
     "ecmaVersion": 2023,
-	  "sourceType": "module"
+    "sourceType": "module"
   },
   "rules": {
     "no-unused-vars": 1,
-		"valid-jsdoc": ["warn", {
-			"requireReturn": false,
-			"requireReturnDescription": false,
-			"preferType": {
-				"String": "string",
-				"Number": "number",
-				"Boolean": "boolean",
-				"Symbol": "symbol",
-				"function": "Function",
-				"object": "Object",
-				"date": "Date",
-				"error": "Error"
-			}
-		}],
+    "valid-jsdoc": [
+      "warn",
+      {
+        "requireReturn": false,
+        "requireReturnDescription": false,
+        "preferType": {
+          "String": "string",
+          "Number": "number",
+          "Boolean": "boolean",
+          "Symbol": "symbol",
+          "function": "Function",
+          "object": "Object",
+          "date": "Date",
+          "error": "Error"
+        }
+      }
+    ],
     "semi": ["error", "always"],
-    "indent": ["error", 2, {"SwitchCase": 1}],
+    "indent": ["error", 2, { "SwitchCase": 1 }],
     "comma-dangle": ["error", "always-multiline"],
-    "keyword-spacing": ["error", {
-			"overrides": {
-				"if": { "after": true },
-				"for": { "after": true },
-				"while": { "after": true },
-				"catch": { "after": true },
-				"switch": { "after": true }
-			}
-		}],
-    "quotes": ["error", "single", { "avoidEscape": true, "allowTemplateLiterals": true }],
+    "keyword-spacing": [
+      "error",
+      {
+        "overrides": {
+          "if": { "after": true },
+          "for": { "after": true },
+          "while": { "after": true },
+          "catch": { "after": true },
+          "switch": { "after": true }
+        }
+      }
+    ],
+    "quotes": [
+      "error",
+      "single",
+      { "avoidEscape": true, "allowTemplateLiterals": true }
+    ],
     "template-curly-spacing": "error"
   }
 }

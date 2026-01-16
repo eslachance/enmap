@@ -12,7 +12,7 @@
   "sort": ["source-order"],
   "kindSortOrder": [
     "Project",
-    "Module", 
+    "Module",
     "Namespace",
     "Enum",
     "EnumMember",

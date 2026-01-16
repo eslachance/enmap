@@ -63,12 +63,21 @@ type MathOps =
 type Path<T, Key extends keyof T = keyof T> = Key extends string
   ? T[Key] extends Record<string, any>
     ?
-        | `${Key}.${Path<T[Key], Exclude<keyof T[Key], keyof any[]>> &
-            string}`
+        | `${Key}.${Path<T[Key], Exclude<keyof T[Key], keyof any[]>> & string}`
         | `${Key}.${Exclude<keyof T[Key], keyof any[]> & string}`
         | Key
     : Key
   : never;
+
+type PathValue<T, P extends string> = P extends `${infer K}.${infer Rest}`
+  ? K extends keyof T
+    ? T[K] extends Record<string, any>
+      ? PathValue<T[K], Rest>
+      : never
+    : never
+  : P extends keyof T
+    ? T[P]
+    : never;
 
 /**
  * A simple, synchronous, fast key/value storage build around better-sqlite3.
@@ -82,7 +91,11 @@ export default class Enmap<V = any, SV = unknown> {
   #ensureProps: boolean;
   #serializer: (value: V, key: string) => SV;
   #deserializer: (value: SV, key: string) => V;
-  #changedCB?: (key: string, oldValue: V | undefined, newValue: V | undefined) => void;
+  #changedCB?: (
+    key: string,
+    oldValue: V | undefined,
+    newValue: V | undefined,
+  ) => void;
 
   /**
    * Initializes a new Enmap, with options.
@@ -99,7 +112,7 @@ export default class Enmap<V = any, SV = unknown> {
    * import Enmap from 'enmap';
    * // Named, Persistent enmap
    * const myEnmap = new Enmap({ name: "testing" });
-   * 
+   *
    * // Memory-only enmap
    * const memoryEnmap = new Enmap({ inMemory: true });
    *
@@ -115,7 +128,9 @@ export default class Enmap<V = any, SV = unknown> {
       );
     }
     this.#ensureProps = options.ensureProps ?? true;
-    this.#serializer = options.serializer ? options.serializer : (data: V, key: string) => data as unknown as SV;
+    this.#serializer = options.serializer
+      ? options.serializer
+      : (data: V, key: string) => data as unknown as SV;
     this.#deserializer = options.deserializer
       ? options.deserializer
       : (data: SV) => data as unknown as V;
@@ -202,8 +217,9 @@ export default class Enmap<V = any, SV = unknown> {
     } else {
       data = value;
     }
-    if (isFunction(this.#changedCB)) this.#changedCB(key, oldValue, data);
-    this.#set(key, data);
+    if (isFunction(this.#changedCB))
+      this.#changedCB(key, oldValue as V, data as V);
+    this.#set(key, data as V);
     return this;
   }
 
@@ -211,14 +227,16 @@ export default class Enmap<V = any, SV = unknown> {
    * Retrieves a value from the enmap, using its key.
    * @param key The key to retrieve from the enmap.
    * @param path Optional. The property to retrieve from the object or array. Should be a path with dot notation, such as "prop1.subprop2.subprop3"
-   * @returns The parsed value for this key.
+   * @returns {*} The parsed value for this key.
    * @example
    * const myKeyValue = enmap.get("myKey");
    * console.log(myKeyValue);
    *
    * const someSubValue = enmap.get("anObjectKey", "someprop.someOtherSubProp");
    */
-  get(key: string, path?: Path<V>): any {
+  get(key: string): V | null;
+  get<P extends Path<V>>(key: string, path: P): PathValue<V, P> | null;
+  get<P extends Path<V>>(key: string, path?: P): V | PathValue<V, P> | null {
     this.#keycheck(key);
 
     if (!isNil(this.#autoEnsure) && !this.has(key)) {
@@ -233,7 +251,7 @@ export default class Enmap<V = any, SV = unknown> {
 
     if (path) {
       this.#check(key, ['Object']);
-      return _get(parsed, path);
+      return _get(parsed, path) as PathValue<V, P>;
     }
     return parsed;
   }
@@ -378,7 +396,10 @@ export default class Enmap<V = any, SV = unknown> {
   entries(): [string, V][] {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     const entries: [string, V][] = [];
-    for (const row of stmt.iterate() as IterableIterator<{ key: string; value: string }>) {
+    for (const row of stmt.iterate() as IterableIterator<{
+      key: string;
+      value: string;
+    }>) {
       entries.push([row.key, this.#parse(row.value, row.key)]);
     }
     return entries;
@@ -415,7 +436,7 @@ export default class Enmap<V = any, SV = unknown> {
     this.#check(key, ['Object']);
     const data = this.get(key) as V;
     const fn = isFunction(valueOrFunction)
-      ? valueOrFunction as (data: V) => V
+      ? (valueOrFunction as (data: V) => V)
       : (currentData: V) => merge(currentData, valueOrFunction);
     const merged = fn(data);
     this.#set(key, merged);
@@ -430,13 +451,15 @@ export default class Enmap<V = any, SV = unknown> {
    * @param {string} path Optional. The property to retrieve from the object or array.
    * @return {*} The value for this key.
    */
-  observe(key: string, path?: Path<V>): any {
+  observe(key: string): V;
+  observe<P extends Path<V>>(key: string, path: P): PathValue<V, P>;
+  observe<P extends Path<V>>(key: string, path?: P): V | PathValue<V, P> {
     this.#check(key, ['Object', 'Array'], path);
     const data = this.get(key, path);
     const proxy = onChange(data as Record<string, unknown>, () => {
       this.set(key, proxy, path);
     });
-    return proxy;
+    return proxy as V | PathValue<V, P>;
   }
 
   /**
@@ -484,7 +507,12 @@ export default class Enmap<V = any, SV = unknown> {
    * points.math("numberInObject", "+", 10, "sub.anInt");
    * @returns {number} The updated value after the operation
    */
-  math(key: string, operation: MathOps, operand: number, path?: Path<V>): number | null {
+  math(
+    key: string,
+    operation: MathOps,
+    operand: number,
+    path?: Path<V>,
+  ): number | null {
     this.#keycheck(key);
     this.#check(key, ['Number'], path);
     const data = this.get(key, path);
@@ -556,7 +584,17 @@ export default class Enmap<V = any, SV = unknown> {
    * console.log(settings) // enmap's value for "1234567890" if it exists, otherwise the defaultSettings value.
    * @return {*} The value from the database for the key, or the default value provided for a new key.
    */
-  ensure(key: string, defaultValue: any, path?: Path<V>): any {
+  ensure(key: string, defaultValue: any): V | null;
+  ensure<P extends Path<V>>(
+    key: string,
+    defaultValue: any,
+    path: P,
+  ): PathValue<V, P> | null;
+  ensure<P extends Path<V>>(
+    key: string,
+    defaultValue: any,
+    path?: P,
+  ): V | PathValue<V, P> | null {
     this.#keycheck(key);
 
     if (!isNil(this.#autoEnsure)) {
@@ -570,7 +608,8 @@ export default class Enmap<V = any, SV = unknown> {
     const clonedDefault = cloneDeep(defaultValue);
 
     if (!isNil(path)) {
-      if (this.has(key) && this.get(key, path) !== undefined) return this.get(key, path);
+      if (this.has(key) && this.get(key, path) !== undefined)
+        return this.get(key, path);
       if (this.#ensureProps) this.ensure(key, {});
 
       this.set(key, clonedDefault, path);
@@ -633,7 +672,9 @@ export default class Enmap<V = any, SV = unknown> {
     this.#keycheck(key);
     this.#check(key, ['Array', 'Object']);
     const data = this.get(key, path) as V[];
-    const criteria = isFunction(val) ? val as (value: V) => boolean : (value: V) => val === value;
+    const criteria = isFunction(val)
+      ? (val as (value: V) => boolean)
+      : (value: V) => val === value;
     const index = data?.findIndex(criteria) ?? -1;
     if (index > -1) {
       data.splice(index, 1);
@@ -650,7 +691,10 @@ export default class Enmap<V = any, SV = unknown> {
   export(): string {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     const entries: { key: string; value: string }[] = [];
-    for (const row of stmt.iterate() as IterableIterator<{ key: string; value: string }>) {
+    for (const row of stmt.iterate() as IterableIterator<{
+      key: string;
+      value: string;
+    }>) {
       entries.push(row);
     }
     return stringify({
@@ -714,7 +758,7 @@ export default class Enmap<V = any, SV = unknown> {
    */
   static multi<V = unknown, SV = unknown>(
     names: string[],
-    options?: Omit<EnmapOptions<V, SV>, 'name'>
+    options?: Omit<EnmapOptions<V, SV>, 'name'>,
   ): Record<string, Enmap<V, SV>> {
     if (!names.length) {
       throw new Err(
@@ -740,7 +784,10 @@ export default class Enmap<V = any, SV = unknown> {
       .prepare(`SELECT key, value FROM ${this.#name} ORDER BY RANDOM() LIMIT ?`)
       .bind(count);
     const results: [string, V][] = [];
-    for (const row of stmt.iterate() as IterableIterator<{ key: string; value: string }>) {
+    for (const row of stmt.iterate() as IterableIterator<{
+      key: string;
+      value: string;
+    }>) {
       results.push([row.key, this.#parse(row.value, row.key)]);
     }
     return results;
@@ -772,9 +819,15 @@ export default class Enmap<V = any, SV = unknown> {
    * @param {string} [path] Required if the value is an object. The path to the property to compare with.
    * @returns {boolean}
    */
-  every(valueOrFunction: ((val: V, key: string) => boolean) | any, path?: Path<V>): boolean {
+  every(
+    valueOrFunction: ((val: V, key: string) => boolean) | any,
+    path?: Path<V>,
+  ): boolean {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
-    for (const row of stmt.iterate() as IterableIterator<{ key: string; value: string }>) {
+    for (const row of stmt.iterate() as IterableIterator<{
+      key: string;
+      value: string;
+    }>) {
       const parsed = this.#parse(row.value, row.key);
       const data = isNil(path) ? parsed : _get(parsed, path);
       if (isFunction(valueOrFunction)) {
@@ -799,9 +852,15 @@ export default class Enmap<V = any, SV = unknown> {
    * @param {string} [path] Required if the value is an object. The path to the property to compare with.
    * @returns {Array}
    */
-  some(valueOrFunction: ((val: V, key: string) => boolean) | any, path?: Path<V>): boolean {
+  some(
+    valueOrFunction: ((val: V, key: string) => boolean) | any,
+    path?: Path<V>,
+  ): boolean {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
-    for (const row of stmt.iterate() as IterableIterator<{ key: string; value: string }>) {
+    for (const row of stmt.iterate() as IterableIterator<{
+      key: string;
+      value: string;
+    }>) {
       const parsed = this.#parse(row.value, row.key);
       const data = isNil(path) ? parsed : _get(parsed, path);
       if (isFunction(valueOrFunction)) {
@@ -827,7 +886,10 @@ export default class Enmap<V = any, SV = unknown> {
   map<R>(pathOrFn: ((val: V, key: string) => R) | string): R[] {
     const results: R[] = [];
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
-    for (const row of stmt.iterate() as IterableIterator<{ key: string; value: string }>) {
+    for (const row of stmt.iterate() as IterableIterator<{
+      key: string;
+      value: string;
+    }>) {
       const parsed = this.#parse(row.value, row.key);
       if (isFunction(pathOrFn)) {
         results.push((pathOrFn as (val: V, key: string) => R)(parsed, row.key));
@@ -850,12 +912,18 @@ export default class Enmap<V = any, SV = unknown> {
    * @example
    * enmap.find(val => val.username === 'Bob');
    */
-  find(pathOrFn: ((val: V, key: string) => boolean) | string, value?: any): V | null {
+  find(
+    pathOrFn: ((val: V, key: string) => boolean) | string,
+    value?: any,
+  ): V | null {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
-    for (const row of stmt.iterate() as IterableIterator<{ key: string; value: string }>) {
+    for (const row of stmt.iterate() as IterableIterator<{
+      key: string;
+      value: string;
+    }>) {
       const parsed = this.#parse(row.value, row.key);
       const func = isFunction(pathOrFn)
-        ? pathOrFn as (val: V, key: string) => boolean
+        ? (pathOrFn as (val: V, key: string) => boolean)
         : (v: V) => value === _get(v, pathOrFn);
       if (func(parsed, row.key)) {
         return parsed;
@@ -876,12 +944,18 @@ export default class Enmap<V = any, SV = unknown> {
    * @example
    * enmap.findIndex(val => val.username === 'Bob');
    */
-  findIndex(pathOrFn: ((val: V, key: string) => boolean) | string, value?: any): string | null {
+  findIndex(
+    pathOrFn: ((val: V, key: string) => boolean) | string,
+    value?: any,
+  ): string | null {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
-    for (const row of stmt.iterate() as IterableIterator<{ key: string; value: string }>) {
+    for (const row of stmt.iterate() as IterableIterator<{
+      key: string;
+      value: string;
+    }>) {
       const parsed = this.#parse(row.value, row.key);
       const func = isFunction(pathOrFn)
-        ? pathOrFn as (val: V, key: string) => boolean
+        ? (pathOrFn as (val: V, key: string) => boolean)
         : (v: V) => value === _get(v, pathOrFn);
       if (func(parsed, row.key)) {
         return row.key;
@@ -897,10 +971,16 @@ export default class Enmap<V = any, SV = unknown> {
    * @param {*} [initialValue] Starting value for the accumulator
    * @returns {*}
    */
-  reduce<R>(predicate: (accumulator: R, val: V, key: string) => R, initialValue: R): R {
+  reduce<R>(
+    predicate: (accumulator: R, val: V, key: string) => R,
+    initialValue: R,
+  ): R {
     let accumulator = initialValue;
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
-    for (const row of stmt.iterate() as IterableIterator<{ key: string; value: string }>) {
+    for (const row of stmt.iterate() as IterableIterator<{
+      key: string;
+      value: string;
+    }>) {
       const parsed = this.#parse(row.value, row.key);
       accumulator = predicate(accumulator, parsed, row.key);
     }
@@ -917,10 +997,16 @@ export default class Enmap<V = any, SV = unknown> {
    * @param {string} [value] Value to use as `this` when executing function
    * @returns {Enmap}
    */
-  filter(pathOrFn: ((val: V, key: string) => boolean) | string, value?: any): V[] {
+  filter(
+    pathOrFn: ((val: V, key: string) => boolean) | string,
+    value?: any,
+  ): V[] {
     const results: V[] = [];
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
-    for (const row of stmt.iterate() as IterableIterator<{ key: string; value: string }>) {
+    for (const row of stmt.iterate() as IterableIterator<{
+      key: string;
+      value: string;
+    }>) {
       const parsed = this.#parse(row.value, row.key);
       if (isFunction(pathOrFn)) {
         if ((pathOrFn as (val: V, key: string) => boolean)(parsed, row.key)) {
@@ -947,7 +1033,10 @@ export default class Enmap<V = any, SV = unknown> {
    * @param {*} [value] The expected value - only applicable and required if using a property for the first argument.
    * @returns {number} The number of removed entries.
    */
-  sweep(pathOrFn: ((val: V, key: string) => boolean) | string, value?: any): number {
+  sweep(
+    pathOrFn: ((val: V, key: string) => boolean) | string,
+    value?: any,
+  ): number {
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
     const deleteStmt = this.#db.prepare(
       `DELETE FROM ${this.#name} WHERE key = ?`,
@@ -957,7 +1046,10 @@ export default class Enmap<V = any, SV = unknown> {
       for (const key of keys) deleteStmt.run(key);
     });
     let count = 0;
-    for (const row of stmt.iterate() as IterableIterator<{ key: string; value: string }>) {
+    for (const row of stmt.iterate() as IterableIterator<{
+      key: string;
+      value: string;
+    }>) {
       const parsed = this.#parse(row.value, row.key);
       if (isFunction(pathOrFn)) {
         if ((pathOrFn as (val: V, key: string) => boolean)(parsed, row.key)) {
@@ -985,7 +1077,9 @@ export default class Enmap<V = any, SV = unknown> {
    * });
    * @param {Function} cb A callback function that will be called whenever data changes in the enmap.
    */
-  changed(cb: (key: string, oldValue: V | undefined, newValue: V | undefined) => void): void {
+  changed(
+    cb: (key: string, oldValue: V | undefined, newValue: V | undefined) => void,
+  ): void {
     this.#changedCB = cb;
   }
 
@@ -995,10 +1089,16 @@ export default class Enmap<V = any, SV = unknown> {
    * @param {*} value the value to use as a condition for partitioning.
    * @returns {Array<Array<*>>} An array of arrays with the partitioned data.
    */
-  partition(pathOrFn: ((val: V, key: string) => boolean) | string, value?: any): [V[], V[]] {
+  partition(
+    pathOrFn: ((val: V, key: string) => boolean) | string,
+    value?: any,
+  ): [V[], V[]] {
     const results: [V[], V[]] = [[], []];
     const stmt = this.#db.prepare(`SELECT key, value FROM ${this.#name}`);
-    for (const row of stmt.iterate() as IterableIterator<{ key: string; value: string }>) {
+    for (const row of stmt.iterate() as IterableIterator<{
+      key: string;
+      value: string;
+    }>) {
       const parsed = this.#parse(row.value, row.key);
       if (isFunction(pathOrFn)) {
         if ((pathOrFn as (val: V, key: string) => boolean)(parsed, row.key)) {
@@ -1025,9 +1125,10 @@ export default class Enmap<V = any, SV = unknown> {
       serialized = stringify(this.#serializer(value, key));
     } catch (e) {
       // If serialization fails, try to get the underlying value from onChange proxy
-      const targetValue = onChange.target && typeof onChange.target === 'function' 
-        ? onChange.target(value as Record<string, unknown>) as V
-        : value;
+      const targetValue =
+        onChange.target && typeof onChange.target === 'function'
+          ? (onChange.target(value as Record<string, unknown>) as V)
+          : value;
       serialized = stringify(this.#serializer(targetValue, key));
     }
     this.#db
@@ -1059,9 +1160,7 @@ export default class Enmap<V = any, SV = unknown> {
 
   #keycheck(key: string, type = 'key'): void {
     if (typeof key !== 'string') {
-      throw new Error(
-        `Invalid ${type} for enmap - keys must be a string.`,
-      );
+      throw new Error(`Invalid ${type} for enmap - keys must be a string.`);
     }
   }
 
@@ -1102,9 +1201,9 @@ export default class Enmap<V = any, SV = unknown> {
           throw new Err(
             `The value for key "${keyStr}" is not of type "${types.join(
               '" or "',
-            )}" in the enmap "${this.#name}" (value was of type "${
-              constructorName
-            }")`,
+            )}" in the enmap "${
+              this.#name
+            }" (value was of type "${constructorName}")`,
             'EnmapTypeError',
           );
         }
