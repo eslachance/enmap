@@ -14,7 +14,7 @@ Enmap stands for "Enhanced Map", and is a data structure based on the native Jav
 {% hint style="danger" %}
 Enmap requires filesystem access. It **DOES NOT WORK** on Heroku, or other such systems that do not allow you to save data directly to disk.
 
-It should also not be used on **Repl.it** where the data cannot be hidden (and will be public) or on **Glitch* *which has been known to break Enmap's data persistence and lose data.
+It should also not be used on **Repl.it** where the data cannot be hidden (and will be public) or on **Glitch** which has been known to break Enmap's data persistence and lose data.
 {% endhint %}
 
 ## Why Enmap?
